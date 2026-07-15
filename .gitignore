@@ -1,0 +1,14 @@
+node_modules/
+**/node_modules/
+
+.env
+.env.*
+
+mongodb-data/
+backups/
+uploads/
+
+dist/
+build/
+
+.vscode/
