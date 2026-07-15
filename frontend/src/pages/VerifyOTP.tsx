@@ -5,6 +5,8 @@ import { useToast } from '../components/ui/Toast';
 import { ShieldAlert, ArrowLeft, RefreshCw } from 'lucide-react';
 import Button from '../components/ui/Button';
 
+import { API_URL } from '../utils/config';
+
 export const VerifyOTP: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -20,17 +22,20 @@ export const VerifyOTP: React.FC = () => {
 
   useEffect(() => {
     if (!email) {
-      showToast('Session expired. Please request OTP again.', 'error');
+      showToast('No email found. Request OTP first.', 'error');
       navigate('/forgot-password');
-      return;
     }
-
-    const interval = setInterval(() => {
-      setTimer((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-
-    return () => clearInterval(interval);
   }, [email, navigate]);
+
+  useEffect(() => {
+    let interval: any;
+    if (timer > 0) {
+      interval = setInterval(() => {
+        setTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [timer]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +46,7 @@ export const VerifyOTP: React.FC = () => {
 
     setLoading(true);
     try {
-      const res = await axios.post(`http://${window.location.hostname}:5000/api/auth/verify-otp`, { email, otp });
+      const res = await axios.post(`${API_URL}/auth/verify-otp`, { email, otp });
       if (res.data.success) {
         showToast('OTP verified. Set your new password.', 'success');
         navigate('/reset-password', { state: { resetToken: res.data.resetToken, role } });
@@ -57,7 +62,7 @@ export const VerifyOTP: React.FC = () => {
     if (timer > 0) return;
     setResendLoading(true);
     try {
-      const res = await axios.post(`http://${window.location.hostname}:5000/api/auth/forgot-password`, { email, role });
+      const res = await axios.post(`${API_URL}/auth/forgot-password`, { email, role });
       if (res.data.success) {
         showToast('A new OTP has been sent to your email', 'success');
         setTimer(60); // Reset timer

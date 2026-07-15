@@ -9,6 +9,7 @@ import {
   ShoppingBag,
 } from 'lucide-react';
 import { Logo } from '../ui/Logo';
+import { getAssetUrl } from '../../utils/config';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -73,7 +74,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
             <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-bold border border-slate-200 dark:border-slate-700 overflow-hidden">
               {user?.profilePicture && !imgFailed ? (
                 <img
-                  src={`http://${window.location.hostname}:5000${user.profilePicture}`}
+                  src={getAssetUrl(user.profilePicture)}
                   alt="Avatar"
                   className="h-full w-full object-cover"
                   onError={() => setImgFailed(true)}

@@ -5,6 +5,8 @@ import { useToast } from '../components/ui/Toast';
 import { Lock, Eye, EyeOff } from 'lucide-react';
 import Button from '../components/ui/Button';
 
+import { API_URL } from '../utils/config';
+
 export const ResetPassword: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -20,7 +22,7 @@ export const ResetPassword: React.FC = () => {
 
   useEffect(() => {
     if (!resetToken) {
-      showToast('Unauthorized access. Request OTP.', 'error');
+      showToast('No session token found. Start process again.', 'error');
       navigate('/forgot-password');
     }
   }, [resetToken, navigate]);
@@ -44,7 +46,7 @@ export const ResetPassword: React.FC = () => {
 
     setLoading(true);
     try {
-      const res = await axios.post(`http://${window.location.hostname}:5000/api/auth/reset-password`, {
+      const res = await axios.post(`${API_URL}/auth/reset-password`, {
         resetToken,
         password,
         role

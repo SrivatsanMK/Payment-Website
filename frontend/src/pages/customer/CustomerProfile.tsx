@@ -17,6 +17,8 @@ import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import Spinner from '../../components/ui/Spinner';
 
+import { getAssetUrl } from '../../utils/config';
+
 export const CustomerProfile: React.FC = () => {
   const { user, updateUserProfile } = useAuth();
   const api = useAxios();
@@ -62,7 +64,7 @@ export const CustomerProfile: React.FC = () => {
           address: c.address || ''
         });
         if (c.profilePicture) {
-          setImagePreview(`http://${window.location.hostname}:5000${c.profilePicture}`);
+          setImagePreview(getAssetUrl(c.profilePicture));
         }
       }
     } catch (err) {

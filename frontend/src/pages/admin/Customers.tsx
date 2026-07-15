@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAxios } from '../../hooks/useAxios';
 import { endpoints } from '../../services/api';
 import { useToast } from '../../components/ui/Toast';
+import { getAssetUrl } from '../../utils/config';
 import { useSocket } from '../../context/SocketContext';
 import { 
   Search, 
@@ -636,7 +637,7 @@ export const Customers: React.FC = () => {
             <div className="flex flex-col sm:flex-row gap-4 items-center border-b border-slate-100 dark:border-slate-800 pb-4">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-950/20 border border-primary-200 dark:border-primary-800 text-primary-600 font-extrabold text-2xl overflow-hidden flex-shrink-0">
                 {selectedCustomer.profilePicture ? (
-                  <img src={`http://${window.location.hostname}:5000${selectedCustomer.profilePicture}`} alt="Avatar" className="h-full w-full object-cover" />
+                  <img src={getAssetUrl(selectedCustomer.profilePicture)} alt="Avatar" className="h-full w-full object-cover" />
                 ) : (
                   selectedCustomer.name.charAt(0).toUpperCase()
                 )}

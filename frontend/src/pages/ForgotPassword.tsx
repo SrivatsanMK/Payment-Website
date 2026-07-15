@@ -5,6 +5,8 @@ import { useToast } from '../components/ui/Toast';
 import { Mail, ArrowLeft } from 'lucide-react';
 import Button from '../components/ui/Button';
 
+import { API_URL } from '../utils/config';
+
 export const ForgotPassword: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -25,7 +27,7 @@ export const ForgotPassword: React.FC = () => {
 
     setLoading(true);
     try {
-      const res = await axios.post(`http://${window.location.hostname}:5000/api/auth/forgot-password`, { email, role });
+      const res = await axios.post(`${API_URL}/auth/forgot-password`, { email, role });
       if (res.data.success) {
         showToast(res.data.message || 'OTP sent successfully', 'success');
         navigate('/verify-otp', { state: { email, role } });

@@ -2,7 +2,7 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useAdminAuth } from '../context/AdminAuthContext';
 
-const API_URL = `http://${window.location.hostname}:5000/api`;
+import { API_URL } from '../utils/config';
 
 export const useAxios = () => {
   const customerAuth = useAuth();

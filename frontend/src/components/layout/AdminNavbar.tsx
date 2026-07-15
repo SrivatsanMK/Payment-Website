@@ -14,6 +14,7 @@ import {
   ArrowLeftRight,
   ShieldCheck
 } from 'lucide-react';
+import { getAssetUrl } from '../../utils/config';
 
 interface AdminNavbarProps {
   setSidebarOpen: (open: boolean) => void;
@@ -159,7 +160,7 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ setSidebarOpen }) => {
         <div className="h-8 w-8 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center text-teal-700 dark:text-teal-300 text-xs font-bold border border-teal-200 dark:border-teal-800 overflow-hidden">
           {admin?.profilePicture ? (
             <img
-              src={`http://${window.location.hostname}:5000${admin.profilePicture}`}
+              src={getAssetUrl(admin.profilePicture)}
               alt="avatar"
               className="h-full w-full object-cover"
             />

@@ -23,7 +23,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_URL = `http://${window.location.hostname}:5000/api`;
+import { API_URL } from '../utils/config';
 
 // Customer-specific storage keys — isolated from admin session
 const STORAGE_KEYS = {

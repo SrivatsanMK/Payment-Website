@@ -14,6 +14,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { Logo } from '../ui/Logo';
+import { getAssetUrl } from '../../utils/config';
 
 interface AdminSidebarProps {
   isOpen: boolean;
@@ -133,7 +134,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, setIsOpen })
             <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 text-sm font-bold border border-teal-200 dark:border-teal-800 overflow-hidden">
               {admin?.profilePicture && !imgFailed ? (
                 <img
-                  src={`http://${window.location.hostname}:5000${admin.profilePicture}`}
+                  src={getAssetUrl(admin.profilePicture)}
                   alt="Avatar"
                   className="h-full w-full object-cover"
                   onError={() => setImgFailed(true)}
