@@ -2,13 +2,15 @@
   "name": "dealer-payment-backend",
   "version": "1.0.0",
   "description": "Dealer Payment Management System Backend",
-  "main": "dist/server.js",
+  "main": "dist/src/server.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/server.js",
+    "start": "node dist/src/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "seed": "ts-node scripts/seed.ts",
-    "clear": "ts-node scripts/clear.ts"
+    "seed:prod": "node dist/scripts/seed.js",
+    "clear": "ts-node scripts/clear.ts",
+    "clear:prod": "node dist/scripts/clear.js"
   },
   "dependencies": {
     "@types/socket.io": "^3.0.1",
