@@ -7,34 +7,27 @@ interface LogoProps {
 }
 
 export const Logo: React.FC<LogoProps> = ({ className = '', collapsed = false, size = 'md' }) => {
-  let containerSize = 'p-3 rounded-2xl bg-white shadow-md border border-slate-100 dark:border-slate-700/60';
-  let imgSizeClass = 'h-20 w-auto max-w-[220px]';
+  let imgSizeClass = 'h-24 md:h-28 w-auto max-w-[280px]';
 
   if (size === 'sm') {
-    containerSize = 'p-2.5 rounded-xl bg-white shadow-md border border-slate-100 dark:border-slate-700/60';
-    imgSizeClass = 'h-14 md:h-16 w-auto max-w-[180px]';
+    imgSizeClass = 'h-16 md:h-20 w-auto max-w-[220px]';
   } else if (size === 'md') {
-    containerSize = 'p-3.5 rounded-2xl bg-white shadow-lg border border-slate-100 dark:border-slate-700/60';
-    imgSizeClass = 'h-24 w-auto max-w-[250px]';
+    imgSizeClass = 'h-24 md:h-28 w-auto max-w-[280px]';
   } else if (size === 'lg') {
-    containerSize = 'p-4 sm:p-5 rounded-3xl bg-white shadow-xl border border-slate-100 dark:border-slate-700/60';
-    imgSizeClass = 'h-28 sm:h-36 w-auto max-w-[320px]';
+    imgSizeClass = 'h-36 sm:h-48 md:h-56 w-auto max-w-[420px]';
   }
 
   if (collapsed) {
-    containerSize = 'p-1.5 rounded-lg bg-white shadow-sm';
-    imgSizeClass = 'h-9 w-auto max-w-[40px]';
+    imgSizeClass = 'h-10 w-auto max-w-[48px]';
   }
 
   return (
     <div className={`flex items-center justify-center ${className}`}>
-      <div className={`flex items-center justify-center transition-all duration-300 hover:scale-[1.03] ${containerSize}`}>
-        <img
-          src="/logo.png"
-          alt="Green Glide Logistics Logo"
-          className={`${imgSizeClass} object-contain`}
-        />
-      </div>
+      <img
+        src="/logo.png"
+        alt="Green Glide Logistics Logo"
+        className={`${imgSizeClass} object-contain transition-transform duration-300 hover:scale-105 drop-shadow-md`}
+      />
     </div>
   );
 };
