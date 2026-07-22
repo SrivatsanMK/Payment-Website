@@ -4,7 +4,7 @@ import { useAdminAuth } from '../../context/AdminAuthContext';
 import { useToast } from '../../components/ui/Toast';
 import { Logo } from '../../components/ui/Logo';
 import { useTheme } from '../../context/ThemeContext';
-import { Lock, ShieldCheck, Sun, Moon } from 'lucide-react';
+import { Lock, Sun, Moon, User } from 'lucide-react';
 import Button from '../../components/ui/Button';
 
 export const AdminLogin: React.FC = () => {
@@ -75,13 +75,6 @@ export const AdminLogin: React.FC = () => {
 
       {/* Admin Login Card */}
       <div className="relative z-10 w-full max-w-md">
-        {/* Shield badge */}
-        <div className="mb-6 flex justify-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-500/10 border border-teal-500/20 shadow-lg shadow-teal-500/10">
-            <ShieldCheck className="h-7 w-7 text-teal-400" />
-          </div>
-        </div>
-
         <div className="rounded-2xl border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur-xl">
           {/* Logo & title */}
           <div className="mb-8 flex flex-col items-center">
@@ -102,7 +95,7 @@ export const AdminLogin: React.FC = () => {
               </label>
               <div className="relative group">
                 <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 group-focus-within:text-teal-400 transition-colors">
-                  <ShieldCheck className="h-4 w-4" />
+                <User className="h-4 w-4" />
                 </span>
                 <input
                   type="text"
@@ -169,22 +162,7 @@ export const AdminLogin: React.FC = () => {
             </Button>
           </form>
 
-          {/* Security notice */}
-          <div className="mt-6 flex items-center gap-2 rounded-lg bg-slate-800/50 border border-slate-700/50 px-4 py-3">
-            <ShieldCheck className="h-4 w-4 flex-shrink-0 text-teal-400" />
-            <p className="text-[11px] text-slate-400">
-              Secured with JWT authentication. All activity is monitored and logged.
-            </p>
-          </div>
         </div>
-
-        {/* Customer portal link */}
-        <p className="mt-4 text-center text-xs text-slate-500">
-          Not an admin?{' '}
-          <Link to="/login" className="text-primary-400 hover:text-primary-300 font-medium hover:underline transition-colors">
-            Go to Customer Portal
-          </Link>
-        </p>
       </div>
     </div>
   );

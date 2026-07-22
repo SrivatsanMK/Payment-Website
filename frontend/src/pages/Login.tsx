@@ -81,9 +81,6 @@ export const Login: React.FC = () => {
               <Logo size="lg" />
             </div>
             <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Customer Portal</h1>
-            <p className="mt-1 text-xs text-slate-400 font-medium">
-              Secure Packing & Logistics Payments
-            </p>
           </div>
 
           {/* Form */}
@@ -161,37 +158,7 @@ export const Login: React.FC = () => {
             </Button>
           </form>
 
-          {/* Divider */}
-          <div className="mt-6 flex items-center gap-3">
-            <div className="h-px flex-1 bg-slate-100 dark:bg-slate-800" />
-            <span className="text-xs text-slate-400">secure connection</span>
-            <div className="h-px flex-1 bg-slate-100 dark:bg-slate-800" />
-          </div>
-
-          {/* Security badges */}
-          <div className="mt-4 flex items-center justify-center gap-4 text-[10px] text-slate-400">
-            <span className="flex items-center gap-1">
-              <svg className="h-3 w-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              SSL Encrypted
-            </span>
-            <span className="flex items-center gap-1">
-              <svg className="h-3 w-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-              </svg>
-              JWT Protected
-            </span>
-          </div>
         </div>
-
-        {/* Admin portal link */}
-        <p className="mt-4 text-center text-xs text-slate-400 dark:text-slate-500">
-          Are you an administrator?{' '}
-          <Link to="/admin/login" className="text-slate-600 dark:text-slate-400 font-semibold hover:underline transition-colors">
-            Admin Portal →
-          </Link>
-        </p>
       </div>
     </div>
   );
