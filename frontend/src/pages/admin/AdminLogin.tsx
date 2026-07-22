@@ -45,19 +45,20 @@ export const AdminLogin: React.FC = () => {
   };
 
   return (
-    <div className="relative flex min-h-screen w-screen items-center justify-center overflow-hidden bg-slate-950 px-4">
-      {/* Animated gradient background */}
-      <div className="absolute inset-0 z-0">
-        <div className="absolute -top-40 -left-40 h-96 w-96 rounded-full bg-teal-500/10 blur-3xl animate-pulse" />
-        <div className="absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-primary-500/10 blur-3xl animate-pulse delay-1000" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-64 w-64 rounded-full bg-teal-700/5 blur-2xl" />
+    <div className="relative flex min-h-screen w-screen items-center justify-center overflow-hidden bg-gradient-to-br from-slate-100 via-teal-50/30 to-slate-200 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 px-4">
+
+      {/* Animated gradient blobs */}
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-40 -left-40 h-96 w-96 rounded-full bg-teal-400/20 dark:bg-teal-500/10 blur-3xl animate-pulse" />
+        <div className="absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-primary-400/20 dark:bg-primary-500/10 blur-3xl animate-pulse delay-1000" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-64 w-64 rounded-full bg-teal-300/10 dark:bg-teal-700/5 blur-2xl" />
       </div>
 
       {/* Grid pattern overlay */}
       <div
-        className="absolute inset-0 z-0 opacity-[0.03]"
+        className="absolute inset-0 z-0 opacity-[0.04] dark:opacity-[0.03]"
         style={{
-          backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)',
+          backgroundImage: 'linear-gradient(rgba(0,0,0,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.4) 1px, transparent 1px)',
           backgroundSize: '40px 40px'
         }}
       />
@@ -66,7 +67,7 @@ export const AdminLogin: React.FC = () => {
       <div className="absolute top-4 right-4 z-20">
         <button
           onClick={toggleTheme}
-          className="p-2 text-slate-400 bg-slate-800/60 border border-slate-700/50 hover:text-slate-200 rounded-lg shadow-md transition-colors backdrop-blur-sm"
+          className="p-2 text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/50 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg shadow-md transition-colors backdrop-blur-sm"
           title="Toggle theme"
         >
           {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
@@ -75,14 +76,15 @@ export const AdminLogin: React.FC = () => {
 
       {/* Admin Login Card */}
       <div className="relative z-10 w-full max-w-md">
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur-xl">
+        <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-8 shadow-[0_20px_60px_rgba(0,0,0,0.12)] dark:shadow-2xl backdrop-blur-xl">
+
           {/* Logo & title */}
           <div className="mb-8 flex flex-col items-center">
             <div className="mb-4">
               <Logo size="lg" />
             </div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">Admin Portal</h1>
-            <p className="mt-1 text-xs font-medium text-slate-400 uppercase tracking-widest">
+            <h1 className="text-2xl font-bold text-slate-800 dark:text-white tracking-tight">Admin Portal</h1>
+            <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-widest">
               Authorized Personnel Only
             </p>
           </div>
@@ -90,19 +92,19 @@ export const AdminLogin: React.FC = () => {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="mb-2 block text-[11px] font-bold uppercase tracking-widest text-slate-400">
+              <label className="mb-2 block text-[11px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
                 Admin ID / Username
               </label>
               <div className="relative group">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 group-focus-within:text-teal-400 transition-colors">
-                <User className="h-4 w-4" />
+                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 dark:text-slate-500 group-focus-within:text-teal-500 dark:group-focus-within:text-teal-400 transition-colors">
+                  <User className="h-4 w-4" />
                 </span>
                 <input
                   type="text"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   placeholder="Enter Admin ID or Email"
-                  className="w-full rounded-xl border border-slate-700 bg-slate-800/50 pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all shadow-inner"
                   required
                   autoComplete="username"
                 />
@@ -111,18 +113,18 @@ export const AdminLogin: React.FC = () => {
 
             <div>
               <div className="mb-2 flex justify-between items-center">
-                <label className="block text-[11px] font-bold uppercase tracking-widest text-slate-400">
+                <label className="block text-[11px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
                   Password
                 </label>
                 <Link
                   to="/admin/forgot-password"
-                  className="text-[11px] font-semibold text-teal-400 hover:text-teal-300 hover:underline transition-colors"
+                  className="text-[11px] font-semibold text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 hover:underline transition-colors"
                 >
                   Forgot Password?
                 </Link>
               </div>
               <div className="relative group">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 group-focus-within:text-teal-400 transition-colors">
+                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 dark:text-slate-500 group-focus-within:text-teal-500 dark:group-focus-within:text-teal-400 transition-colors">
                   <Lock className="h-4 w-4" />
                 </span>
                 <input
@@ -130,14 +132,14 @@ export const AdminLogin: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter password"
-                  className="w-full rounded-xl border border-slate-700 bg-slate-800/50 pl-10 pr-10 py-2.5 text-sm text-white placeholder-slate-500 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 pl-10 pr-10 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all shadow-inner"
                   required
                   autoComplete="current-password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-500 hover:text-slate-300 transition-colors"
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
                 >
                   {showPassword ? (
                     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
