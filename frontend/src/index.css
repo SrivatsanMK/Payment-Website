@@ -77,11 +77,23 @@ html.dark,
   .preserve-3d {
     transform-style: preserve-3d;
   }
+  .transform-style-3d {
+    transform-style: preserve-3d;
+  }
   .backface-hidden {
     backface-visibility: hidden;
   }
   .rotate-y-180 {
     transform: rotateY(180deg);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-25px) rotate(6deg);
   }
 }
 
