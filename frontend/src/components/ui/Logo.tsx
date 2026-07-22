@@ -21,28 +21,28 @@ export const Logo: React.FC<LogoProps> = ({ className = '', collapsed = false, s
   }
 
   if (size === 'sm') {
-    // Sidebar: fill the full width of the sidebar rectangle
+    // Sidebar: fill the full width, very tall
     return (
       <div className={`flex items-center justify-center w-full ${className}`}>
         <img
           src="/logo.png"
           alt="Green Glide Logistics Logo"
           className="w-full h-auto object-contain"
-          style={{ maxHeight: '140px' }}
+          style={{ minHeight: '180px', maxHeight: '240px' }}
         />
       </div>
     );
   }
 
   if (size === 'lg') {
-    // Login page: very large
+    // Login page: extremely large
     return (
       <div className={`flex items-center justify-center w-full ${className}`}>
         <img
           src="/logo.png"
           alt="Green Glide Logistics Logo"
           className="w-full h-auto object-contain"
-          style={{ maxHeight: '220px' }}
+          style={{ minHeight: '260px', maxHeight: '320px' }}
         />
       </div>
     );
@@ -55,7 +55,7 @@ export const Logo: React.FC<LogoProps> = ({ className = '', collapsed = false, s
         src="/logo.png"
         alt="Green Glide Logistics Logo"
         className="w-full h-auto object-contain"
-        style={{ maxHeight: '160px' }}
+        style={{ minHeight: '200px', maxHeight: '280px' }}
       />
     </div>
   );
