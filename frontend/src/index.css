@@ -8,6 +8,68 @@
   }
 }
 
+/* ═══════════════════════════════════════════════════════════
+   DARK MODE HARD OVERRIDES — #000000 bg, #2A2A2A surfaces
+   These take effect immediately without needing a dev server
+   restart, and override any cached Tailwind CSS values.
+   ═══════════════════════════════════════════════════════════ */
+
+/* Root / page background → pure black */
+html.dark,
+.dark,
+.dark body,
+.dark #root {
+  background-color: #000000;
+}
+
+/* Page-level bg utility classes → #000000 */
+.dark .dark\:bg-slate-950,
+.dark .dark\:bg-slate-900,
+.dark .bg-slate-950,
+.dark .bg-slate-900 {
+  background-color: #000000 !important;
+}
+
+/* Card / sidebar / navbar / modal surfaces → #2A2A2A */
+.dark .dark\:bg-slate-850,
+.dark .dark\:bg-slate-800,
+.dark .bg-slate-850,
+.dark .bg-slate-800 {
+  background-color: #2A2A2A !important;
+}
+
+/* Input fields → #333333 */
+.dark .dark\:bg-slate-700,
+.dark .bg-slate-700 {
+  background-color: #333333 !important;
+}
+
+/* Semi-transparent card variants (admin login, modals) */
+.dark .bg-white\/5 {
+  background-color: rgba(42, 42, 42, 0.85) !important;
+}
+
+/* Gradient login backgrounds → pure black */
+.dark .dark\:from-slate-950 {
+  --tw-gradient-from: #000000 var(--tw-gradient-from-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+.dark .dark\:via-slate-900 {
+  --tw-gradient-stops: var(--tw-gradient-from), #000000 var(--tw-gradient-via-position), var(--tw-gradient-to);
+}
+.dark .dark\:to-slate-950 {
+  --tw-gradient-to: #000000 var(--tw-gradient-to-position);
+}
+
+/* Border overrides → slightly lighter than surface */
+.dark .dark\:border-slate-800,
+.dark .border-slate-800,
+.dark .dark\:border-slate-700 {
+  border-color: #3D3D3D !important;
+}
+
+
+
 @layer utilities {
   .perspective-1000 {
     perspective: 1000px;
