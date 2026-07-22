@@ -23,12 +23,12 @@ export default {
         },
         slate: {
           // ── Dark mode overrides ──────────────────────────────────────────
-          // Page backgrounds  →  pure black
-          900:  '#000000',   // was #0f172a — now #000000 (pure black)
-          950:  '#000000',   // was #020617 — now #000000 (pure black)
-          // Card / panel / sidebar surfaces  →  #2A2A2A
-          800:  '#2A2A2A',   // was #1e293b
-          850:  '#2A2A2A',   // custom fine-tuned dark card
+          // Page backgrounds  →  #2A2A2A
+          900:  '#2A2A2A',   // background
+          950:  '#2A2A2A',   // background
+          // Card / panel / sidebar surfaces  →  pure black #000000
+          800:  '#000000',   // cards
+          850:  '#000000',   // custom fine-tuned dark card
           // Slightly lighter surface (inputs, rows)
           700:  '#333333',   // was #334155
           // Borders
