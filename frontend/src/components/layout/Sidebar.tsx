@@ -43,7 +43,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
         }`}
       >
         {/* Brand */}
-        <div className="flex items-center justify-center w-full border-b border-slate-100 dark:border-slate-800 pt-8 pb-6">
+        <div className="flex items-center justify-center w-full border-b border-slate-100 dark:border-slate-800 p-4">
           <Logo size="sm" />
         </div>
 
