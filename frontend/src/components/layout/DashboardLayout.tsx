@@ -12,7 +12,7 @@ export const DashboardLayout: React.FC = () => {
   // If loading user state on application start
   if (loading) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
+      <div className="flex h-screen w-screen items-center justify-center bg-slate-50 dark:bg-[#2A2A2A]">
         <Spinner size="lg" />
       </div>
     );
@@ -30,7 +30,7 @@ export const DashboardLayout: React.FC = () => {
 
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
+    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 dark:bg-[#2A2A2A]">
       {/* Sidebar Navigation */}
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 

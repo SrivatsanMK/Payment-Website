@@ -57,7 +57,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, setIsOpen })
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 lg:h-screen flex-col bg-white dark:bg-slate-850 border-r border-slate-150 dark:border-slate-800 transition-transform duration-300 lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 lg:h-screen flex-col bg-white dark:bg-black border-r border-slate-150 dark:border-slate-800 transition-transform duration-300 lg:static lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >

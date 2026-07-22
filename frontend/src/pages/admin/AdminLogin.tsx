@@ -45,7 +45,7 @@ export const AdminLogin: React.FC = () => {
   };
 
   return (
-    <div className="relative flex min-h-screen w-screen items-center justify-center overflow-hidden bg-gradient-to-br from-slate-100 via-teal-50/30 to-slate-200 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 px-4">
+    <div className="relative flex min-h-screen w-screen items-center justify-center overflow-hidden bg-gradient-to-br from-slate-100 via-teal-50/30 to-slate-200 dark:from-[#2A2A2A] dark:via-[#2A2A2A] dark:to-[#2A2A2A] px-4">
 
       {/* Animated gradient blobs */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
@@ -76,7 +76,7 @@ export const AdminLogin: React.FC = () => {
 
       {/* Admin Login Card */}
       <div className="relative z-10 w-full max-w-md">
-        <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-8 shadow-[0_20px_60px_rgba(0,0,0,0.12)] dark:shadow-2xl backdrop-blur-xl">
+        <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-black p-8 shadow-[0_20px_60px_rgba(0,0,0,0.12)] dark:shadow-2xl backdrop-blur-xl">
 
           {/* Logo & title */}
           <div className="mb-8 flex flex-col items-center">
@@ -104,7 +104,7 @@ export const AdminLogin: React.FC = () => {
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   placeholder="Enter Admin ID or Email"
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all shadow-inner"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#1A1A1A] pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all shadow-inner"
                   required
                   autoComplete="username"
                 />
@@ -132,7 +132,7 @@ export const AdminLogin: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter password"
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 pl-10 pr-10 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all shadow-inner"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#1A1A1A] pl-10 pr-10 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 transition-all shadow-inner"
                   required
                   autoComplete="current-password"
                 />

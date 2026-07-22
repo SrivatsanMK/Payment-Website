@@ -11,7 +11,7 @@ export const AdminLayout: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-slate-950">
+      <div className="flex h-screen w-screen items-center justify-center bg-slate-50 dark:bg-[#2A2A2A]">
         <Spinner size="lg" />
       </div>
     );
@@ -22,7 +22,7 @@ export const AdminLayout: React.FC = () => {
   }
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 dark:bg-slate-950">
+    <div className="flex h-screen w-screen overflow-hidden bg-slate-50 dark:bg-[#2A2A2A]">
       <AdminSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
       <div className="flex flex-1 flex-col overflow-hidden">
         <AdminNavbar setSidebarOpen={setSidebarOpen} />

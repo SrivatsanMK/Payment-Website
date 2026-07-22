@@ -74,7 +74,7 @@ export const Navbar: React.FC<NavbarProps> = ({ setSidebarOpen }) => {
   }, [isCustomer]);
 
   return (
-    <header className="flex h-16 w-full items-center justify-between bg-white dark:bg-slate-850 px-6 border-b border-slate-150 dark:border-slate-800">
+    <header className="flex h-16 w-full items-center justify-between bg-white dark:bg-black px-6 border-b border-slate-150 dark:border-slate-800">
       {/* Left items */}
       <div className="flex items-center gap-3">
         <button
@@ -121,9 +121,9 @@ export const Navbar: React.FC<NavbarProps> = ({ setSidebarOpen }) => {
                   onClick={() => setShowNotifications(false)}
                   className="fixed inset-0 z-40"
                 />
-                <div className="absolute right-0 mt-2 w-80 z-50 rounded-xl bg-white dark:bg-slate-850 shadow-xl border border-slate-100 dark:border-slate-800 overflow-hidden flex flex-col">
+                <div className="absolute right-0 mt-2 w-80 z-50 rounded-xl bg-white dark:bg-black shadow-xl border border-slate-100 dark:border-slate-800 overflow-hidden flex flex-col">
                   {/* Dropdown Header */}
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-[#1A1A1A]">
                     <span className="text-xs font-semibold text-slate-850 dark:text-slate-100">
                       Notifications ({unreadCount})
                     </span>
@@ -150,7 +150,7 @@ export const Navbar: React.FC<NavbarProps> = ({ setSidebarOpen }) => {
                         <div 
                           key={n._id} 
                           className={`p-4 flex flex-col gap-1 transition-colors ${
-                            n.isRead ? 'bg-white dark:bg-slate-850' : 'bg-primary-50/20 dark:bg-primary-950/10'
+                            n.isRead ? 'bg-white dark:bg-black' : 'bg-primary-50/20 dark:bg-primary-950/10'
                           }`}
                         >
                           <div className="flex justify-between items-start">

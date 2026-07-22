@@ -43,7 +43,7 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="relative flex min-h-screen w-screen items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 px-4 overflow-hidden">
+    <div className="relative flex min-h-screen w-screen items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 dark:from-[#2A2A2A] dark:via-[#2A2A2A] dark:to-[#2A2A2A] px-4 overflow-hidden">
 
       {/* Decorative background elements */}
       <div className="absolute top-0 left-0 w-full h-full z-0 overflow-hidden pointer-events-none">
@@ -73,7 +73,7 @@ export const Login: React.FC = () => {
 
       {/* Login Card */}
       <div className="relative z-10 w-full max-w-md">
-        <div className="rounded-2xl bg-white dark:bg-slate-850 p-8 shadow-[0_20px_60px_rgba(8,112,184,0.08)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.5)] border border-slate-100 dark:border-slate-800">
+        <div className="rounded-2xl bg-white dark:bg-black p-8 shadow-[0_20px_60px_rgba(8,112,184,0.08)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.5)] border border-slate-100 dark:border-slate-800">
 
           {/* Logo & branding */}
           <div className="mb-8 flex flex-col items-center">
@@ -98,7 +98,7 @@ export const Login: React.FC = () => {
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   placeholder="e.g. CUST12345 or your email"
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all shadow-inner"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#1A1A1A] pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all shadow-inner"
                   required
                   autoComplete="username"
                 />
@@ -126,7 +126,7 @@ export const Login: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 pl-10 pr-10 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all shadow-inner"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#1A1A1A] pl-10 pr-10 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all shadow-inner"
                   required
                   autoComplete="current-password"
                 />

@@ -66,7 +66,7 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ setSidebarOpen }) => {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-slate-850/80 backdrop-blur-md px-4 sm:px-6">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-black/80 backdrop-blur-md px-4 sm:px-6">
       {/* Left: hamburger */}
       <div className="flex items-center gap-3">
         <button
@@ -114,7 +114,7 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ setSidebarOpen }) => {
           </button>
 
           {showNotifications && (
-            <div className="absolute right-0 top-full mt-2 w-80 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-850 shadow-xl z-50">
+            <div className="absolute right-0 top-full mt-2 w-80 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-black shadow-xl z-50">
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 px-4 py-3">
                 <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">Notifications</span>
                 <div className="flex items-center gap-2">
