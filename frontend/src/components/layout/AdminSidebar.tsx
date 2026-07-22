@@ -62,8 +62,13 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, setIsOpen })
         }`}
       >
         {/* Brand */}
-        <div className="flex items-center justify-center w-full border-b border-slate-100 dark:border-slate-800" style={{ padding: 0 }}>
-          <Logo size="sm" />
+        <div
+          className="flex items-center justify-center w-full border-b border-slate-100 dark:border-slate-800"
+          style={{ padding: 0 }}
+        >
+          <div className="w-full dark:bg-black" style={{ padding: 0 }}>
+            <Logo size="sm" />
+          </div>
         </div>
 
         {/* Role badge */}

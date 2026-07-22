@@ -22,8 +22,11 @@ export default {
           950: '#2e1065',
         },
         slate: {
-          850: '#1e293b', // fine-tuned dark card background
-          950: '#020617', // premium deep black background
+          // Light mode slate colors stay the same
+          // Dark mode custom palette: #000000 and #2A2A2A
+          850: '#2A2A2A',  // card / panel background in dark mode
+          900: '#2A2A2A',  // dark surfaces → #2A2A2A
+          950: '#000000',  // deepest background → pure black
         }
       },
       fontFamily: {
