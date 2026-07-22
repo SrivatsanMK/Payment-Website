@@ -22,11 +22,17 @@ export default {
           950: '#2e1065',
         },
         slate: {
-          // Light mode slate colors stay the same
-          // Dark mode custom palette: #000000 and #2A2A2A
-          850: '#2A2A2A',  // card / panel background in dark mode
-          900: '#2A2A2A',  // dark surfaces → #2A2A2A
-          950: '#000000',  // deepest background → pure black
+          // ── Dark mode overrides ──────────────────────────────────────────
+          // Page backgrounds  →  pure black
+          900:  '#000000',   // was #0f172a — now #000000 (pure black)
+          950:  '#000000',   // was #020617 — now #000000 (pure black)
+          // Card / panel / sidebar surfaces  →  #2A2A2A
+          800:  '#2A2A2A',   // was #1e293b
+          850:  '#2A2A2A',   // custom fine-tuned dark card
+          // Slightly lighter surface (inputs, rows)
+          700:  '#333333',   // was #334155
+          // Borders
+          600:  '#3D3D3D',   // was #475569
         }
       },
       fontFamily: {
