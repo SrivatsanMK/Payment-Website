@@ -45,18 +45,27 @@ export const Login: React.FC = () => {
   return (
     <div className="relative flex min-h-screen w-screen items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-100 dark:from-[#2A2A2A] dark:via-[#2A2A2A] dark:to-[#2A2A2A] px-4 overflow-hidden">
 
-      {/* Decorative background elements */}
-      <div className="absolute top-0 left-0 w-full h-full z-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-20 -left-20 h-80 w-80 rounded-full bg-primary-100/60 dark:bg-primary-900/10 blur-3xl" />
-        <div className="absolute -bottom-20 -right-20 h-80 w-80 rounded-full bg-blue-100/60 dark:bg-blue-900/10 blur-3xl" />
-        <div className="absolute top-10 right-20 text-slate-200 dark:text-slate-800 opacity-40 transform rotate-12">
-          <Package size={100} strokeWidth={1} />
+      {/* 3D Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none perspective-1000">
+        {/* Glows */}
+        <div className="absolute -top-40 -left-40 h-[500px] w-[500px] rounded-full bg-primary-500/20 dark:bg-primary-500/10 blur-[100px] animate-pulse" />
+        <div className="absolute -bottom-40 -right-40 h-[500px] w-[500px] rounded-full bg-blue-500/20 dark:bg-blue-500/10 blur-[100px] animate-pulse" style={{ animationDelay: '2s' }} />
+        
+        {/* Floating 3D Icons */}
+        <div className="absolute top-20 right-[10%] text-slate-300 dark:text-black opacity-30 dark:opacity-40 animate-[bounce_8s_infinite] drop-shadow-[0_20px_30px_rgba(0,0,0,0.5)]">
+          <div className="animate-[spin_15s_linear_infinite] preserve-3d">
+            <Package size={140} strokeWidth={0.5} />
+          </div>
         </div>
-        <div className="absolute bottom-10 left-20 text-slate-200 dark:text-slate-800 opacity-40 transform -rotate-12">
-          <Box size={120} strokeWidth={1} />
+        <div className="absolute bottom-20 left-[10%] text-slate-300 dark:text-black opacity-30 dark:opacity-40 animate-[bounce_10s_infinite] drop-shadow-[0_20px_30px_rgba(0,0,0,0.5)]" style={{ animationDelay: '1s' }}>
+          <div className="animate-[spin_20s_linear_infinite_reverse] preserve-3d">
+            <Box size={180} strokeWidth={0.5} />
+          </div>
         </div>
-        <div className="absolute top-1/3 left-10 text-slate-200 dark:text-slate-800 opacity-20 transform rotate-45">
-          <Package size={60} strokeWidth={1} />
+        <div className="absolute top-1/3 left-10 text-slate-300 dark:text-black opacity-20 dark:opacity-30 animate-[bounce_12s_infinite] drop-shadow-[0_15px_20px_rgba(0,0,0,0.4)]">
+          <div className="animate-[spin_12s_linear_infinite] preserve-3d">
+            <Package size={80} strokeWidth={1} />
+          </div>
         </div>
       </div>
 
@@ -71,24 +80,27 @@ export const Login: React.FC = () => {
         </button>
       </div>
 
-      {/* 3D Login Card */}
+      {/* 3D Login Card Wrapper */}
       <div className="relative z-10 w-full max-w-md perspective-1000">
         <div className="
-          relative rounded-2xl p-8 
+          relative rounded-3xl p-10 
           bg-white dark:bg-black 
-          border border-slate-100 dark:border-slate-800
-          shadow-[0_8px_0_0_#e2e8f0,0_20px_40px_rgba(8,112,184,0.15)] 
-          dark:shadow-[0_8px_0_0_#111111,0_20px_40px_rgba(0,0,0,0.8),0_0_50px_rgba(8,112,184,0.1)]
-          transform transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_0_0_#e2e8f0,0_30px_50px_rgba(8,112,184,0.2)]
-          dark:hover:shadow-[0_12px_0_0_#111111,0_30px_50px_rgba(0,0,0,0.9),0_0_60px_rgba(8,112,184,0.15)]
+          /* 3D Bevel Borders */
+          border-t border-l border-white dark:border-[#333333]
+          border-b-[8px] border-r-[8px] border-b-slate-200 border-r-slate-200 dark:border-b-[#0a0a0a] dark:border-r-[#0a0a0a]
+          /* Deep Ambient Shadow */
+          shadow-[0_40px_60px_-15px_rgba(8,112,184,0.2)] 
+          dark:shadow-[0_40px_60px_-15px_rgba(0,0,0,1),0_0_40px_rgba(0,0,0,0.5)]
+          transform transition-transform duration-500 hover:-translate-y-2 hover:shadow-[0_50px_70px_-15px_rgba(8,112,184,0.3)] dark:hover:shadow-[0_50px_70px_-15px_rgba(0,0,0,1),0_0_60px_rgba(8,112,184,0.15)]
         ">
 
           {/* Logo & branding */}
-          <div className="mb-8 flex flex-col items-center">
-            <div className="mb-4 hover:scale-105 transition-transform">
+          <div className="mb-10 flex flex-col items-center">
+            <div className="mb-6 transform transition-transform duration-500 hover:scale-110 hover:rotate-3 drop-shadow-xl">
               <Logo size="lg" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Customer Portal</h1>
+            <h1 className="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight drop-shadow-sm">Customer Portal</h1>
+            <div className="h-1 w-12 bg-primary-500 rounded-full mt-4 shadow-[0_0_10px_rgba(var(--primary),0.8)]"></div>
           </div>
 
           {/* Form */}
@@ -106,7 +118,14 @@ export const Login: React.FC = () => {
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   placeholder="e.g. CUST12345 or your email"
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#1A1A1A] pl-10 pr-4 py-3 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-primary-500 focus:outline-none shadow-[inset_0_3px_6px_rgba(0,0,0,0.06)] dark:shadow-[inset_0_4px_10px_rgba(0,0,0,0.6)] focus:shadow-[inset_0_3px_6px_rgba(0,0,0,0.06),0_0_15px_rgba(8,112,184,0.2)] transition-all"
+                  className="w-full rounded-2xl bg-slate-50 dark:bg-[#151515] pl-12 pr-4 py-3.5 text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 
+                             /* 3D Inset Cavity */
+                             border-t-[3px] border-l-[3px] border-slate-200 dark:border-[#050505]
+                             border-b border-r border-white dark:border-[#222222]
+                             shadow-[inset_3px_3px_6px_rgba(0,0,0,0.05),inset_-2px_-2px_4px_rgba(255,255,255,0.8)] 
+                             dark:shadow-[inset_4px_4px_10px_rgba(0,0,0,0.8),inset_-2px_-2px_5px_rgba(255,255,255,0.05)]
+                             focus:outline-none focus:shadow-[inset_4px_4px_10px_rgba(0,0,0,0.8),0_0_20px_rgba(8,112,184,0.3)]
+                             transition-all"
                   required
                   autoComplete="username"
                 />
@@ -134,7 +153,14 @@ export const Login: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#1A1A1A] pl-10 pr-10 py-3 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-primary-500 focus:outline-none shadow-[inset_0_3px_6px_rgba(0,0,0,0.06)] dark:shadow-[inset_0_4px_10px_rgba(0,0,0,0.6)] focus:shadow-[inset_0_3px_6px_rgba(0,0,0,0.06),0_0_15px_rgba(8,112,184,0.2)] transition-all"
+                  className="w-full rounded-2xl bg-slate-50 dark:bg-[#151515] pl-12 pr-12 py-3.5 text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 
+                             /* 3D Inset Cavity */
+                             border-t-[3px] border-l-[3px] border-slate-200 dark:border-[#050505]
+                             border-b border-r border-white dark:border-[#222222]
+                             shadow-[inset_3px_3px_6px_rgba(0,0,0,0.05),inset_-2px_-2px_4px_rgba(255,255,255,0.8)] 
+                             dark:shadow-[inset_4px_4px_10px_rgba(0,0,0,0.8),inset_-2px_-2px_5px_rgba(255,255,255,0.05)]
+                             focus:outline-none focus:shadow-[inset_4px_4px_10px_rgba(0,0,0,0.8),0_0_20px_rgba(8,112,184,0.3)]
+                             transition-all"
                   required
                   autoComplete="current-password"
                 />
@@ -157,13 +183,25 @@ export const Login: React.FC = () => {
               </div>
             </div>
 
-            <Button
-              type="submit"
-              className="w-full mt-6 py-3.5 rounded-xl bg-gradient-to-b from-primary-400 to-primary-600 border-b-4 border-primary-700 shadow-[0_8px_20px_rgba(8,112,184,0.3)] hover:brightness-110 hover:shadow-[0_12px_25px_rgba(8,112,184,0.4)] hover:-translate-y-0.5 active:border-b-0 active:translate-y-1 active:shadow-[0_2px_10px_rgba(8,112,184,0.3)] transition-all font-bold text-white tracking-wide uppercase text-sm"
-              loading={loading}
-            >
-              Sign In Securely
-            </Button>
+            <div className="pt-4">
+              <Button
+                type="submit"
+                className="w-full py-4 rounded-2xl 
+                           bg-gradient-to-b from-primary-400 to-primary-600 
+                           /* 3D Button Bevel */
+                           border-t-2 border-white/30
+                           border-b-[6px] border-primary-800
+                           /* Drop shadow */
+                           shadow-[0_10px_20px_rgba(8,112,184,0.4)]
+                           /* Active Press State */
+                           active:border-b-[0px] active:translate-y-[6px] active:shadow-[0_2px_5px_rgba(8,112,184,0.4)]
+                           hover:brightness-110
+                           transition-all font-extrabold text-white tracking-[0.2em] uppercase text-sm"
+                loading={loading}
+              >
+                Sign In Securely
+              </Button>
+            </div>
           </form>
 
         </div>
