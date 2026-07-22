@@ -14,48 +14,73 @@ export const Logo: React.FC<LogoProps> = ({ className = '', collapsed = false, s
         <img
           src="/logo.png"
           alt="Green Glide Logistics Logo"
-          className="h-10 w-10 object-contain"
+          style={{ width: '40px', height: '40px', objectFit: 'contain' }}
         />
       </div>
     );
   }
 
   if (size === 'sm') {
-    // Sidebar: fill the full width, very tall
+    // Sidebar — sidebar width is 256px, logo ratio is 1.5:1 (landscape)
+    // Setting explicit width to fill the sidebar fully, height proportional = 256/1.5 = ~170px
+    // But to make it BIGGER we scale up and let the sidebar accommodate it
     return (
-      <div className={`flex items-center justify-center w-full ${className}`}>
+      <div
+        className={`flex items-center justify-center w-full ${className}`}
+        style={{ width: '100%', padding: '0' }}
+      >
         <img
           src="/logo.png"
           alt="Green Glide Logistics Logo"
-          className="w-full h-auto object-contain"
-          style={{ minHeight: '180px', maxHeight: '240px' }}
+          style={{
+            width: '100%',       // fills full 256px sidebar width
+            height: 'auto',      // ~170px from aspect ratio  
+            objectFit: 'contain',
+            display: 'block',
+          }}
         />
       </div>
     );
   }
 
   if (size === 'lg') {
-    // Login page: extremely large
+    // Login page — make it very wide and tall
     return (
-      <div className={`flex items-center justify-center w-full ${className}`}>
+      <div
+        className={`flex items-center justify-center w-full ${className}`}
+        style={{ width: '100%' }}
+      >
         <img
           src="/logo.png"
           alt="Green Glide Logistics Logo"
-          className="w-full h-auto object-contain"
-          style={{ minHeight: '260px', maxHeight: '320px' }}
+          style={{
+            width: '100%',
+            maxWidth: '480px',
+            height: 'auto',       // ~320px from aspect ratio at 480px wide
+            objectFit: 'contain',
+            display: 'block',
+          }}
         />
       </div>
     );
   }
 
-  // md (default)
+  // md
   return (
-    <div className={`flex items-center justify-center w-full ${className}`}>
+    <div
+      className={`flex items-center justify-center w-full ${className}`}
+      style={{ width: '100%' }}
+    >
       <img
         src="/logo.png"
         alt="Green Glide Logistics Logo"
-        className="w-full h-auto object-contain"
-        style={{ minHeight: '200px', maxHeight: '280px' }}
+        style={{
+          width: '100%',
+          maxWidth: '400px',
+          height: 'auto',
+          objectFit: 'contain',
+          display: 'block',
+        }}
       />
     </div>
   );
