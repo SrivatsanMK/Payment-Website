@@ -71,9 +71,17 @@ export const Login: React.FC = () => {
         </button>
       </div>
 
-      {/* Login Card */}
-      <div className="relative z-10 w-full max-w-md">
-        <div className="rounded-2xl bg-white dark:bg-black p-8 shadow-[0_20px_60px_rgba(8,112,184,0.08)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.5)] border border-slate-100 dark:border-slate-800">
+      {/* 3D Login Card */}
+      <div className="relative z-10 w-full max-w-md perspective-1000">
+        <div className="
+          relative rounded-2xl p-8 
+          bg-white dark:bg-black 
+          border border-slate-100 dark:border-slate-800
+          shadow-[0_8px_0_0_#e2e8f0,0_20px_40px_rgba(8,112,184,0.15)] 
+          dark:shadow-[0_8px_0_0_#111111,0_20px_40px_rgba(0,0,0,0.8),0_0_50px_rgba(8,112,184,0.1)]
+          transform transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_0_0_#e2e8f0,0_30px_50px_rgba(8,112,184,0.2)]
+          dark:hover:shadow-[0_12px_0_0_#111111,0_30px_50px_rgba(0,0,0,0.9),0_0_60px_rgba(8,112,184,0.15)]
+        ">
 
           {/* Logo & branding */}
           <div className="mb-8 flex flex-col items-center">
@@ -98,7 +106,7 @@ export const Login: React.FC = () => {
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   placeholder="e.g. CUST12345 or your email"
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#1A1A1A] pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all shadow-inner"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#1A1A1A] pl-10 pr-4 py-3 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-primary-500 focus:outline-none shadow-[inset_0_3px_6px_rgba(0,0,0,0.06)] dark:shadow-[inset_0_4px_10px_rgba(0,0,0,0.6)] focus:shadow-[inset_0_3px_6px_rgba(0,0,0,0.06),0_0_15px_rgba(8,112,184,0.2)] transition-all"
                   required
                   autoComplete="username"
                 />
@@ -126,7 +134,7 @@ export const Login: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
-                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#1A1A1A] pl-10 pr-10 py-2.5 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all shadow-inner"
+                  className="w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-[#1A1A1A] pl-10 pr-10 py-3 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:border-primary-500 focus:outline-none shadow-[inset_0_3px_6px_rgba(0,0,0,0.06)] dark:shadow-[inset_0_4px_10px_rgba(0,0,0,0.6)] focus:shadow-[inset_0_3px_6px_rgba(0,0,0,0.06),0_0_15px_rgba(8,112,184,0.2)] transition-all"
                   required
                   autoComplete="current-password"
                 />
@@ -151,7 +159,7 @@ export const Login: React.FC = () => {
 
             <Button
               type="submit"
-              className="w-full mt-2 py-2.5 rounded-xl shadow-[0_8px_20px_rgba(8,112,184,0.2)] hover:shadow-[0_12px_24px_rgba(8,112,184,0.3)] transition-all"
+              className="w-full mt-6 py-3.5 rounded-xl bg-gradient-to-b from-primary-400 to-primary-600 border-b-4 border-primary-700 shadow-[0_8px_20px_rgba(8,112,184,0.3)] hover:brightness-110 hover:shadow-[0_12px_25px_rgba(8,112,184,0.4)] hover:-translate-y-0.5 active:border-b-0 active:translate-y-1 active:shadow-[0_2px_10px_rgba(8,112,184,0.3)] transition-all font-bold text-white tracking-wide uppercase text-sm"
               loading={loading}
             >
               Sign In Securely
