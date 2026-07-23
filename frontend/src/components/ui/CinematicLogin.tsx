@@ -1,8 +1,9 @@
 /**
- * CinematicLogin.tsx — Exact Match to Reference Image
- * Apple VisionOS Glass Card with Green Glide Logistics branding,
- * pill inputs, white Sign In button, and SSL Encrypted footer text.
- * Works with high-contrast 3D sweeping particle wave background.
+ * CinematicLogin.tsx — Authentic iPhone Liquid Glass Design
+ * Perfectly mirrors the iPhone Liquid Glass aesthetics in the reference image:
+ * Tall floating glass slab with 44px rounded corners, 60px backdrop blur,
+ * top specular edge reflections, glass pill inputs, white liquid glass button,
+ * and SSL Encrypted footer text.
  */
 import React, {
   useState, useEffect, useRef, useCallback, Suspense, lazy
@@ -39,7 +40,7 @@ export interface CinematicLoginProps {
   onSubmit: (e: React.FormEvent) => void
 }
 
-// ─── Modern Pill Glass Input (Radius: 18px, Height: 52px) ─────────────────────
+// ─── iPhone Liquid Glass Pill Input ──────────────────────────────────────────
 
 interface PillGlassInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -64,14 +65,14 @@ const PillGlassInput: React.FC<PillGlassInputProps> = ({
         display: 'flex', alignItems: 'center',
         color: focused
           ? (isDark ? '#ffffff' : '#0f172a')
-          : (isDark ? 'rgba(255,255,255,0.45)' : 'rgba(15,23,42,0.45)'),
-        transition: 'color 250ms ease',
+          : (isDark ? 'rgba(255,255,255,0.4)' : 'rgba(15,23,42,0.4)'),
+        transition: 'color 200ms ease',
         pointerEvents: 'none',
       }}>
         <Icon size={17} strokeWidth={1.8} />
       </span>
 
-      {/* Input */}
+      {/* iPhone Liquid Glass Input Field */}
       <input
         {...rest}
         onChange={e => onChange(e.target.value)}
@@ -88,13 +89,20 @@ const PillGlassInput: React.FC<PillGlassInputProps> = ({
           width: '100%',
           height: 52,
           padding: `0 ${hasRight ? '48px' : '20px'} 0 48px`,
-          borderRadius: 18,
+          borderRadius: 20,
           border: isDark
-            ? (focused ? '1px solid rgba(255,255,255,0.4)' : '1px solid rgba(255,255,255,0.15)')
-            : (focused ? '1px solid rgba(0,0,0,0.3)' : '1px solid rgba(0,0,0,0.1)'),
+            ? (focused ? '1px solid rgba(255,255,255,0.45)' : '1px solid rgba(255,255,255,0.14)')
+            : (focused ? '1px solid rgba(15,23,42,0.3)' : '1px solid rgba(255,255,255,0.9)'),
           background: isDark
-            ? (focused ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.06)')
-            : (focused ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.6)'),
+            ? (focused ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.05)')
+            : (focused ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.65)'),
+          boxShadow: isDark
+            ? (focused
+                ? '0 4px 16px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.2)'
+                : 'inset 0 1px 1px rgba(255,255,255,0.1)')
+            : (focused
+                ? '0 6px 20px rgba(0,0,0,0.06), inset 0 1px 1px rgba(255,255,255,1)'
+                : '0 2px 8px rgba(0,0,0,0.03), inset 0 1px 1px rgba(255,255,255,0.8)'),
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
           color: isDark ? '#ffffff' : '#0f172a',
@@ -102,13 +110,13 @@ const PillGlassInput: React.FC<PillGlassInputProps> = ({
           fontWeight: 400,
           outline: 'none',
           fontFamily: 'inherit',
-          transition: 'all 250ms ease',
+          transition: 'all 200ms ease',
           boxSizing: 'border-box',
           caretColor: isDark ? '#ffffff' : '#0f172a',
         } as React.CSSProperties}
       />
 
-      {/* Trailing Right Slot (eye icon etc) */}
+      {/* Trailing Right Slot (eye icon) */}
       {hasRight && (
         <div style={{
           position: 'absolute', right: 16, top: 0, bottom: 0,
@@ -139,8 +147,8 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
   // Framer Motion tilt physics
   const rawX = useMotionValue(0)
   const rawY = useMotionValue(0)
-  const rotX = useSpring(useTransform(rawY, [-1, 1], [3, -3]), { stiffness: 40, damping: 22 })
-  const rotY = useSpring(useTransform(rawX, [-1, 1], [-3, 3]), { stiffness: 40, damping: 22 })
+  const rotX = useSpring(useTransform(rawY, [-1, 1], [3, -3]), { stiffness: 45, damping: 24 })
+  const rotY = useSpring(useTransform(rawX, [-1, 1], [-3, 3]), { stiffness: 45, damping: 24 })
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
@@ -166,11 +174,11 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
     rawY.set(0)
   }, [rawX, rawY])
 
-  // Sequential Fade Up Variant
+  // Fade Up Variant
   const fadeUp = (delay: number) => ({
     initial: { opacity: 0, y: 14 },
     animate: { opacity: 1, y: 0 },
-    transition: { delay, duration: 0.55, ease: [0.16, 1, 0.3, 1] as const },
+    transition: { delay, duration: 0.5, ease: [0.16, 1, 0.3, 1] as const },
   })
 
   return (
@@ -183,13 +191,13 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
       alignItems: 'center',
       justifyContent: 'center',
       background: isDark ? '#000000' : '#EAEBED',
-      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif",
+      fontFamily: "'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
       WebkitFontSmoothing: 'antialiased',
       MozOsxFontSmoothing: 'grayscale',
       transition: 'background 400ms ease',
     }}>
 
-      {/* ── 3D Sweeping Particle Mesh Wave Canvas ──────────────────────────── */}
+      {/* ── 3D Particle Wave Background ──────────────────────────────────── */}
       {mounted && (
         <Suspense fallback={null}>
           <CinematicSceneLazy mouse={mouseRef} theme={theme} />
@@ -206,10 +214,10 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
           width: 44, height: 44, borderRadius: '50%',
           background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.7)',
           boxShadow: isDark
-            ? '0 8px 24px rgba(0,0,0,0.4), inset 0 1px rgba(255,255,255,0.2)'
-            : '0 8px 24px rgba(0,0,0,0.08), inset 0 1px rgba(255,255,255,0.9)',
+            ? '0 8px 24px rgba(0,0,0,0.4), inset 0 1px rgba(255,255,255,0.25)'
+            : '0 8px 24px rgba(0,0,0,0.08), inset 0 1px rgba(255,255,255,1)',
           cursor: 'pointer',
-          border: isDark ? '1px solid rgba(255,255,255,0.15)' : '1px solid rgba(255,255,255,0.8)',
+          border: isDark ? '1px solid rgba(255,255,255,0.18)' : '1px solid rgba(255,255,255,0.9)',
           backdropFilter: 'blur(30px)',
           WebkitBackdropFilter: 'blur(30px)',
         }}
@@ -217,7 +225,7 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
         whileTap={{ scale: 0.92 }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.6 }}
+        transition={{ delay: 0.5 }}
       >
         {isDark
           ? <Moon size={18} color="#ffffff" strokeWidth={1.8} />
@@ -225,7 +233,7 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
         }
       </motion.button>
 
-      {/* ── Centered VisionOS Liquid Glass Card ─────────────────────────────── */}
+      {/* ── Centered iPhone Liquid Glass Card ─────────────────────────────── */}
       <div style={{
         position: 'relative',
         zIndex: 20,
@@ -238,15 +246,15 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
         boxSizing: 'border-box',
       }}>
 
-        {/* Entrance animation wrapper */}
+        {/* Entrance Animation */}
         <motion.div
           style={{ perspective: 1200 }}
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          initial={{ opacity: 0, scale: 0.95, y: 18 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
+          transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
         >
 
-          {/* Floating Y-Motion & Mouse Tilt Wrapper */}
+          {/* Floating Motion & 3D Tilt Wrapper */}
           <motion.div
             ref={cardRef}
             style={{
@@ -258,7 +266,7 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
               y: [-5, 5, -5],
             }}
             transition={{
-              duration: 8,
+              duration: 7,
               repeat: Infinity,
               ease: 'easeInOut',
             }}
@@ -266,41 +274,58 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
             onMouseLeave={onCardLeave}
           >
 
-            {/* Glass Card Container */}
+            {/* Authentic iPhone Liquid Glass Card Slab */}
             <div style={{
               position: 'relative',
-              width: 480,
+              width: 440,
               maxWidth: '92vw',
-              borderRadius: 36,
-              padding: '44px 38px 36px',
+              borderRadius: 44,
+              padding: '48px 36px 36px',
               boxSizing: 'border-box',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              // Apple Liquid Glass
+              // True iPhone Liquid Glass Material
               background: isDark
-                ? 'rgba(18, 18, 20, 0.55)'
-                : 'rgba(255, 255, 255, 0.55)',
-              backdropFilter: 'blur(45px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(45px) saturate(180%)',
+                ? 'rgba(18, 18, 22, 0.48)'
+                : 'rgba(255, 255, 255, 0.62)',
+              backdropFilter: 'blur(60px) saturate(200%)',
+              WebkitBackdropFilter: 'blur(60px) saturate(200%)',
               border: isDark
                 ? '1px solid rgba(255, 255, 255, 0.18)'
-                : '1px solid rgba(255, 255, 255, 0.8)',
+                : '1px solid rgba(255, 255, 255, 0.9)',
               boxShadow: isDark
-                ? `0 30px 90px rgba(0,0,0,0.6), inset 0 1px rgba(255,255,255,0.25)`
-                : `0 30px 90px rgba(0,0,0,0.08), inset 0 1px rgba(255,255,255,0.9)`,
+                ? `0 40px 100px rgba(0,0,0,0.7), 
+                   inset 0 1px 1px rgba(255,255,255,0.35), 
+                   inset 0 -1px 1px rgba(0,0,0,0.5)`
+                : `0 30px 90px rgba(0,0,0,0.06), 
+                   inset 0 1px 2px rgba(255,255,255,1), 
+                   inset 0 -1px 1px rgba(0,0,0,0.03)`,
               overflow: 'hidden',
             }}>
 
-              {/* Top Glass Highlight */}
+              {/* Specular Liquid Reflection Overlay (Top 35% Sheen) */}
               <div style={{
-                position: 'absolute', top: 0, left: 30, right: 30, height: 1,
-                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                height: '35%',
+                background: isDark
+                  ? 'linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 100%)'
+                  : 'linear-gradient(180deg, rgba(255,255,255,0.4) 0%, transparent 100%)',
                 pointerEvents: 'none',
               }} />
 
-              {/* ── CARD TOP: Logo & Title ──────────────────────────────── */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', marginBottom: 28 }}>
+              {/* Top Curved Edge Specular Highlight */}
+              <div style={{
+                position: 'absolute', top: 0, left: 40, right: 40, height: 1,
+                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)',
+                pointerEvents: 'none',
+              }} />
+
+              {/* ── CARD TOP: Logo & Subtitle ────────────────────────────── */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', marginBottom: 28, position: 'relative' }}>
 
                 {/* Green Glide Logistics Logo */}
                 <motion.div
@@ -310,7 +335,7 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
                     justifyContent: 'center',
                     marginBottom: 20,
                   }}
-                  {...fadeUp(0.25)}
+                  {...fadeUp(0.2)}
                 >
                   <Logo size="lg" />
                 </motion.div>
@@ -325,14 +350,14 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
                     letterSpacing: '-0.02em',
                     textAlign: 'center',
                   }}
-                  {...fadeUp(0.35)}
+                  {...fadeUp(0.3)}
                 >
                   {title}
                 </motion.h1>
 
               </div>
 
-              {/* ── CARD MIDDLE: Form & Inputs ───────────────────────────── */}
+              {/* ── CARD MIDDLE: Form & Pill Inputs ───────────────────────── */}
               <motion.form
                 onSubmit={onSubmit}
                 style={{
@@ -340,17 +365,18 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
                   flexDirection: 'column',
                   gap: 18,
                   width: '100%',
+                  position: 'relative',
                 }}
-                {...fadeUp(0.45)}
+                {...fadeUp(0.4)}
               >
 
                 {/* Customer ID / Email Field */}
                 <div>
                   <label style={{
                     display: 'block',
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: 500,
-                    color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(15,23,42,0.6)',
+                    color: isDark ? 'rgba(255,255,255,0.65)' : 'rgba(15,23,42,0.65)',
                     marginBottom: 8,
                     paddingLeft: 4,
                   }}>
@@ -381,23 +407,23 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
                     paddingRight: 4,
                   }}>
                     <label style={{
-                      fontSize: 11,
+                      fontSize: 12,
                       fontWeight: 500,
-                      color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(15,23,42,0.6)',
+                      color: isDark ? 'rgba(255,255,255,0.65)' : 'rgba(15,23,42,0.65)',
                     }}>
                       {passwordLabel}
                     </label>
                     <Link
                       to={forgotPasswordLink}
                       style={{
-                        fontSize: 11,
+                        fontSize: 12,
                         fontWeight: 500,
-                        color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(15,23,42,0.6)',
+                        color: isDark ? 'rgba(255,255,255,0.65)' : 'rgba(15,23,42,0.65)',
                         textDecoration: 'none',
                         transition: 'color 200ms ease',
                       }}
                       onMouseEnter={e => (e.currentTarget.style.color = isDark ? '#ffffff' : '#0f172a')}
-                      onMouseLeave={e => (e.currentTarget.style.color = isDark ? 'rgba(255,255,255,0.6)' : 'rgba(15,23,42,0.6)')}
+                      onMouseLeave={e => (e.currentTarget.style.color = isDark ? 'rgba(255,255,255,0.65)' : 'rgba(15,23,42,0.65)')}
                     >
                       Forgot Password?
                     </Link>
@@ -438,8 +464,8 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
                   />
                 </div>
 
-                {/* ── CARD BOTTOM: White Sign In Button (54px Height, 16px Radius) ── */}
-                <div style={{ paddingTop: 8 }}>
+                {/* ── CARD BOTTOM: White Liquid Glass Button (52px Height, 18px Radius) ── */}
+                <div style={{ paddingTop: 6 }}>
                   <motion.button
                     type="submit"
                     disabled={loading}
@@ -450,7 +476,7 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
                       justifyContent: 'center',
                       width: '100%',
                       height: 52,
-                      borderRadius: 16,
+                      borderRadius: 18,
                       border: 'none',
                       cursor: loading ? 'not-allowed' : 'pointer',
                       background: '#ffffff',
@@ -460,12 +486,12 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
                       fontFamily: 'inherit',
                       overflow: 'hidden',
                       opacity: loading ? 0.75 : 1,
-                      boxShadow: '0 4px 16px rgba(0,0,0,0.12), inset 0 1px rgba(255,255,255,1)',
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.15), inset 0 1px rgba(255,255,255,1)',
                       transition: 'all 250ms ease',
                     } as React.CSSProperties}
                     whileHover={loading ? {} : {
                       y: -2,
-                      boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.22)',
                     } as any}
                     whileTap={loading ? {} : { scale: 0.98 } as any}
                   >
@@ -495,19 +521,20 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
 
               </motion.form>
 
-              {/* ── CARD FOOTER: SSL Encrypted • JWT Protected (Matching Reference Image) ── */}
+              {/* ── CARD FOOTER: SSL Encrypted • JWT Protected ──────────────── */}
               <motion.div
                 style={{
-                  marginTop: 20,
+                  marginTop: 22,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 6,
-                  color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(15,23,42,0.4)',
+                  color: isDark ? 'rgba(255,255,255,0.45)' : 'rgba(15,23,42,0.45)',
                   fontSize: 11,
                   fontWeight: 400,
+                  position: 'relative',
                 }}
-                {...fadeUp(0.55)}
+                {...fadeUp(0.5)}
               >
                 <Lock size={12} strokeWidth={1.8} />
                 <span>SSL Encrypted • JWT Protected</span>
