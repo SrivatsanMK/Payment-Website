@@ -1,8 +1,8 @@
 /// <reference types="@react-three/fiber" />
 /**
- * CinematicScene.tsx — Bulletproof Mobile & Desktop 3D Particle Wave
- * Eliminates WebGL context loss crashes, removes lazy-load delays, and guarantees
- * 100% reliable 3D particle wave rendering on all mobile & desktop browsers.
+ * CinematicScene.tsx — Ultra-High Contrast 3D Sweeping Particle Mesh Wave
+ * Fixes Light Mode fog washout: In Light Mode, particles use deep charcoal/black tones (#090d16, #1e293b)
+ * and expanded fog distance so the 3D particle motion is 100% bold, crisp, and striking.
  */
 import React, { useRef, useMemo } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
@@ -21,9 +21,9 @@ function ParticleWave({ mouse, theme }: ParticleWaveProps) {
   const pointsRef = useRef<THREE.Points>(null!)
   const isDark = theme === 'dark'
 
-  // Grid Dimensions (optimized for mobile & desktop 60 FPS)
-  const cols = 120
-  const rows = 80
+  // Grid Dimensions
+  const cols = 130
+  const rows = 85
   const numParticles = cols * rows
 
   // Initial grid position generation
@@ -60,7 +60,7 @@ function ParticleWave({ mouse, theme }: ParticleWaveProps) {
     return { positions: pos, baseCoords: base }
   }, [numParticles])
 
-  // Particle Colors
+  // Particle Colors — Deep high-contrast dark particles in Light Mode
   const colors = useMemo(() => {
     const colArray = new Float32Array(numParticles * 3)
     const colorObj = new THREE.Color()
@@ -69,22 +69,22 @@ function ParticleWave({ mouse, theme }: ParticleWaveProps) {
       const rand = Math.random()
 
       if (isDark) {
-        // Dark Mode: Crisp White & Silver
+        // Dark Mode: Bright White & Silver on Pure Black
         if (rand > 0.75) {
-          colorObj.set('#ffffff')
+          colorObj.set('#ffffff') // Pure White
         } else if (rand > 0.35) {
-          colorObj.set('#cbd5e1')
+          colorObj.set('#e2e8f0') // Silver
         } else {
-          colorObj.set('#94a3b8')
+          colorObj.set('#a0aec0') // Slate Gray
         }
       } else {
-        // Light Mode: Dark Charcoal & Slate for 3D contrast
-        if (rand > 0.75) {
-          colorObj.set('#0f172a')
+        // Light Mode: Deep Slate Black & Dark Charcoal so 3D wave pops boldly on Light background!
+        if (rand > 0.7) {
+          colorObj.set('#020617') // Deepest Midnight Slate
         } else if (rand > 0.35) {
-          colorObj.set('#334155')
+          colorObj.set('#0f172a') // Dark Slate
         } else {
-          colorObj.set('#475569')
+          colorObj.set('#1e293b') // Charcoal Slate
         }
       }
 
@@ -113,10 +113,12 @@ function ParticleWave({ mouse, theme }: ParticleWaveProps) {
       const x = baseCoords[i * 2]
       const z = baseCoords[i * 2 + 1]
 
+      // Sweeping wave equations
       let y = Math.sin(x * 0.18 + z * 0.15 + t * 1.1) * 3.2
       y += Math.cos(x * 0.1 - z * 0.2 + t * 0.8) * 2.2
       y += Math.sin((x + z) * 0.06 + t * 0.5) * 1.5
 
+      // Mouse interaction
       const dx = x - targetMouseX
       const dz = z - targetMouseZ
       const distSq = dx * dx + dz * dz
@@ -142,10 +144,10 @@ function ParticleWave({ mouse, theme }: ParticleWaveProps) {
         />
       </bufferGeometry>
       <pointsMaterial
-        size={isDark ? 0.085 : 0.095}
+        size={isDark ? 0.09 : 0.105}
         vertexColors
         transparent
-        opacity={isDark ? 0.9 : 0.95}
+        opacity={isDark ? 0.95 : 0.98}
         sizeAttenuation
         depthWrite={false}
         blending={isDark ? THREE.AdditiveBlending : THREE.NormalBlending}
@@ -197,23 +199,24 @@ export function CinematicScene({ mouse, theme }: SceneProps) {
         <div style={{
           position: 'absolute',
           inset: 0,
-          background: 'radial-gradient(circle at 50% 40%, #F5F6F8 0%, #E2E4E9 100%)',
+          background: 'radial-gradient(circle at 50% 40%, #F8FAFC 0%, #E2E8F0 100%)',
           pointerEvents: 'none',
         }} />
       )}
 
       {/* R3F WebGL 3D Canvas */}
       <Canvas
-        camera={{ position: [0, 12, 19], fov: 50, near: 0.1, far: 120 }}
+        camera={{ position: [0, 12, 19], fov: 50, near: 0.1, far: 140 }}
         gl={{ antialias: true, powerPreference: 'high-performance', alpha: false }}
         dpr={[1, Math.min(typeof devicePixelRatio !== 'undefined' ? devicePixelRatio : 2, 2)]}
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
       >
         <color attach="background" args={[bgColor]} />
-        <fog attach="fog" args={[bgColor, 12, 50]} />
+        {/* Fog distance expanded in Light Mode to prevent washing out dark particles */}
+        <fog attach="fog" args={[bgColor, isDark ? 12 : 28, isDark ? 50 : 90]} />
 
-        <ambientLight intensity={isDark ? 0.5 : 0.9} />
-        <directionalLight position={[10, 20, 15]} intensity={isDark ? 0.9 : 1.2} />
+        <ambientLight intensity={isDark ? 0.5 : 1.0} />
+        <directionalLight position={[10, 20, 15]} intensity={isDark ? 0.9 : 1.4} />
 
         <ParticleWave mouse={mouse} theme={theme} />
         <CameraRig mouse={mouse} />
