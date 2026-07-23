@@ -1,30 +1,27 @@
 /**
  * CinematicLogin.tsx
- * World-class premium login interface — Apple Liquid Glass card floating above
- * a Three.js cinematic 3D environment with full mouse parallax, card tilt,
- * cursor spotlight, shimmer sweep, ripple interactions and staggered entrance.
+ * Apple Liquid Glass Login UI on an infinite particle 3D space.
+ * Features ultra-clear, neutral, physically accurate glass materials,
+ * carved inputs, and a premium white frosted glass submit button.
+ * Completely stripped of artificial colored tints.
  */
 import React, {
   useState, useEffect, useRef, useCallback, Suspense, lazy
 } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  motion, useMotionValue, useSpring, useTransform, AnimatePresence
+  motion, useMotionValue, useSpring, useTransform
 } from 'framer-motion'
 import {
-  Lock, User, Eye, EyeOff, ArrowRight, Loader2, Sun, Moon
+  Lock, User, Eye, EyeOff, Loader2, Sun, Moon
 } from 'lucide-react'
 import { Logo } from './Logo'
 import { useTheme } from '../../context/ThemeContext'
 
-// Lazy-load the heavy 3D scene so Three.js is only bundled when login is visited
+// Lazy-load the 3D scene
 const CinematicSceneLazy = lazy(() =>
   import('./CinematicScene').then(m => ({ default: m.CinematicScene }))
 )
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface Ripple { id: number; x: number; y: number }
 
 export interface CinematicLoginProps {
   title: string
@@ -41,88 +38,88 @@ export interface CinematicLoginProps {
   onPasswordChange: (v: string) => void
   onTogglePassword: () => void
   onSubmit: (e: React.FormEvent) => void
-  accentColor: 'emerald' | 'cyan'
 }
 
-// ─── Accent Token Helper ──────────────────────────────────────────────────────
-
-function accentTokens(c: 'emerald' | 'cyan') {
-  const isEm = c === 'emerald'
-  return {
-    rgb: isEm ? '16,185,129' : '6,182,212',
-    hex: isEm ? '#10b981' : '#06b6d4',
-    from: isEm ? '#065f46' : '#0c4a6e',
-    shadow: isEm ? 'rgba(16,185,129,0.38)' : 'rgba(6,182,212,0.38)',
-    glow: isEm ? 'rgba(16,185,129,0.55)' : 'rgba(6,182,212,0.55)',
-  }
-}
-
-// ─── Glass Input ─────────────────────────────────────────────────────────────
+// ─── Carved Glass Input ──────────────────────────────────────────────────────
 
 interface GlassInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   icon: React.ComponentType<any>
   focused: boolean
-  accentRgb: string
-  accentHex: string
+  isDark: boolean
   rightSlot?: React.ReactNode
   onChange: (val: string) => void
 }
 
 const GlassInput: React.FC<GlassInputProps> = ({
-  icon: Icon, focused, accentRgb, accentHex, rightSlot, onChange, ...rest
+  icon: Icon, focused, isDark, rightSlot, onChange, ...rest
 }) => {
   const hasRight = !!rightSlot
+
   return (
     <div style={{ position: 'relative' }}>
-      {/* Animated glow ring on focus */}
-      <motion.div
-        style={{
-          position: 'absolute',
-          inset: -1.5,
-          borderRadius: 16,
-          border: `1.5px solid ${accentHex}`,
-          boxShadow: `0 0 18px rgba(${accentRgb},0.28), 0 0 6px rgba(${accentRgb},0.18) inset`,
-          pointerEvents: 'none',
-        }}
-        animate={{ opacity: focused ? 1 : 0 }}
-        transition={{ duration: 0.2 }}
-      />
       {/* Leading icon */}
       <span style={{
         position: 'absolute', left: 14, top: '50%',
         transform: 'translateY(-50%)',
         display: 'flex', alignItems: 'center',
-        color: focused ? accentHex : 'rgba(255,255,255,0.28)',
-        transition: 'color 0.22s ease',
+        color: focused 
+          ? (isDark ? 'rgba(255,255,255,0.9)' : 'rgba(0,0,0,0.8)')
+          : (isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)'),
+        transition: 'color 0.3s ease',
         pointerEvents: 'none',
       }}>
-        <Icon size={15} strokeWidth={1.7} />
+        <Icon size={15} strokeWidth={1.8} />
       </span>
-      {/* Native input */}
+      
+      {/* Carved Input */}
       <input
         {...rest}
         onChange={e => onChange(e.target.value)}
         style={{
           display: 'block',
           width: '100%',
-          padding: `12px ${hasRight ? '44px' : '16px'} 12px 40px`,
+          padding: `14px ${hasRight ? '44px' : '16px'} 14px 40px`,
           borderRadius: 14,
-          border: '1px solid rgba(255,255,255,0.08)',
-          background: focused
-            ? 'rgba(255,255,255,0.09)'
-            : 'rgba(255,255,255,0.045)',
-          color: 'rgba(255,255,255,0.92)',
+          border: 'none',
+          // Inner carved effect depending on theme
+          background: isDark
+            ? 'rgba(0, 0, 0, 0.4)'
+            : 'rgba(0, 0, 0, 0.05)',
+          boxShadow: isDark
+            ? `inset 0 2px 6px rgba(0,0,0,0.6), 
+               inset 0 0 0 1px rgba(0,0,0,0.8),
+               0 1px 0 rgba(255,255,255,0.08)`
+            : `inset 0 2px 6px rgba(0,0,0,0.08), 
+               inset 0 0 0 1px rgba(0,0,0,0.1),
+               0 1px 0 rgba(255,255,255,0.8)`,
+          color: isDark ? 'rgba(255,255,255,0.92)' : 'rgba(0,0,0,0.92)',
           fontSize: 14,
           fontWeight: 500,
           outline: 'none',
           fontFamily: 'inherit',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
-          transition: 'background 0.22s ease, border-color 0.22s ease',
+          transition: 'box-shadow 0.3s ease',
           boxSizing: 'border-box',
-          caretColor: accentHex,
+          caretColor: isDark ? '#ffffff' : '#000000',
         } as React.CSSProperties}
+        onFocus={(e) => {
+          if (rest.onFocus) rest.onFocus(e);
+          e.currentTarget.style.boxShadow = isDark
+            ? `inset 0 2px 6px rgba(0,0,0,0.8), 
+               inset 0 0 0 1.5px rgba(255,255,255,0.3)`
+            : `inset 0 2px 6px rgba(0,0,0,0.12), 
+               inset 0 0 0 1.5px rgba(0,0,0,0.3)`;
+        }}
+        onBlur={(e) => {
+          if (rest.onBlur) rest.onBlur(e);
+          e.currentTarget.style.boxShadow = isDark
+            ? `inset 0 2px 6px rgba(0,0,0,0.6), 
+               inset 0 0 0 1px rgba(0,0,0,0.8),
+               0 1px 0 rgba(255,255,255,0.08)`
+            : `inset 0 2px 6px rgba(0,0,0,0.08), 
+               inset 0 0 0 1px rgba(0,0,0,0.1),
+               0 1px 0 rgba(255,255,255,0.8)`;
+        }}
       />
       {/* Trailing slot (eye toggle etc.) */}
       {hasRight && (
@@ -143,15 +140,14 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
   title, identifierLabel, identifierPlaceholder, passwordLabel,
   forgotPasswordLink, submitLabel, loading, identifier, password,
   showPassword, onIdentifierChange, onPasswordChange, onTogglePassword,
-  onSubmit, accentColor,
+  onSubmit,
 }) => {
   const { theme, toggleTheme } = useTheme()
+  const isDark = theme === 'dark'
 
-  const [mounted, setMounted]   = useState(false)
-  const [ripples, setRipples]   = useState<Ripple[]>([])
-  const [idFocus, setIdFocus]   = useState(false)
-  const [pwFocus, setPwFocus]   = useState(false)
-  const [spot, setSpot]         = useState({ x: 50, y: 50, o: 0 })
+  const [mounted, setMounted] = useState(false)
+  const [idFocus, setIdFocus] = useState(false)
+  const [pwFocus, setPwFocus] = useState(false)
 
   const mouseRef = useRef({ x: 0, y: 0 })
   const cardRef  = useRef<HTMLDivElement>(null)
@@ -159,10 +155,8 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
   // Framer Motion spring card tilt
   const rawX = useMotionValue(0)
   const rawY = useMotionValue(0)
-  const rotX = useSpring(useTransform(rawY, [-1, 1], [5, -5]),  { stiffness: 22, damping: 15 })
-  const rotY = useSpring(useTransform(rawX, [-1, 1], [-5, 5]),  { stiffness: 22, damping: 15 })
-
-  const { rgb, hex, from, shadow, glow } = accentTokens(accentColor)
+  const rotX = useSpring(useTransform(rawY, [-1, 1], [3, -3]),  { stiffness: 30, damping: 20 })
+  const rotY = useSpring(useTransform(rawX, [-1, 1], [-3, 3]),  { stiffness: 30, damping: 20 })
 
   // ── Mount: global mouse tracking for 3D scene parallax ──────────────────
   useEffect(() => {
@@ -175,7 +169,7 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
     return () => window.removeEventListener('mousemove', onMove)
   }, [])
 
-  // ── Card mouse handlers (tilt + spotlight) ────────────────────────────────
+  // ── Card mouse handlers (tilt) ────────────────────────────────────────────
   const onCardMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return
     const r  = cardRef.current.getBoundingClientRect()
@@ -183,71 +177,67 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
     const ny = (e.clientY - r.top)  / r.height
     rawX.set(nx * 2 - 1)
     rawY.set(ny * 2 - 1)
-    setSpot({ x: nx * 100, y: ny * 100, o: 1 })
   }, [rawX, rawY])
 
   const onCardLeave = useCallback(() => {
     rawX.set(0)
     rawY.set(0)
-    setSpot(p => ({ ...p, o: 0 }))
   }, [rawX, rawY])
-
-  // ── Ripple on button click ─────────────────────────────────────────────────
-  const addRipple = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
-    const r  = e.currentTarget.getBoundingClientRect()
-    const id = Date.now()
-    setRipples(p => [...p, { id, x: e.clientX - r.left, y: e.clientY - r.top }])
-    setTimeout(() => setRipples(p => p.filter(v => v.id !== id)), 900)
-  }, [])
 
   // ── Cinematic entrance variants ────────────────────────────────────────────
   const fadeUp = (delay: number) => ({
-    initial: { opacity: 0, y: 18 },
+    initial: { opacity: 0, y: 12 },
     animate: { opacity: 1, y: 0 },
-    transition: { delay, duration: 0.75, ease: [0.23, 1, 0.32, 1] as const },
+    transition: { delay, duration: 0.8, ease: [0.22, 1, 0.36, 1] as const },
   })
+
+  // Apple Liquid Glass text colors
+  const textColor = isDark ? 'rgba(255,255,255,0.92)' : 'rgba(0,0,0,0.85)'
+  const labelColor = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.5)'
 
   return (
     <div style={{
       width: '100vw',
       height: '100vh',
       overflow: 'hidden',
-      background: '#000000',
-      fontFamily: "'Inter','SF Pro Display','Manrope','Space Grotesk',system-ui,sans-serif",
+      background: isDark ? '#000000' : '#ffffff',
+      fontFamily: "'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
       WebkitFontSmoothing: 'antialiased',
       MozOsxFontSmoothing: 'grayscale',
+      transition: 'background 0.5s ease',
     }}>
 
-      {/* ── 3D Cinematic Scene (lazy) ───────────────────────────────────────── */}
+      {/* ── 3D Infinite Particle Space (lazy) ─────────────────────────────── */}
       {mounted && (
         <Suspense fallback={null}>
-          <CinematicSceneLazy mouse={mouseRef} accentColor={accentColor} />
+          <CinematicSceneLazy mouse={mouseRef} theme={theme} />
         </Suspense>
       )}
 
-      {/* ── Theme toggle (top-right) ────────────────────────────────────────── */}
+      {/* ── Liquid Glass Theme Switcher (top-right) ───────────────────────── */}
       <motion.button
         onClick={toggleTheme}
         aria-label="Toggle theme"
         style={{
-          position: 'fixed', top: 22, right: 22, zIndex: 60,
+          position: 'fixed', top: 24, right: 24, zIndex: 60,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          width: 40, height: 40, borderRadius: 12,
-          background: 'rgba(255,255,255,0.06)',
-          border: '1px solid rgba(255,255,255,0.1)',
+          width: 44, height: 44, borderRadius: '50%',
+          background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.4)',
+          border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.05)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
           cursor: 'pointer',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
+          backdropFilter: 'blur(30px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(30px) saturate(180%)',
         }}
-        whileHover={{ scale: 1.08, background: 'rgba(255,255,255,0.11)' } as any}
-        whileTap={{ scale: 0.93 } as any}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.4 }}
       >
-        {theme === 'dark'
-          ? <Sun  size={15} color="#fbbf24" />
-          : <Moon size={15} color="rgba(255,255,255,0.7)" />
+        {isDark
+          ? <Sun  size={16} color="rgba(255,255,255,0.8)" strokeWidth={2} />
+          : <Moon size={16} color="rgba(0,0,0,0.7)" strokeWidth={2} />
         }
       </motion.button>
 
@@ -262,9 +252,9 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
         {/* Entrance animation wrapper */}
         <motion.div
           style={{ perspective: 1400, pointerEvents: 'auto' }}
-          initial={{ opacity: 0, scale: 0.9, y: 44 }}
-          animate={{ opacity: 1, scale: 1,   y:  0 }}
-          transition={{ duration: 1.15, ease: [0.23, 1, 0.32, 1], delay: 0.45 }}
+          initial={{ opacity: 0, scale: 0.95, y: 30 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.3 }}
         >
           {/* 3-D tilt wrapper */}
           <motion.div
@@ -278,166 +268,96 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
             onMouseLeave={onCardLeave}
           >
 
-            {/* Ambient outer glow pulse */}
-            <motion.div
-              style={{
-                position: 'absolute', inset: -32, borderRadius: 72,
-                background: `radial-gradient(ellipse at 50% 60%, ${glow}, transparent 62%)`,
-                filter: 'blur(30px)',
-                pointerEvents: 'none',
-              }}
-              animate={{ opacity: [0.45, 0.7, 0.45] }}
-              transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-            />
-
-            {/* Gradient border shell (1px padding = gradient border trick) */}
+            {/* Gradient border shell for the premium cut-glass edge */}
             <div style={{
               position: 'relative',
               padding: '1px',
-              borderRadius: 30,
-              background: `linear-gradient(
-                145deg,
-                rgba(255,255,255,0.32) 0%,
-                rgba(255,255,255,0.08) 35%,
-                rgba(${rgb},0.26) 70%,
-                rgba(255,255,255,0.14) 100%
-              )`,
+              borderRadius: 34,
+              background: isDark 
+                ? `linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.03) 100%)`
+                : `linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.4) 100%)`,
             }}>
 
-              {/* ── Inner glass card ──────────────────────────────────────────── */}
+              {/* ── Inner Liquid Glass Card ─────────────────────────────────── */}
               <div style={{
                 position: 'relative',
-                borderRadius: 29,
+                borderRadius: 33,
                 overflow: 'hidden',
-                width: 390,
-                background: 'rgba(8,8,10,0.55)',
-                backdropFilter: 'blur(72px) saturate(190%) brightness(1.05)',
-                WebkitBackdropFilter: 'blur(72px) saturate(190%) brightness(1.05)',
-                boxShadow: `
-                  0 0 0 0.5px rgba(255,255,255,0.07) inset,
-                  0 2.5px 0 rgba(255,255,255,0.11) inset,
-                  0 -1px 0 rgba(255,255,255,0.04) inset,
-                  0 72px 144px rgba(0,0,0,0.98),
-                  0 28px 56px rgba(0,0,0,0.88)
-                `,
+                width: 380,
+                // True neutral Apple Liquid Glass (no tints)
+                background: isDark ? 'rgba(20,20,22,0.35)' : 'rgba(255,255,255,0.65)',
+                backdropFilter: 'blur(72px) saturate(180%) brightness(1.1)',
+                WebkitBackdropFilter: 'blur(72px) saturate(180%) brightness(1.1)',
+                boxShadow: isDark 
+                  ? `0 30px 60px rgba(0,0,0,0.6), 0 0 0 0.5px rgba(255,255,255,0.05) inset, 0 1px 0 rgba(255,255,255,0.1) inset`
+                  : `0 30px 60px rgba(0,0,0,0.08), 0 0 0 0.5px rgba(255,255,255,0.4) inset, 0 1px 0 rgba(255,255,255,0.8) inset`,
               }}>
 
-                {/* Layer A: diagonal inner highlight */}
+                {/* Specular Edge Highlights */}
+                <div style={{
+                  position: 'absolute', top: 0, left: '10%', right: '10%', height: 1,
+                  background: isDark ? 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)' : 'linear-gradient(90deg, transparent, rgba(255,255,255,1), transparent)',
+                  pointerEvents: 'none',
+                }} />
+
+                <div style={{
+                  position: 'absolute', top: '10%', left: 0, bottom: '10%', width: 1,
+                  background: isDark ? 'linear-gradient(180deg, transparent, rgba(255,255,255,0.1), transparent)' : 'linear-gradient(180deg, transparent, rgba(255,255,255,0.6), transparent)',
+                  pointerEvents: 'none',
+                }} />
+
+                {/* Soft Inner Shadow (carved depth for the whole card) */}
                 <div style={{
                   position: 'absolute', inset: 0,
-                  background: 'linear-gradient(150deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.02) 30%, transparent 50%)',
+                  boxShadow: isDark ? 'inset 0 0 40px rgba(0,0,0,0.5)' : 'none',
                   pointerEvents: 'none',
                 }} />
-
-                {/* Layer B: top specular edge */}
-                <div style={{
-                  position: 'absolute', top: 0, left: 24, right: 24, height: 1,
-                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.42), transparent)',
-                  pointerEvents: 'none',
-                }} />
-
-                {/* Layer C: bottom inner shadow */}
-                <div style={{
-                  position: 'absolute', bottom: 0, left: 0, right: 0, height: 64,
-                  background: 'linear-gradient(to top, rgba(0,0,0,0.25), transparent)',
-                  pointerEvents: 'none',
-                }} />
-
-                {/* Layer D: left edge specular */}
-                <div style={{
-                  position: 'absolute', top: 24, left: 0, bottom: 24, width: 1,
-                  background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.12), transparent)',
-                  pointerEvents: 'none',
-                }} />
-
-                {/* Layer E: cursor spotlight */}
-                <div style={{
-                  position: 'absolute', inset: 0,
-                  background: `radial-gradient(340px circle at ${spot.x}% ${spot.y}%, rgba(${rgb},0.15), transparent 62%)`,
-                  opacity: spot.o,
-                  transition: 'opacity 0.48s ease',
-                  pointerEvents: 'none',
-                }} />
-
-                {/* Layer F: SVG noise (frosted glass texture) */}
-                <div style={{
-                  position: 'absolute', inset: 0,
-                  backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.88' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
-                  opacity: 0.032,
-                  mixBlendMode: 'overlay' as const,
-                  pointerEvents: 'none',
-                }} />
-
-                {/* Layer G: animated shimmer sweep */}
-                <motion.div
-                  style={{
-                    position: 'absolute', inset: 0,
-                    background: 'linear-gradient(110deg, transparent 38%, rgba(255,255,255,0.06) 50%, transparent 62%)',
-                    pointerEvents: 'none',
-                  }}
-                  animate={{ x: ['-130%', '230%'] }}
-                  transition={{ duration: 3.8, repeat: Infinity, repeatDelay: 12, ease: 'easeInOut', delay: 2 }}
-                />
 
                 {/* ── Card content ────────────────────────────────────────────── */}
-                <div style={{ position: 'relative', padding: '36px 32px 32px' }}>
+                <div style={{ position: 'relative', padding: '40px 32px 36px' }}>
 
                   {/* Logo + Title section */}
                   <motion.div
-                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 24 }}
-                    {...fadeUp(0.75)}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 32 }}
+                    {...fadeUp(0.6)}
                   >
-                    {/* Logo with glow */}
+                    {/* Logo with elegant white glow */}
                     <div style={{
-                      width: '100%', marginBottom: 16,
-                      filter: `drop-shadow(0 0 20px rgba(${rgb},0.22)) drop-shadow(0 0 48px rgba(${rgb},0.1))`,
+                      width: '100%', marginBottom: 18,
+                      filter: isDark ? 'drop-shadow(0 0 16px rgba(255,255,255,0.15))' : 'none',
                     }}>
                       <Logo size="md" />
                     </div>
 
                     {/* Title */}
                     <h1 style={{
-                      margin: '0 0 10px',
-                      fontSize: 20,
-                      fontWeight: 700,
-                      color: 'rgba(255,255,255,0.92)',
-                      letterSpacing: '-0.03em',
-                      lineHeight: 1.2,
+                      margin: 0,
+                      fontSize: 22,
+                      fontWeight: 600,
+                      color: textColor,
+                      letterSpacing: '-0.02em',
                     }}>
                       {title}
                     </h1>
-
-                    {/* Accent line */}
-                    <motion.div
-                      style={{
-                        height: 2, borderRadius: 2,
-                        background: `linear-gradient(90deg, transparent, ${hex}, transparent)`,
-                      }}
-                      initial={{ width: 0 }}
-                      animate={{ width: 46 }}
-                      transition={{ delay: 1.05, duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
-                    />
                   </motion.div>
 
                   {/* ── Form ──────────────────────────────────────────────────── */}
                   <motion.form
                     onSubmit={onSubmit}
-                    style={{ display: 'flex', flexDirection: 'column', gap: 14 }}
-                    {...fadeUp(0.9)}
+                    style={{ display: 'flex', flexDirection: 'column', gap: 18 }}
+                    {...fadeUp(0.7)}
                   >
-
                     {/* Identifier field */}
                     <div>
                       <label
                         htmlFor="cin-identifier"
                         style={{
                           display: 'block',
-                          fontSize: 10,
-                          fontWeight: 700,
-                          letterSpacing: '0.1em',
-                          textTransform: 'uppercase',
-                          color: 'rgba(255,255,255,0.36)',
-                          marginBottom: 7,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          color: labelColor,
+                          marginBottom: 8,
+                          paddingLeft: 4,
                         }}
                       >
                         {identifierLabel}
@@ -446,8 +366,7 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
                         id="cin-identifier"
                         icon={User}
                         focused={idFocus}
-                        accentRgb={rgb}
-                        accentHex={hex}
+                        isDark={isDark}
                         type="text"
                         value={identifier}
                         onChange={onIdentifierChange}
@@ -462,15 +381,13 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
 
                     {/* Password field */}
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, paddingLeft: 4, paddingRight: 4 }}>
                         <label
                           htmlFor="cin-password"
                           style={{
-                            fontSize: 10,
-                            fontWeight: 700,
-                            letterSpacing: '0.1em',
-                            textTransform: 'uppercase',
-                            color: 'rgba(255,255,255,0.36)',
+                            fontSize: 11,
+                            fontWeight: 600,
+                            color: labelColor,
                           }}
                         >
                           {passwordLabel}
@@ -478,13 +395,13 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
                         <Link
                           to={forgotPasswordLink}
                           style={{
-                            fontSize: 11, fontWeight: 600,
-                            color: hex, textDecoration: 'none',
-                            opacity: 0.82,
-                            transition: 'opacity 0.15s',
+                            fontSize: 11, fontWeight: 500,
+                            color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)', 
+                            textDecoration: 'none',
+                            transition: 'color 0.2s',
                           }}
-                          onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
-                          onMouseLeave={e => (e.currentTarget.style.opacity = '0.82')}
+                          onMouseEnter={e => (e.currentTarget.style.color = isDark ? '#fff' : '#000')}
+                          onMouseLeave={e => (e.currentTarget.style.color = isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)')}
                         >
                           Forgot Password?
                         </Link>
@@ -493,8 +410,7 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
                         id="cin-password"
                         icon={Lock}
                         focused={pwFocus}
-                        accentRgb={rgb}
-                        accentHex={hex}
+                        isDark={isDark}
                         type={showPassword ? 'text' : 'password'}
                         value={password}
                         onChange={onPasswordChange}
@@ -513,15 +429,15 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
                               background: 'none', border: 'none',
                               cursor: 'pointer', padding: 0,
                               display: 'flex', alignItems: 'center',
-                              color: 'rgba(255,255,255,0.36)',
+                              color: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
                               transition: 'color 0.2s',
                             }}
-                            onMouseEnter={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.7)')}
-                            onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.36)')}
+                            onMouseEnter={e => (e.currentTarget.style.color = isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)')}
+                            onMouseLeave={e => (e.currentTarget.style.color = isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)')}
                           >
                             {showPassword
-                              ? <EyeOff size={15} strokeWidth={1.7} />
-                              : <Eye    size={15} strokeWidth={1.7} />
+                              ? <EyeOff size={15} strokeWidth={1.8} />
+                              : <Eye    size={15} strokeWidth={1.8} />
                             }
                           </button>
                         }
@@ -529,86 +445,47 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
                     </div>
 
                     {/* ── Submit Button ────────────────────────────────────────── */}
-                    <div style={{ paddingTop: 8 }}>
+                    <div style={{ paddingTop: 12 }}>
                       <motion.button
                         type="submit"
                         disabled={loading}
-                        onClick={addRipple}
                         style={{
                           position: 'relative',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          width: '100%', padding: '13.5px 0',
+                          width: '100%', padding: '14px 0',
                           borderRadius: 14,
                           border: 'none',
                           cursor: loading ? 'not-allowed' : 'pointer',
-                          background: `linear-gradient(135deg, ${from} 0%, ${hex} 65%)`,
-                          color: '#ffffff',
-                          fontSize: 14,
-                          fontWeight: 700,
-                          letterSpacing: '0.015em',
+                          // Apple Liquid Glass White Button
+                          background: 'rgba(255, 255, 255, 0.95)',
+                          backdropFilter: 'blur(20px)',
+                          WebkitBackdropFilter: 'blur(20px)',
+                          color: '#000000',
+                          fontSize: 15,
+                          fontWeight: 600,
+                          letterSpacing: '-0.01em',
                           fontFamily: 'inherit',
                           overflow: 'hidden',
                           opacity: loading ? 0.7 : 1,
-                          boxShadow: `
-                            0 8px 32px ${shadow},
-                            0 2px 0 rgba(255,255,255,0.16) inset,
-                            0 -1px 0 rgba(0,0,0,0.3) inset
-                          `,
+                          boxShadow: isDark
+                            ? `0 4px 12px rgba(255,255,255,0.1), inset 0 1px 1px rgba(255,255,255,1)`
+                            : `0 8px 24px rgba(0,0,0,0.1), inset 0 1px 1px rgba(255,255,255,1)`,
                           WebkitFontSmoothing: 'antialiased',
                         } as React.CSSProperties}
                         whileHover={loading ? {} : {
-                          scale: 1.016,
-                          boxShadow: `0 12px 44px ${glow}, 0 2px 0 rgba(255,255,255,0.16) inset`,
+                          scale: 1.02,
+                          boxShadow: isDark
+                            ? `0 8px 24px rgba(255,255,255,0.15), inset 0 1px 1px rgba(255,255,255,1)`
+                            : `0 12px 32px rgba(0,0,0,0.15), inset 0 1px 1px rgba(255,255,255,1)`,
                         } as any}
-                        whileTap={loading ? {} : { scale: 0.984 } as any}
-                        transition={{ duration: 0.22, ease: 'easeOut' }}
+                        whileTap={loading ? {} : { scale: 0.98 } as any}
+                        transition={{ duration: 0.3, ease: 'easeOut' }}
                       >
-                        {/* Button: top glass sheen */}
-                        <div style={{
-                          position: 'absolute', top: 0, left: 0, right: 0,
-                          height: '50%',
-                          background: 'linear-gradient(to bottom, rgba(255,255,255,0.2), transparent)',
-                          borderRadius: '14px 14px 0 0',
-                          pointerEvents: 'none',
-                        }} />
-
-                        {/* Button: continuous shimmer sweep */}
-                        <motion.div
-                          style={{
-                            position: 'absolute', inset: 0,
-                            background: 'linear-gradient(110deg, transparent 38%, rgba(255,255,255,0.24) 50%, transparent 62%)',
-                            pointerEvents: 'none',
-                          }}
-                          animate={{ x: ['-130%', '230%'] }}
-                          transition={{ duration: 1.9, repeat: Infinity, repeatDelay: 3.2, ease: 'easeInOut' }}
-                        />
-
-                        {/* Button: click ripples */}
-                        <AnimatePresence>
-                          {ripples.map(r => (
-                            <motion.span
-                              key={r.id}
-                              style={{
-                                position: 'absolute',
-                                left: r.x - 64, top: r.y - 64,
-                                width: 128, height: 128,
-                                borderRadius: '50%',
-                                background: 'rgba(255,255,255,0.24)',
-                                pointerEvents: 'none',
-                              }}
-                              initial={{ scale: 0, opacity: 0.72 }}
-                              animate={{ scale: 4.8, opacity: 0 }}
-                              exit={{ opacity: 0 }}
-                              transition={{ duration: 0.85, ease: 'easeOut' }}
-                            />
-                          ))}
-                        </AnimatePresence>
-
                         {/* Button: label */}
                         <span style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8 }}>
                           {loading
                             ? <Loader2 size={16} className="animate-spin" />
-                            : <>{submitLabel} <ArrowRight size={15} strokeWidth={2.5} /></>
+                            : <>{submitLabel}</>
                           }
                         </span>
                       </motion.button>
@@ -619,16 +496,16 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
                   {/* ── Footer micro-text ─────────────────────────────────────── */}
                   <motion.p
                     style={{
-                      margin: '20px 0 0',
-                      fontSize: 10.5,
-                      color: 'rgba(255,255,255,0.22)',
+                      margin: '24px 0 0',
+                      fontSize: 11,
+                      color: isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.4)',
                       textAlign: 'center',
-                      letterSpacing: '0.04em',
                       lineHeight: 1.5,
+                      fontWeight: 500,
                     }}
-                    {...fadeUp(1.15)}
+                    {...fadeUp(0.9)}
                   >
-                    SSL Encrypted · JWT Protected · All activity is monitored
+                    SSL Encrypted · JWT Protected
                   </motion.p>
 
                 </div>

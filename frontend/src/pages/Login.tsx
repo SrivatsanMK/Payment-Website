@@ -57,7 +57,6 @@ export const Login: React.FC = () => {
       onPasswordChange={setPassword}
       onTogglePassword={() => setShowPassword(p => !p)}
       onSubmit={handleSubmit}
-      accentColor="emerald"
     />
   );
 };
