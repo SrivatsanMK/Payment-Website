@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { useToast } from '../../components/ui/Toast';
-import { LiquidGlassLogin } from '../../components/ui/LiquidGlassLogin';
+import { CinematicLogin } from '../../components/ui/CinematicLogin';
 
 export const AdminLogin: React.FC = () => {
   const { login } = useAdminAuth();
@@ -41,13 +41,13 @@ export const AdminLogin: React.FC = () => {
   };
 
   return (
-    <LiquidGlassLogin
+    <CinematicLogin
       title="Admin Portal"
       identifierLabel="Admin ID / Username"
       identifierPlaceholder="Enter Admin ID or Email"
       passwordLabel="Password"
       forgotPasswordLink="/admin/forgot-password"
-      submitLabel="Sign In to Admin Portal"
+      submitLabel="Sign In"
       loading={loading}
       identifier={identifier}
       password={password}

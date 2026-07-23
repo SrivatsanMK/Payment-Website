@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/ui/Toast';
-import { LiquidGlassLogin } from '../components/ui/LiquidGlassLogin';
+import { CinematicLogin } from '../components/ui/CinematicLogin';
 
 export const Login: React.FC = () => {
   const { login } = useAuth();
@@ -32,20 +32,23 @@ export const Login: React.FC = () => {
         navigate('/dashboard');
       }
     } catch (err: any) {
-      showToast(err || 'Invalid credentials. Please check your Customer ID and password.', 'error');
+      showToast(
+        err || 'Invalid credentials. Please check your Customer ID and password.',
+        'error'
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <LiquidGlassLogin
+    <CinematicLogin
       title="Customer Portal"
       identifierLabel="Customer ID / Email"
-      identifierPlaceholder="e.g. CUST12345 or email"
+      identifierPlaceholder="e.g. CUST12345 or email@example.com"
       passwordLabel="Password"
       forgotPasswordLink="/forgot-password"
-      submitLabel="Sign In Securely"
+      submitLabel="Sign In"
       loading={loading}
       identifier={identifier}
       password={password}
