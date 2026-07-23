@@ -1,253 +1,285 @@
 /// <reference types="@react-three/fiber" />
 /**
- * CinematicScene.tsx
- * An ultra-premium, infinite 3D particle universe inspired by Google Antigravity.
- * Features thousands of micro-elements (dots, capsules, flakes) that drift
- * continuously through Z-depth with subtle mouse parallax.
+ * CinematicScene.tsx — Green Glide Logistics 3D Volumetric Particle Wave
+ * Built with React Three Fiber, Three.js, and Post-Processing.
+ * Renders an animated 3D particle wave flowing along morphing spline/sine curves with
+ * floating light orbs, volumetric lighting, fog, bloom, and mouse reactivity.
  */
 import React, { useRef, useMemo, Suspense } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
+import { EffectComposer, Bloom } from '@react-three/postprocessing'
 import * as THREE from 'three'
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t
 
-// ─── Infinite Particle Field ─────────────────────────────────────────────────
+// ─── 3D Volumetric Particle Wave ─────────────────────────────────────────────
 
-interface InfiniteParticlesProps {
-  count: number
-  geometry: THREE.BufferGeometry
+interface ParticleWaveProps {
+  mouse: React.MutableRefObject<{ x: number; y: number }>
   theme: 'light' | 'dark'
-  speed: number
-  zRange: [number, number] // [minZ, maxZ]
-  scaleRange: [number, number]
-  opacityRange: [number, number]
 }
 
-function InfiniteParticles({
-  count, geometry, theme, speed, zRange, scaleRange, opacityRange
-}: InfiniteParticlesProps) {
-  const meshRef = useRef<THREE.InstancedMesh>(null!)
-  
-  // Store original positions and speeds for the update loop
-  const particleData = useMemo(() => {
-    const data = []
-    const [minZ, maxZ] = zRange
-    const depth = maxZ - minZ
-    
-    for (let i = 0; i < count; i++) {
-      // Widespread X and Y to fill the screen
-      const x = (Math.random() - 0.5) * 40
-      const y = (Math.random() - 0.5) * 30
-      const z = minZ + Math.random() * depth
-      
-      // Individual random speeds for parallax feel within the group
-      const individualSpeed = speed * (0.5 + Math.random() * 1.5)
-      
-      // Random rotation
-      const rx = Math.random() * Math.PI * 2
-      const ry = Math.random() * Math.PI * 2
-      const rz = Math.random() * Math.PI * 2
-      
-      // Random scale
-      const scale = lerp(scaleRange[0], scaleRange[1], Math.random())
-      
-      data.push({ x, y, z, individualSpeed, rx, ry, rz, scale })
+function ParticleWave({ mouse, theme }: ParticleWaveProps) {
+  const pointsRef = useRef<THREE.Points>(null!)
+  const isDark = theme === 'dark'
+
+  // Grid dimensions
+  const cols = 90
+  const rows = 65
+  const numParticles = cols * rows
+
+  // Initial geometry setup
+  const { positions, baseCoords } = useMemo(() => {
+    const pos = new Float32Array(numParticles * 3)
+    const base = new Float32Array(numParticles * 2)
+
+    let idx = 0
+    let bIdx = 0
+    const xSpan = 42
+    const zSpan = 32
+
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const u = c / (cols - 1)
+        const v = r / (rows - 1)
+
+        const x = (u - 0.5) * xSpan
+        const z = (v - 0.5) * zSpan - 2
+        const y = 0
+
+        pos[idx]     = x
+        pos[idx + 1] = y
+        pos[idx + 2] = z
+
+        base[bIdx]     = x
+        base[bIdx + 1] = z
+
+        idx += 3
+        bIdx += 2
+      }
     }
-    return data
-  }, [count, speed, zRange, scaleRange])
 
-  // Material setup (Dark vs Light mode)
-  const material = useMemo(() => {
-    const isDark = theme === 'dark'
-    const color = isDark ? 0xffffff : 0x000000
-    
-    // We use a physical material for that premium soft shading
-    return new THREE.MeshPhysicalMaterial({
-      color: color,
-      transparent: true,
-      opacity: 0.6,
-      roughness: 0.2,
-      metalness: 0.1,
-      transmission: 0.5,
-      ior: 1.5,
-      depthWrite: false, // Prevents z-fighting among overlapping transparent particles
-    })
-  }, [theme])
+    return { positions: pos, baseCoords: base }
+  }, [numParticles])
 
-  // Initialization
-  useMemo(() => {
-    if (!meshRef.current) return
-    const dummy = new THREE.Object3D()
-    
-    const [minO, maxO] = opacityRange
-    const isDark = theme === 'dark'
-    const baseColor = new THREE.Color(isDark ? 0xffffff : 0x000000)
-    
-    for (let i = 0; i < count; i++) {
-      const d = particleData[i]
-      dummy.position.set(d.x, d.y, d.z)
-      dummy.rotation.set(d.rx, d.ry, d.rz)
-      dummy.scale.set(d.scale, d.scale, d.scale)
-      dummy.updateMatrix()
-      meshRef.current.setMatrixAt(i, dummy.matrix)
-      
-      // Set individual colors/opacities via instance color if desired, 
-      // but instance alpha isn't trivially supported without custom shaders.
-      // We will vary the color's lightness slightly to simulate opacity/depth.
-      const variance = lerp(minO, maxO, Math.random())
-      const c = baseColor.clone()
-      // In dark mode, lower variance = darker (looks more transparent).
-      // In light mode, lower variance = lighter (looks more transparent).
+  // Dynamic particle colors (White, Silver, Gray, Blue, Gold highlights)
+  const colors = useMemo(() => {
+    const colArray = new Float32Array(numParticles * 3)
+    const colorObj = new THREE.Color()
+
+    for (let i = 0; i < numParticles; i++) {
+      const rand = Math.random()
+
       if (isDark) {
-        c.multiplyScalar(variance)
+        // Dark Mode: White, Silver, Soft Gray, Subtle Blue
+        if (rand > 0.88) {
+          colorObj.set('#38bdf8') // Icy blue highlight
+        } else if (rand > 0.65) {
+          colorObj.set('#ffffff') // Pure white
+        } else if (rand > 0.35) {
+          colorObj.set('#e2e8f0') // Silver
+        } else {
+          colorObj.set('#94a3b8') // Soft gray
+        }
       } else {
-        c.lerp(new THREE.Color(0xffffff), 1 - variance)
+        // Light Mode: High contrast Silver, Blue, Gold, Dark Gray
+        if (rand > 0.88) {
+          colorObj.set('#38bdf8') // Soft Sky Blue
+        } else if (rand > 0.75) {
+          colorObj.set('#f59e0b') // Soft Gold highlight
+        } else if (rand > 0.45) {
+          colorObj.set('#475569') // Dark Gray contrast
+        } else {
+          colorObj.set('#64748b') // Medium Slate
+        }
       }
-      meshRef.current.setColorAt(i, c)
-    }
-    meshRef.current.instanceMatrix.needsUpdate = true
-    if (meshRef.current.instanceColor) {
-      meshRef.current.instanceColor.needsUpdate = true
-    }
-  }, [count, particleData, opacityRange, theme])
 
-  // Animation Loop
-  useFrame(({ clock }) => {
-    if (!meshRef.current) return
-    const dummy = new THREE.Object3D()
-    const [minZ, maxZ] = zRange
-    const depth = maxZ - minZ
-    
-    for (let i = 0; i < count; i++) {
-      const d = particleData[i]
-      
-      // Move forward continuously
-      d.z += d.individualSpeed
-      
-      // If a particle passes the camera (Z > maxZ), wrap it back to minZ
-      if (d.z > maxZ) {
-        d.z -= depth
-        // Re-randomize X and Y slightly when wrapping to avoid recognizable patterns
-        d.x = (Math.random() - 0.5) * 40
-        d.y = (Math.random() - 0.5) * 30
-      }
-      
-      // Very slow drift rotation
-      d.rx += 0.002
-      d.ry += 0.003
-      
-      dummy.position.set(d.x, d.y, d.z)
-      dummy.rotation.set(d.rx, d.ry, d.rz)
-      dummy.scale.set(d.scale, d.scale, d.scale)
-      dummy.updateMatrix()
-      
-      meshRef.current.setMatrixAt(i, dummy.matrix)
+      colArray[i * 3]     = colorObj.r
+      colArray[i * 3 + 1] = colorObj.g
+      colArray[i * 3 + 2] = colorObj.b
     }
-    meshRef.current.instanceMatrix.needsUpdate = true
+
+    return colArray
+  }, [numParticles, isDark])
+
+  // Geometry ref for live position buffer updates
+  const geometryRef = useRef<THREE.BufferGeometry>(null!)
+
+  // Animation Loop — morphing wave along sine/spline curves
+  useFrame(({ clock }) => {
+    if (!geometryRef.current) return
+
+    const t = clock.getElapsedTime()
+    const posAttr = geometryRef.current.attributes.position as THREE.BufferAttribute
+    const posArray = posAttr.array as Float32Array
+
+    const targetMouseX = mouse.current.x * 12
+    const targetMouseZ = mouse.current.y * 8
+
+    for (let i = 0; i < numParticles; i++) {
+      const x = baseCoords[i * 2]
+      const z = baseCoords[i * 2 + 1]
+
+      // Primary flowing spline curves
+      let y = Math.sin(x * 0.18 + t * 0.85) * Math.cos(z * 0.22 + t * 0.65) * 2.8
+      y += Math.sin((x + z) * 0.12 + t * 0.4) * 1.6
+      y += Math.cos(x * 0.08 - t * 0.3) * 0.9
+
+      // Mouse proximity interaction (wave bends toward mouse)
+      const dx = x - targetMouseX
+      const dz = z - targetMouseZ
+      const distSq = dx * dx + dz * dz
+      const mouseBend = Math.exp(-distSq / 45) * 2.2
+      y += mouseBend
+
+      posArray[i * 3 + 1] = y
+    }
+
+    posAttr.needsUpdate = true
   })
 
   return (
-    <instancedMesh ref={meshRef} args={[geometry, material, count]} />
+    <points ref={pointsRef}>
+      <bufferGeometry ref={geometryRef}>
+        <bufferAttribute
+          attach="attributes-position"
+          args={[positions, 3]}
+        />
+        <bufferAttribute
+          attach="attributes-color"
+          args={[colors, 3]}
+        />
+      </bufferGeometry>
+      <pointsMaterial
+        size={isDark ? 0.09 : 0.11}
+        vertexColors
+        transparent
+        opacity={isDark ? 0.85 : 0.9}
+        sizeAttenuation
+        depthWrite={false}
+        blending={isDark ? THREE.AdditiveBlending : THREE.NormalBlending}
+      />
+    </points>
   )
 }
 
-// ─── Scene Composition ───────────────────────────────────────────────────────
+// ─── Ambient Floating Orbs ────────────────────────────────────────────────────
+
+function FloatingOrbs({ theme }: { theme: 'light' | 'dark' }) {
+  const isDark = theme === 'dark'
+  const orb1 = useRef<THREE.Mesh>(null!)
+  const orb2 = useRef<THREE.Mesh>(null!)
+  const orb3 = useRef<THREE.Mesh>(null!)
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime()
+    if (orb1.current) {
+      orb1.current.position.x = Math.sin(t * 0.3) * 14
+      orb1.current.position.y = Math.cos(t * 0.25) * 6 + 2
+    }
+    if (orb2.current) {
+      orb2.current.position.x = Math.cos(t * 0.2) * 16
+      orb2.current.position.y = Math.sin(t * 0.35) * 7 - 3
+    }
+    if (orb3.current) {
+      orb3.current.position.x = Math.sin(t * 0.15 + 2) * 12
+      orb3.current.position.y = Math.cos(t * 0.2 + 1) * 5
+    }
+  })
+
+  const orbColor1 = isDark ? '#38bdf8' : '#60a5fa'
+  const orbColor2 = isDark ? '#818cf8' : '#38bdf8'
+  const orbColor3 = isDark ? '#34d399' : '#f59e0b'
+
+  return (
+    <group>
+      <mesh ref={orb1} position={[-8, 4, -12]}>
+        <sphereGeometry args={[2.5, 32, 32]} />
+        <meshBasicMaterial color={orbColor1} transparent opacity={isDark ? 0.15 : 0.12} />
+      </mesh>
+      <mesh ref={orb2} position={[10, -3, -15]}>
+        <sphereGeometry args={[3.2, 32, 32]} />
+        <meshBasicMaterial color={orbColor2} transparent opacity={isDark ? 0.12 : 0.1} />
+      </mesh>
+      <mesh ref={orb3} position={[0, 2, -18]}>
+        <sphereGeometry args={[4.0, 32, 32]} />
+        <meshBasicMaterial color={orbColor3} transparent opacity={isDark ? 0.08 : 0.07} />
+      </mesh>
+    </group>
+  )
+}
+
+// ─── Camera & Parallax Rig ───────────────────────────────────────────────────
+
+function CameraRig({ mouse }: { mouse: React.MutableRefObject<{ x: number; y: number }> }) {
+  useFrame(({ camera }) => {
+    const targetX = mouse.current.x * 2.5
+    const targetY = mouse.current.y * 1.8 + 11
+
+    camera.position.x = lerp(camera.position.x, targetX, 0.03)
+    camera.position.y = lerp(camera.position.y, targetY, 0.03)
+    camera.lookAt(0, 0, -2)
+  })
+
+  return null
+}
+
+// ─── Main Export Component ────────────────────────────────────────────────────
 
 interface SceneProps {
   mouse: React.MutableRefObject<{ x: number; y: number }>
   theme: 'light' | 'dark'
 }
 
-function InfiniteUniverse({ mouse, theme }: SceneProps) {
-  const groupRef = useRef<THREE.Group>(null!)
-
-  // Geometries for our different particle types
-  const dotGeo = useMemo(() => new THREE.SphereGeometry(1, 16, 16), [])
-  const capsuleGeo = useMemo(() => new THREE.CapsuleGeometry(0.5, 1, 4, 8), [])
-  const flakeGeo = useMemo(() => new THREE.PlaneGeometry(1, 1), [])
-
-  // Subtle Mouse Parallax
-  useFrame(() => {
-    if (!groupRef.current) return
-    const { x, y } = mouse.current
-    const smooth = 0.015 // Extremely soft easing
-
-    // The whole universe subtly rotates and shifts
-    groupRef.current.rotation.x = lerp(groupRef.current.rotation.x, -y * 0.05, smooth)
-    groupRef.current.rotation.y = lerp(groupRef.current.rotation.y, x * 0.05, smooth)
-    
-    groupRef.current.position.x = lerp(groupRef.current.position.x, x * 0.5, smooth)
-    groupRef.current.position.y = lerp(groupRef.current.position.y, -y * 0.5, smooth)
-  })
-
-  // Lighting adjustments based on theme
-  const isDark = theme === 'dark'
-
-  return (
-    <group ref={groupRef}>
-      {/* Ambient lighting */}
-      <ambientLight intensity={isDark ? 0.2 : 0.8} color="#ffffff" />
-      <directionalLight position={[10, 10, 5]} intensity={isDark ? 0.5 : 1.2} color="#ffffff" />
-      <directionalLight position={[-10, -10, -5]} intensity={isDark ? 0.3 : 0.6} color="#ffffff" />
-
-      {/* Layer 1: Tiny dots (Background/Midground) */}
-      <InfiniteParticles 
-        count={2500}
-        geometry={dotGeo}
-        theme={theme}
-        speed={0.008}
-        zRange={[-40, 5]}
-        scaleRange={[0.02, 0.06]}
-        opacityRange={[0.1, 0.8]}
-      />
-
-      {/* Layer 2: Micro capsules (Midground/Foreground) */}
-      <InfiniteParticles 
-        count={800}
-        geometry={capsuleGeo}
-        theme={theme}
-        speed={0.012}
-        zRange={[-30, 8]}
-        scaleRange={[0.03, 0.08]}
-        opacityRange={[0.2, 0.6]}
-      />
-
-      {/* Layer 3: Glass flakes (Widespread) */}
-      <InfiniteParticles 
-        count={1200}
-        geometry={flakeGeo}
-        theme={theme}
-        speed={0.01}
-        zRange={[-35, 10]}
-        scaleRange={[0.04, 0.12]}
-        opacityRange={[0.05, 0.4]}
-      />
-    </group>
-  )
-}
-
-// ─── Export ───────────────────────────────────────────────────────────────────
-
 export function CinematicScene({ mouse, theme }: SceneProps) {
   const isDark = theme === 'dark'
-  const bgColor = isDark ? '#000000' : '#ffffff'
+  const bgColor = isDark ? '#000000' : '#F5F6F8'
 
   return (
-    <Canvas
-      camera={{ position: [0, 0, 10], fov: 45, near: 0.1, far: 100 }}
-      gl={{ antialias: true, powerPreference: 'high-performance', alpha: false }}
-      dpr={[1, Math.min(typeof devicePixelRatio !== 'undefined' ? devicePixelRatio : 2, 2)]}
-      style={{ position: 'fixed', inset: 0, zIndex: 1 }}
-    >
-      <color attach="background" args={[bgColor]} />
-      {/* Fog ensures particles fade out smoothly in the distance */}
-      <fog attach="fog" args={[bgColor, 15, 45]} />
+    <div style={{ position: 'fixed', inset: 0, zIndex: 1, overflow: 'hidden' }}>
+      {/* Light Mode Layered Soft Gradients (Ensures Light Mode is never flat white) */}
+      {!isDark && (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          background: `
+            radial-gradient(circle at 20% 20%, rgba(224, 242, 254, 0.7) 0%, transparent 50%),
+            radial-gradient(circle at 80% 80%, rgba(254, 243, 199, 0.4) 0%, transparent 50%),
+            radial-gradient(circle at 50% 50%, rgba(241, 245, 249, 0.9) 0%, #F5F6F8 100%)
+          `,
+          pointerEvents: 'none',
+        }} />
+      )}
 
-      <Suspense fallback={null}>
-        <InfiniteUniverse mouse={mouse} theme={theme} />
-      </Suspense>
-    </Canvas>
+      {/* R3F WebGL 3D Canvas */}
+      <Canvas
+        camera={{ position: [0, 11, 18], fov: 45, near: 0.1, far: 100 }}
+        gl={{ antialias: true, powerPreference: 'high-performance', alpha: false }}
+        dpr={[1, Math.min(typeof devicePixelRatio !== 'undefined' ? devicePixelRatio : 2, 2)]}
+        style={{ position: 'absolute', inset: 0 }}
+      >
+        <color attach="background" args={[bgColor]} />
+        <fog attach="fog" args={[bgColor, 12, 42]} />
+
+        <Suspense fallback={null}>
+          <ambientLight intensity={isDark ? 0.4 : 0.8} />
+          <directionalLight position={[10, 20, 15]} intensity={isDark ? 0.8 : 1.4} />
+
+          <ParticleWave mouse={mouse} theme={theme} />
+          <FloatingOrbs theme={theme} />
+          <CameraRig mouse={mouse} />
+        </Suspense>
+
+        <EffectComposer>
+          <Bloom
+            luminanceThreshold={isDark ? 0.25 : 0.35}
+            luminanceSmoothing={0.8}
+            intensity={isDark ? 1.4 : 0.9}
+            radius={0.65}
+          />
+        </EffectComposer>
+      </Canvas>
+    </div>
   )
 }
 
