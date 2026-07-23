@@ -1,10 +1,10 @@
 /**
- * CinematicLogin.tsx — Mobile Chrome & Safari Backdrop Blur Fix
- * Resolves Mobile WebKit backdrop-filter bypass bugs by removing preserve-3d layers,
- * enforcing explicit -webkit-backdrop-filter, and optimizing frosted glass body opacities.
+ * CinematicLogin.tsx — Instant Page Reload & Mobile Backdrop Blur Fix
+ * Directly imports CinematicScene to eliminate reload delays, and optimizes
+ * frosted glass opacities for perfect readability on all mobile & desktop screens.
  */
 import React, {
-  useState, useEffect, useRef, useCallback, Suspense, lazy
+  useState, useEffect, useRef, useCallback
 } from 'react'
 import { Link } from 'react-router-dom'
 import {
@@ -15,11 +15,7 @@ import {
 } from 'lucide-react'
 import { Logo } from './Logo'
 import { useTheme } from '../../context/ThemeContext'
-
-// Lazy-load the 3D particle wave background
-const CinematicSceneLazy = lazy(() =>
-  import('./CinematicScene').then(m => ({ default: m.CinematicScene }))
-)
+import { CinematicScene } from './CinematicScene'
 
 export interface CinematicLoginProps {
   title: string
@@ -92,8 +88,8 @@ const PillGlassInput: React.FC<PillGlassInputProps> = ({
             ? (focused ? '1px solid rgba(255,255,255,0.45)' : '1px solid rgba(255,255,255,0.22)')
             : (focused ? '1px solid rgba(15,23,42,0.35)' : '1px solid rgba(0,0,0,0.12)'),
           background: isDark
-            ? (focused ? 'rgba(0,0,0,0.45)' : 'rgba(0,0,0,0.35)')
-            : (focused ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.7)'),
+            ? (focused ? 'rgba(0,0,0,0.55)' : 'rgba(0,0,0,0.45)')
+            : (focused ? 'rgba(255,255,255,0.95)' : 'rgba(245,245,248,0.85)'),
           boxShadow: isDark
             ? (focused
                 ? '0 4px 16px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.2)'
@@ -138,11 +134,10 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
   const { theme, toggleTheme } = useTheme()
   const isDark = theme === 'dark'
 
-  const [mounted, setMounted] = useState(false)
   const mouseRef = useRef({ x: 0, y: 0 })
   const cardRef  = useRef<HTMLDivElement>(null)
 
-  // Framer Motion tilt physics
+  // Mouse tilt for desktop cursor movements
   const rawX = useMotionValue(0)
   const rawY = useMotionValue(0)
   const rotX = useSpring(useTransform(rawY, [-1, 1], [2, -2]), { stiffness: 45, damping: 24 })
@@ -154,7 +149,6 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
       mouseRef.current.y = (e.clientY / window.innerHeight - 0.5) * 2
     }
     window.addEventListener('mousemove', onMove, { passive: true })
-    setMounted(true)
     return () => window.removeEventListener('mousemove', onMove)
   }, [])
 
@@ -196,12 +190,8 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
       transition: 'background 400ms ease',
     }}>
 
-      {/* ── 3D Fullscreen Particle Wave Canvas ─────────────────────────────── */}
-      {mounted && (
-        <Suspense fallback={null}>
-          <CinematicSceneLazy mouse={mouseRef} theme={theme} />
-        </Suspense>
-      )}
+      {/* ── 3D Fullscreen Particle Wave Canvas (Direct Import) ───────────── */}
+      <CinematicScene mouse={mouseRef} theme={theme} />
 
       {/* ── Top Right Theme Toggle Button ─────────────────────────────────── */}
       <motion.button
@@ -211,7 +201,7 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
           position: 'fixed', top: 24, right: 24, zIndex: 60,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           width: 42, height: 42, borderRadius: '50%',
-          background: isDark ? 'rgba(30, 30, 38, 0.65)' : 'rgba(255, 255, 255, 0.85)',
+          background: isDark ? 'rgba(30, 30, 38, 0.75)' : 'rgba(255, 255, 255, 0.85)',
           boxShadow: isDark
             ? '0 8px 24px rgba(0,0,0,0.5), inset 0 1px rgba(255,255,255,0.3)'
             : '0 8px 24px rgba(0,0,0,0.08), inset 0 1px rgba(255,255,255,1)',
@@ -224,7 +214,7 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
         whileTap={{ scale: 0.92 }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
+        transition={{ delay: 0.2 }}
       >
         {isDark
           ? <Moon size={17} color="#ffffff" strokeWidth={1.8} />
@@ -247,12 +237,12 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
 
         {/* Entrance Animation */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 16 }}
+          initial={{ opacity: 0, scale: 0.96, y: 12 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
         >
 
-          {/* Floating Motion & 2D/3D Parallax Tilt Wrapper (No preserve-3d to preserve Mobile backdrop-filter) */}
+          {/* Floating Motion Wrapper */}
           <motion.div
             ref={cardRef}
             style={{
@@ -282,10 +272,10 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              // High-Quality Mobile-Compatible Frosted Liquid Glass Material
+              // High-Quality Frosted Liquid Glass Material
               background: isDark
-                ? 'rgba(18, 18, 24, 0.65)'
-                : 'rgba(255, 255, 255, 0.68)',
+                ? 'rgba(20, 20, 26, 0.72)'
+                : 'rgba(255, 255, 255, 0.78)',
               backdropFilter: 'blur(30px) saturate(180%)',
               WebkitBackdropFilter: 'blur(30px) saturate(180%)',
               border: isDark
@@ -332,7 +322,7 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
                     justifyContent: 'center',
                     marginBottom: 14,
                   }}
-                  {...fadeUp(0.15)}
+                  {...fadeUp(0.1)}
                 >
                   <Logo size="md" />
                 </motion.div>
@@ -347,7 +337,7 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
                     letterSpacing: '-0.02em',
                     textAlign: 'center',
                   }}
-                  {...fadeUp(0.25)}
+                  {...fadeUp(0.15)}
                 >
                   {title}
                 </motion.h1>
@@ -364,7 +354,7 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
                   width: '100%',
                   position: 'relative',
                 }}
-                {...fadeUp(0.35)}
+                {...fadeUp(0.2)}
               >
 
                 {/* Customer ID / Email Field */}
@@ -531,7 +521,7 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
                   fontWeight: 400,
                   position: 'relative',
                 }}
-                {...fadeUp(0.45)}
+                {...fadeUp(0.3)}
               >
                 <Lock size={11} strokeWidth={1.8} />
                 <span>SSL Encrypted • JWT Protected</span>
