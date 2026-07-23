@@ -1,7 +1,8 @@
 /// <reference types="@react-three/fiber" />
 /**
- * CinematicScene.tsx — Fullscreen 3D Sweeping Particle Mesh Wave
- * Fills 100% of the viewport on laptops, desktops, and mobile devices without edge clipping.
+ * CinematicScene.tsx — Fullscreen 3D Sweeping Particle Wave
+ * Renders smooth circular glowing particles (no square pixel artifacts)
+ * and fills 100% of dynamic viewport height (100dvh) for mobile & desktop.
  */
 import React, { useRef, useMemo, Suspense } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
@@ -21,7 +22,28 @@ function ParticleWave({ mouse, theme }: ParticleWaveProps) {
   const pointsRef = useRef<THREE.Points>(null!)
   const isDark = theme === 'dark'
 
-  // Expanded Grid Dimensions to cover 100% of wide laptops & tall mobile screens
+  // Dynamic canvas texture for soft circular glowing dots (eliminates square pixel points)
+  const circleTexture = useMemo(() => {
+    if (typeof document === 'undefined') return null
+    const canvas = document.createElement('canvas')
+    canvas.width = 64
+    canvas.height = 64
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return null
+
+    const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32)
+    grad.addColorStop(0, 'rgba(255, 255, 255, 1)')
+    grad.addColorStop(0.4, 'rgba(255, 255, 255, 0.8)')
+    grad.addColorStop(1, 'rgba(255, 255, 255, 0)')
+    ctx.fillStyle = grad
+    ctx.fillRect(0, 0, 64, 64)
+
+    const tex = new THREE.CanvasTexture(canvas)
+    tex.needsUpdate = true
+    return tex
+  }, [])
+
+  // Expanded Grid Dimensions
   const cols = 150
   const rows = 95
   const numParticles = cols * rows
@@ -33,7 +55,6 @@ function ParticleWave({ mouse, theme }: ParticleWaveProps) {
 
     let idx = 0
     let bIdx = 0
-    // Increased spans so wave extends far beyond all viewport boundaries
     const xSpan = 85
     const zSpan = 55
 
@@ -79,7 +100,7 @@ function ParticleWave({ mouse, theme }: ParticleWaveProps) {
           colorObj.set('#94a3b8') // Medium Slate
         }
       } else {
-        // Light Mode: Dark Charcoal & Slate for maximum 3D contrast
+        // Light Mode: Dark Charcoal & Slate for 3D contrast
         if (rand > 0.75) {
           colorObj.set('#0f172a') // Deep Slate Black
         } else if (rand > 0.35) {
@@ -114,12 +135,10 @@ function ParticleWave({ mouse, theme }: ParticleWaveProps) {
       const x = baseCoords[i * 2]
       const z = baseCoords[i * 2 + 1]
 
-      // Sweeping diagonal wave equations
       let y = Math.sin(x * 0.18 + z * 0.15 + t * 1.1) * 3.2
       y += Math.cos(x * 0.1 - z * 0.2 + t * 0.8) * 2.2
       y += Math.sin((x + z) * 0.06 + t * 0.5) * 1.5
 
-      // Mouse interaction
       const dx = x - targetMouseX
       const dz = z - targetMouseZ
       const distSq = dx * dx + dz * dz
@@ -145,10 +164,12 @@ function ParticleWave({ mouse, theme }: ParticleWaveProps) {
         />
       </bufferGeometry>
       <pointsMaterial
-        size={isDark ? 0.09 : 0.1}
+        size={isDark ? 0.22 : 0.25}
         vertexColors
         transparent
-        opacity={isDark ? 0.9 : 0.95}
+        opacity={isDark ? 0.85 : 0.9}
+        map={circleTexture || undefined}
+        alphaTest={0.01}
         sizeAttenuation
         depthWrite={false}
         blending={isDark ? THREE.AdditiveBlending : THREE.NormalBlending}
@@ -189,12 +210,13 @@ export function CinematicScene({ mouse, theme }: SceneProps) {
       top: 0,
       left: 0,
       width: '100vw',
-      height: '100vh',
+      height: '100dvh',
+      minHeight: '100vh',
       zIndex: 1,
       overflow: 'hidden',
       pointerEvents: 'none',
     }}>
-      {/* Light Mode soft background gradient */}
+      {/* Light Mode background gradient */}
       {!isDark && (
         <div style={{
           position: 'absolute',

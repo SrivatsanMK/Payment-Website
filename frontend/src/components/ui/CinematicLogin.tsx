@@ -1,7 +1,7 @@
 /**
- * CinematicLogin.tsx — Authentic iPhone Liquid Glass Transparency & Compact Card
- * Features a compact (390px) floating iPhone Liquid Glass slab with high transparency
- * so background 3D motion is clearly visible blurring through the glass card in both Dark and Light modes.
+ * CinematicLogin.tsx — Mobile Chrome & Safari Backdrop Blur Fix
+ * Resolves Mobile WebKit backdrop-filter bypass bugs by removing preserve-3d layers,
+ * enforcing explicit -webkit-backdrop-filter, and optimizing frosted glass body opacities.
  */
 import React, {
   useState, useEffect, useRef, useCallback, Suspense, lazy
@@ -63,7 +63,7 @@ const PillGlassInput: React.FC<PillGlassInputProps> = ({
         display: 'flex', alignItems: 'center',
         color: focused
           ? (isDark ? '#ffffff' : '#0f172a')
-          : (isDark ? 'rgba(255,255,255,0.5)' : 'rgba(15,23,42,0.5)'),
+          : (isDark ? 'rgba(255,255,255,0.6)' : 'rgba(15,23,42,0.6)'),
         transition: 'color 200ms ease',
         pointerEvents: 'none',
       }}>
@@ -89,15 +89,15 @@ const PillGlassInput: React.FC<PillGlassInputProps> = ({
           padding: `0 ${hasRight ? '44px' : '18px'} 0 44px`,
           borderRadius: 18,
           border: isDark
-            ? (focused ? '1px solid rgba(255,255,255,0.45)' : '1px solid rgba(255,255,255,0.2)')
-            : (focused ? '1px solid rgba(15,23,42,0.3)' : '1px solid rgba(255,255,255,0.9)'),
+            ? (focused ? '1px solid rgba(255,255,255,0.45)' : '1px solid rgba(255,255,255,0.22)')
+            : (focused ? '1px solid rgba(15,23,42,0.35)' : '1px solid rgba(0,0,0,0.12)'),
           background: isDark
-            ? (focused ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.07)')
-            : (focused ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.65)'),
+            ? (focused ? 'rgba(0,0,0,0.45)' : 'rgba(0,0,0,0.35)')
+            : (focused ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.7)'),
           boxShadow: isDark
             ? (focused
-                ? '0 4px 16px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.3)'
-                : 'inset 0 1px 1px rgba(255,255,255,0.15)')
+                ? '0 4px 16px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.2)'
+                : 'inset 0 1px 2px rgba(0,0,0,0.5)')
             : (focused
                 ? '0 6px 20px rgba(0,0,0,0.06), inset 0 1px 1px rgba(255,255,255,1)'
                 : '0 2px 8px rgba(0,0,0,0.03), inset 0 1px 1px rgba(255,255,255,0.8)'),
@@ -145,8 +145,8 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
   // Framer Motion tilt physics
   const rawX = useMotionValue(0)
   const rawY = useMotionValue(0)
-  const rotX = useSpring(useTransform(rawY, [-1, 1], [3, -3]), { stiffness: 45, damping: 24 })
-  const rotY = useSpring(useTransform(rawX, [-1, 1], [-3, 3]), { stiffness: 45, damping: 24 })
+  const rotX = useSpring(useTransform(rawY, [-1, 1], [2, -2]), { stiffness: 45, damping: 24 })
+  const rotY = useSpring(useTransform(rawX, [-1, 1], [-2, 2]), { stiffness: 45, damping: 24 })
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
@@ -183,7 +183,8 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
     <div style={{
       position: 'relative',
       width: '100vw',
-      height: '100vh',
+      height: '100dvh',
+      minHeight: '100vh',
       overflow: 'hidden',
       display: 'flex',
       alignItems: 'center',
@@ -210,9 +211,9 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
           position: 'fixed', top: 24, right: 24, zIndex: 60,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           width: 42, height: 42, borderRadius: '50%',
-          background: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.75)',
+          background: isDark ? 'rgba(30, 30, 38, 0.65)' : 'rgba(255, 255, 255, 0.85)',
           boxShadow: isDark
-            ? '0 8px 24px rgba(0,0,0,0.4), inset 0 1px rgba(255,255,255,0.3)'
+            ? '0 8px 24px rgba(0,0,0,0.5), inset 0 1px rgba(255,255,255,0.3)'
             : '0 8px 24px rgba(0,0,0,0.08), inset 0 1px rgba(255,255,255,1)',
           cursor: 'pointer',
           border: isDark ? '1px solid rgba(255,255,255,0.25)' : '1px solid rgba(255,255,255,0.9)',
@@ -246,19 +247,17 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
 
         {/* Entrance Animation */}
         <motion.div
-          style={{ perspective: 1200 }}
           initial={{ opacity: 0, scale: 0.95, y: 16 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
         >
 
-          {/* Floating Motion & 3D Tilt Wrapper */}
+          {/* Floating Motion & 2D/3D Parallax Tilt Wrapper (No preserve-3d to preserve Mobile backdrop-filter) */}
           <motion.div
             ref={cardRef}
             style={{
               rotateX: rotX,
               rotateY: rotY,
-              transformStyle: 'preserve-3d',
             }}
             animate={{
               y: [-4, 4, -4],
@@ -275,25 +274,25 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
             {/* Compact iPhone Liquid Glass Card Slab */}
             <div style={{
               position: 'relative',
-              width: 390,
+              width: 380,
               maxWidth: '88vw',
               borderRadius: 36,
-              padding: '36px 28px 28px',
+              padding: '36px 26px 28px',
               boxSizing: 'border-box',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              // High Transparency iPhone Liquid Glass Material
+              // High-Quality Mobile-Compatible Frosted Liquid Glass Material
               background: isDark
-                ? 'rgba(255, 255, 255, 0.07)'
-                : 'rgba(255, 255, 255, 0.48)',
-              backdropFilter: 'blur(28px) saturate(190%)',
-              WebkitBackdropFilter: 'blur(28px) saturate(190%)',
+                ? 'rgba(18, 18, 24, 0.65)'
+                : 'rgba(255, 255, 255, 0.68)',
+              backdropFilter: 'blur(30px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(30px) saturate(180%)',
               border: isDark
                 ? '1px solid rgba(255, 255, 255, 0.22)'
                 : '1px solid rgba(255, 255, 255, 0.85)',
               boxShadow: isDark
-                ? `0 25px 60px rgba(0,0,0,0.5), 
+                ? `0 30px 70px rgba(0,0,0,0.7), 
                    inset 0 1px 1px rgba(255,255,255,0.4), 
                    inset 0 0 20px rgba(255,255,255,0.05)`
                 : `0 25px 60px rgba(0,0,0,0.06), 
@@ -374,7 +373,7 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
                     display: 'block',
                     fontSize: 11.5,
                     fontWeight: 500,
-                    color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(15,23,42,0.7)',
+                    color: isDark ? 'rgba(255,255,255,0.75)' : 'rgba(15,23,42,0.75)',
                     marginBottom: 6,
                     paddingLeft: 4,
                   }}>
@@ -407,7 +406,7 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
                     <label style={{
                       fontSize: 11.5,
                       fontWeight: 500,
-                      color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(15,23,42,0.7)',
+                      color: isDark ? 'rgba(255,255,255,0.75)' : 'rgba(15,23,42,0.75)',
                     }}>
                       {passwordLabel}
                     </label>
@@ -416,12 +415,12 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
                       style={{
                         fontSize: 11.5,
                         fontWeight: 500,
-                        color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(15,23,42,0.7)',
+                        color: isDark ? 'rgba(255,255,255,0.75)' : 'rgba(15,23,42,0.75)',
                         textDecoration: 'none',
                         transition: 'color 200ms ease',
                       }}
                       onMouseEnter={e => (e.currentTarget.style.color = isDark ? '#ffffff' : '#0f172a')}
-                      onMouseLeave={e => (e.currentTarget.style.color = isDark ? 'rgba(255,255,255,0.7)' : 'rgba(15,23,42,0.7)')}
+                      onMouseLeave={e => (e.currentTarget.style.color = isDark ? 'rgba(255,255,255,0.75)' : 'rgba(15,23,42,0.75)')}
                     >
                       Forgot Password?
                     </Link>
@@ -447,11 +446,11 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
                           background: 'none', border: 'none',
                           cursor: 'pointer', padding: 0,
                           display: 'flex', alignItems: 'center',
-                          color: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(15,23,42,0.5)',
+                          color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(15,23,42,0.6)',
                           transition: 'color 200ms ease',
                         }}
                         onMouseEnter={e => (e.currentTarget.style.color = isDark ? '#ffffff' : '#0f172a')}
-                        onMouseLeave={e => (e.currentTarget.style.color = isDark ? 'rgba(255,255,255,0.5)' : 'rgba(15,23,42,0.5)')}
+                        onMouseLeave={e => (e.currentTarget.style.color = isDark ? 'rgba(255,255,255,0.6)' : 'rgba(15,23,42,0.6)')}
                       >
                         {showPassword
                           ? <EyeOff size={15} strokeWidth={1.8} />
@@ -527,7 +526,7 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 6,
-                  color: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(15,23,42,0.5)',
+                  color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(15,23,42,0.6)',
                   fontSize: 10.5,
                   fontWeight: 400,
                   position: 'relative',
