@@ -11,7 +11,8 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setTheme] = useState<Theme>(() => {
-    // Always default to 'dark' mode on fresh load and refresh
+    const saved = localStorage.getItem('theme');
+    if (saved === 'dark' || saved === 'light') return saved;
     return 'dark';
   });
 
@@ -19,8 +20,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const root = window.document.documentElement;
     if (theme === 'dark') {
       root.classList.add('dark');
+      root.style.backgroundColor = '#000000';
     } else {
       root.classList.remove('dark');
+      root.style.backgroundColor = '#EAEBED';
     }
     localStorage.setItem('theme', theme);
   }, [theme]);

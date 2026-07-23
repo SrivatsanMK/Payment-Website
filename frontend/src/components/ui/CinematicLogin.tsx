@@ -1,6 +1,7 @@
 /**
- * CinematicLogin.tsx — Guaranteed Pitch Black (#000000) Viewport & Apple Glass Card
- * Enforces pure black viewport background to eliminate white screen glitches on mobile refresh.
+ * CinematicLogin.tsx — Authentic Apple VisionOS Liquid Glass Architecture
+ * Multi-layer CSS compositing: frosted glass body blur (40px), top specular sheen,
+ * beveled optical border, high-contrast carved inputs, and 100% AAA WCAG text legibility.
  */
 import React, {
   useState, useEffect, useRef, useCallback
@@ -182,13 +183,14 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: '#000000', // Pure pitch black viewport base (eliminates white screen on refresh)
+      background: isDark ? '#000000' : '#EAEBED',
       fontFamily: "'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
       WebkitFontSmoothing: 'antialiased',
       MozOsxFontSmoothing: 'grayscale',
+      transition: 'background 400ms ease',
     }}>
 
-      {/* ── 3D Fullscreen Particle Wave Canvas ───────────────────────────── */}
+      {/* ── 3D Fullscreen Particle Wave Canvas (Direct Import) ───────────── */}
       <CinematicScene mouse={mouseRef} theme={theme} />
 
       {/* ── Top Right Theme Toggle Button ─────────────────────────────────── */}
