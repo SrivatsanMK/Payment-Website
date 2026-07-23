@@ -509,24 +509,7 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
 
               </motion.form>
 
-              {/* ── CARD FOOTER: SSL Encrypted • JWT Protected ──────────────── */}
-              <motion.div
-                style={{
-                  marginTop: 18,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                  color: isDark ? 'rgba(255,255,255,0.7)' : 'rgba(15,23,42,0.7)',
-                  fontSize: 10.5,
-                  fontWeight: 500,
-                  position: 'relative',
-                }}
-                {...fadeUp(0.3)}
-              >
-                <Lock size={11} strokeWidth={1.8} />
-                <span>SSL Encrypted • JWT Protected</span>
-              </motion.div>
+
 
             </div>
           </motion.div>
