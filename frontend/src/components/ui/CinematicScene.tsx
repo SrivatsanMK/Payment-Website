@@ -1,8 +1,8 @@
 /// <reference types="@react-three/fiber" />
 /**
- * CinematicScene.tsx — Ultra-High Contrast 3D Sweeping Particle Mesh Wave
- * Fixes Light Mode fog washout: In Light Mode, particles use deep charcoal/black tones (#090d16, #1e293b)
- * and expanded fog distance so the 3D particle motion is 100% bold, crisp, and striking.
+ * CinematicScene.tsx — 100% Stable 3D Sweeping Particle Mesh Wave
+ * Renders exact sweeping particle wave ribbon matching Image 3.
+ * Defaults to pure black (#000000) background with bright white/silver dots.
  */
 import React, { useRef, useMemo } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
@@ -60,7 +60,7 @@ function ParticleWave({ mouse, theme }: ParticleWaveProps) {
     return { positions: pos, baseCoords: base }
   }, [numParticles])
 
-  // Particle Colors — Deep high-contrast dark particles in Light Mode
+  // Particle Colors
   const colors = useMemo(() => {
     const colArray = new Float32Array(numParticles * 3)
     const colorObj = new THREE.Color()
@@ -69,22 +69,22 @@ function ParticleWave({ mouse, theme }: ParticleWaveProps) {
       const rand = Math.random()
 
       if (isDark) {
-        // Dark Mode: Bright White & Silver on Pure Black
+        // Dark Mode: Crisp White & Silver on Pure Black (Image 3)
         if (rand > 0.75) {
-          colorObj.set('#ffffff') // Pure White
+          colorObj.set('#ffffff')
         } else if (rand > 0.35) {
-          colorObj.set('#e2e8f0') // Silver
+          colorObj.set('#cbd5e1')
         } else {
-          colorObj.set('#a0aec0') // Slate Gray
+          colorObj.set('#94a3b8')
         }
       } else {
-        // Light Mode: Deep Slate Black & Dark Charcoal so 3D wave pops boldly on Light background!
-        if (rand > 0.7) {
-          colorObj.set('#020617') // Deepest Midnight Slate
+        // Light Mode: High Contrast Dark Slate
+        if (rand > 0.75) {
+          colorObj.set('#020617')
         } else if (rand > 0.35) {
-          colorObj.set('#0f172a') // Dark Slate
+          colorObj.set('#0f172a')
         } else {
-          colorObj.set('#1e293b') // Charcoal Slate
+          colorObj.set('#1e293b')
         }
       }
 
@@ -113,12 +113,10 @@ function ParticleWave({ mouse, theme }: ParticleWaveProps) {
       const x = baseCoords[i * 2]
       const z = baseCoords[i * 2 + 1]
 
-      // Sweeping wave equations
       let y = Math.sin(x * 0.18 + z * 0.15 + t * 1.1) * 3.2
       y += Math.cos(x * 0.1 - z * 0.2 + t * 0.8) * 2.2
       y += Math.sin((x + z) * 0.06 + t * 0.5) * 1.5
 
-      // Mouse interaction
       const dx = x - targetMouseX
       const dz = z - targetMouseZ
       const distSq = dx * dx + dz * dz
@@ -144,10 +142,10 @@ function ParticleWave({ mouse, theme }: ParticleWaveProps) {
         />
       </bufferGeometry>
       <pointsMaterial
-        size={isDark ? 0.09 : 0.105}
+        size={isDark ? 0.085 : 0.095}
         vertexColors
         transparent
-        opacity={isDark ? 0.95 : 0.98}
+        opacity={isDark ? 0.9 : 0.95}
         sizeAttenuation
         depthWrite={false}
         blending={isDark ? THREE.AdditiveBlending : THREE.NormalBlending}
@@ -212,7 +210,6 @@ export function CinematicScene({ mouse, theme }: SceneProps) {
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
       >
         <color attach="background" args={[bgColor]} />
-        {/* Fog distance expanded in Light Mode to prevent washing out dark particles */}
         <fog attach="fog" args={[bgColor, isDark ? 12 : 28, isDark ? 50 : 90]} />
 
         <ambientLight intensity={isDark ? 0.5 : 1.0} />
