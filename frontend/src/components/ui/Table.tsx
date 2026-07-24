@@ -8,21 +8,21 @@ interface TableProps {
 
 export const Table: React.FC<TableProps> = ({ headers, children, className = '' }) => {
   return (
-    <div className={`w-full overflow-x-auto rounded-lg border border-slate-100 dark:border-slate-800 ${className}`}>
+    <div className={`w-full overflow-x-auto glass-table-container ${className}`}>
       <table className="w-full text-left border-collapse">
         <thead>
-          <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800">
+          <tr className="border-b border-white/10 dark:border-white/10 bg-white/5 dark:bg-white/5 backdrop-blur-md">
             {headers.map((header, idx) => (
               <th
                 key={idx}
-                className="px-6 py-3.5 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400"
+                className="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-300"
               >
                 {header}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-850">
+        <tbody className="divide-y divide-white/10 dark:divide-white/10">
           {children}
         </tbody>
       </table>

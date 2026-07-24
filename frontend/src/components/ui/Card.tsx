@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   glass?: boolean;
@@ -7,26 +8,36 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 
 export const Card: React.FC<CardProps> = ({
   children,
-  glass = false,
-  hoverable = false,
+  glass = true,
+  hoverable = true,
   className = '',
+  style,
   ...props
 }) => {
-  const baseStyle = glass
-    ? 'glass rounded-xl shadow-premium dark:shadow-dark-premium border border-white/30 dark:border-slate-800/20'
-    : 'bg-white dark:bg-slate-850 rounded-xl shadow-premium dark:shadow-dark-premium border border-slate-100 dark:border-slate-800/10';
-  
-  const hoverStyle = hoverable
-    ? 'hover:shadow-premium-hover dark:hover:shadow-dark-premium-hover hover:border-slate-200 dark:hover:border-slate-800/50 hover:-translate-y-0.5 transition-all duration-300'
-    : '';
-
   return (
-    <div
-      className={`${baseStyle} ${hoverStyle} p-6 ${className}`}
-      {...props}
+    <motion.div
+      whileHover={hoverable ? { y: -4, scale: 1.008 } : undefined}
+      transition={{ duration: 0.35, ease: [0.22, 0.61, 0.36, 1] }}
+      className={`glass-card p-6 ${className}`}
+      style={style}
+      {...(props as any)}
     >
-      {children}
-    </div>
+      {/* Top curved specular sheen highlight */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '35%',
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 100%)',
+          pointerEvents: 'none',
+        }}
+      />
+      <div style={{ position: 'relative', zIndex: 2 }}>
+        {children}
+      </div>
+    </motion.div>
   );
 };
 

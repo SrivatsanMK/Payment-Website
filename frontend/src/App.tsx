@@ -7,6 +7,7 @@ import { AdminAuthProvider, useAdminAuth } from './context/AdminAuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './components/ui/Toast';
 import { SocketProvider } from './context/SocketContext';
+import { GlobalBackground } from './components/ui/GlobalBackground';
 
 // Layouts
 import DashboardLayout from './components/layout/DashboardLayout';
@@ -54,6 +55,9 @@ const AdminProfileRoute: React.FC<{ children: React.ReactNode }> = ({ children }
 export const App: React.FC = () => {
   return (
     <ThemeProvider>
+      {/* Global Persistent 3D Background Canvas */}
+      <GlobalBackground />
+
       <ToastProvider>
         {/* Customer auth provider wraps the entire app */}
         <AuthProvider>
@@ -108,9 +112,7 @@ export const App: React.FC = () => {
                   </Route>
 
                   {/* ── FALLBACK ────────────────────────────────────────────── */}
-                  {/* Root goes to customer login by default */}
                   <Route path="/" element={<Navigate to="/login" replace />} />
-                  {/* Unknown paths — try to guess based on context */}
                   <Route path="*" element={<Navigate to="/login" replace />} />
 
                 </Routes>

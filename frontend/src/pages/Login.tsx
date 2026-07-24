@@ -45,7 +45,7 @@ export const Login: React.FC = () => {
     <CinematicLogin
       title="Customer Portal"
       identifierLabel="Customer ID / Email"
-      identifierPlaceholder="e.g. CUST12345 or email@example.com"
+      identifierPlaceholder="Enter Customer ID or Email"
       passwordLabel="Password"
       forgotPasswordLink="/forgot-password"
       submitLabel="Sign In"

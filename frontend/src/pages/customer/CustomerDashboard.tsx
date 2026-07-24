@@ -9,8 +9,6 @@ import {
   TrendingUp, 
   AlertCircle,
   FileCheck,
-  CreditCard,
-  ChevronRight,
   Package,
   Download
 } from 'lucide-react';
@@ -27,10 +25,9 @@ import {
 } from 'recharts';
 import Card from '../../components/ui/Card';
 import Table from '../../components/ui/Table';
-import Badge from '../../components/ui/Badge';
 import Spinner from '../../components/ui/Spinner';
 import Button from '../../components/ui/Button';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 export const CustomerDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -47,7 +44,6 @@ export const CustomerDashboard: React.FC = () => {
   const handleDownloadInvoice = async (invoiceNumber: string) => {
     setDownloadingInvoice(invoiceNumber);
     try {
-      // 1. Fetch exact invoice details
       const invoicesRes = await api.get('/invoices', { params: { search: invoiceNumber } });
       const invoice = invoicesRes.data.invoices.find((inv: any) => inv.invoiceNumber === invoiceNumber);
       
@@ -56,18 +52,13 @@ export const CustomerDashboard: React.FC = () => {
         return;
       }
       
-      // 2. Fetch business configurations (settings)
       const settingsRes = await api.get('/settings');
       const settings = settingsRes.data.settings || {};
       
-      // Generate PDF
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.width || 210;
-      const primaryColor = "#1e293b";
-      const accentColor = invoice.status === 'Paid' ? "#10b981" : "#ef4444";
       const textColor = "#334155";
       
-      // Top header band (slate-900 background)
       doc.setFillColor(15, 23, 42);
       doc.rect(0, 0, pageWidth, 40, "F");
       
@@ -81,7 +72,6 @@ export const CustomerDashboard: React.FC = () => {
       doc.text("Premium Machinery, Hardware & Operations", 15, 25);
       doc.text(`Phone: ${settings.supportPhone || "+91 98765 43210"}  |  UPI ID: ${settings.upiId || "apexdealer@okaxis"}`, 15, 32);
       
-      // Invoice meta info
       doc.setTextColor(textColor);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(11);
@@ -92,11 +82,9 @@ export const CustomerDashboard: React.FC = () => {
       doc.text(`Invoice No: ${invoice.invoiceNumber}`, 15, 63);
       doc.text(`Date of Issue: ${new Date(invoice.createdAt).toLocaleDateString()}`, 15, 70);
       
-      // Divider line
       doc.setDrawColor(226, 232, 240);
       doc.line(15, 87, pageWidth - 15, 87);
       
-      // Customer Info
       const customer = invoice.customer || {};
       doc.setTextColor(textColor);
       doc.setFont("helvetica", "bold");
@@ -111,7 +99,6 @@ export const CustomerDashboard: React.FC = () => {
       doc.text(`Phone: ${customer.phone || "N/A"}`, 15, 120);
       doc.text(`Address: ${customer.address || "N/A"}`, 15, 127);
       
-      // Products Table Headers
       let currentY = 145;
       doc.setFillColor(30, 41, 59);
       doc.rect(15, currentY, pageWidth - 30, 8, "F");
@@ -127,7 +114,6 @@ export const CustomerDashboard: React.FC = () => {
       
       currentY += 8;
       
-      // Products Table Rows
       doc.setFont("helvetica", "normal");
       doc.setTextColor(textColor);
       
@@ -154,7 +140,6 @@ export const CustomerDashboard: React.FC = () => {
       doc.line(15, currentY, pageWidth - 15, currentY);
       currentY += 6;
       
-      // Summary Calculations
       const discount = invoice.discount || 0;
       const taxableAmount = Math.max(0, subtotal - discount);
       const gstRate = invoice.gst || 0;
@@ -190,7 +175,6 @@ export const CustomerDashboard: React.FC = () => {
       doc.setFontSize(10.5);
       drawSummaryLine("Grand Total:", `INR ${finalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, true);
       
-      // Footer
       currentY = Math.max(currentY + 8, 245);
       doc.setDrawColor(226, 232, 240);
       doc.line(15, currentY, pageWidth - 15, currentY);
@@ -217,14 +201,12 @@ export const CustomerDashboard: React.FC = () => {
 
   const fetchDashboardData = async () => {
     try {
-      // 1. Get customer details with financial metrics
       const detailsRes = await api.get(endpoints.customers.single(user?.id || ''));
       if (detailsRes.data.success) {
         setMetrics(detailsRes.data.metrics);
         setChartData(detailsRes.data.chartData || []);
       }
 
-      // 2. Get recent invoices (unpaid only)
       const invoicesRes = await api.get(endpoints.invoices.base, {
         params: { limit: 10, status: 'Unpaid' }
       });
@@ -254,67 +236,69 @@ export const CustomerDashboard: React.FC = () => {
     {
       title: 'Total Packages Received',
       value: metrics?.totalPackages || 0,
-      icon: <Package className="h-5 w-5 text-amber-500" />,
+      icon: <Package className="h-5 w-5 text-amber-400" />,
       subtext: 'Including paid and unpaid',
-      color: 'border-l-4 border-amber-500'
+      borderColor: 'border-amber-500/40'
     },
     {
       title: 'Total Amount Purchased',
       value: `₹${(metrics?.totalPurchased || 0).toLocaleString('en-IN')}`,
-      icon: <TrendingUp className="h-5 w-5 text-indigo-500" />,
+      icon: <TrendingUp className="h-5 w-5 text-purple-400" />,
       subtext: 'Total ordered items volume',
-      color: 'border-l-4 border-indigo-500'
+      borderColor: 'border-purple-500/40'
     },
     {
       title: 'Total Amount Paid',
       value: `₹${(metrics?.totalPaid || 0).toLocaleString('en-IN')}`,
-      icon: <IndianRupee className="h-5 w-5 text-emerald-500" />,
+      icon: <IndianRupee className="h-5 w-5 text-emerald-400" />,
       subtext: 'Amount successfully settled',
-      color: 'border-l-4 border-emerald-500'
+      borderColor: 'border-emerald-500/40'
     },
     {
       title: 'Remaining Balance Due',
       value: `₹${(metrics?.remainingBalance || 0).toLocaleString('en-IN')}`,
-      icon: <AlertCircle className="h-5 w-5 text-rose-500" />,
+      icon: <AlertCircle className="h-5 w-5 text-rose-400" />,
       subtext: 'Outstanding unpaid balance',
-      color: 'border-l-4 border-rose-500'
+      borderColor: 'border-rose-500/40'
     },
     {
       title: 'Invoices Issued',
       value: metrics?.totalInvoices || 0,
-      icon: <Receipt className="h-5 w-5 text-sky-500" />,
+      icon: <Receipt className="h-5 w-5 text-sky-400" />,
       subtext: 'Total billing statements',
-      color: 'border-l-4 border-sky-500'
+      borderColor: 'border-sky-500/40'
     }
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-12">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100">
+        <h1 className="text-3xl font-extrabold tracking-tight text-white dark:text-white">
           Customer Portal Dashboard
         </h1>
-        <p className="text-xs text-slate-400 mt-1">
+        <p className="text-xs text-slate-300 dark:text-slate-400 mt-1.5 font-medium">
           Review orders, invoices, and settle outstanding balances safely.
         </p>
       </div>
 
       {/* Metrics Grid */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+      <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
         {metricCards.map((card, idx) => (
-          <Card key={idx} hoverable className={`${card.color} flex flex-col justify-between h-32 py-4 px-5 bg-white dark:bg-slate-850`}>
+          <Card key={idx} hoverable className={`glass-card border-l-4 ${card.borderColor} flex flex-col justify-between h-36 py-5 px-6`}>
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-300 dark:text-slate-300">
                 {card.title}
               </span>
-              {card.icon}
+              <div className="p-2 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md">
+                {card.icon}
+              </div>
             </div>
-            <div className="mt-2">
-              <span className="text-xl font-bold text-slate-800 dark:text-slate-100">
+            <div className="mt-3">
+              <span className="text-2xl font-bold text-white dark:text-white">
                 {card.value}
               </span>
-              <p className="text-[10px] text-slate-400 mt-0.5 font-medium">
+              <p className="text-[11px] text-slate-400 mt-1 font-medium">
                 {card.subtext}
               </p>
             </div>
@@ -325,12 +309,12 @@ export const CustomerDashboard: React.FC = () => {
       {/* Invoices and Actions */}
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Recent Invoices list */}
-        <Card className="lg:col-span-2 p-0 overflow-hidden flex flex-col justify-between">
-          <div className="p-6">
-            <h3 className="text-sm font-bold text-slate-850 dark:text-slate-150">
+        <Card className="lg:col-span-2 glass-card p-0 overflow-hidden flex flex-col justify-between">
+          <div className="p-7 border-b border-white/10">
+            <h3 className="text-base font-bold text-white dark:text-white">
               Recent Bills & Statements
             </h3>
-            <p className="text-[11px] text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-400 mt-1">
               Your newly issued invoices.
             </p>
           </div>
@@ -339,42 +323,42 @@ export const CustomerDashboard: React.FC = () => {
             <Table headers={['Invoice No', 'Issue Date', 'Total', 'Actions']}>
               {invoices.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-6 text-center text-xs text-slate-400">
+                  <td colSpan={4} className="px-6 py-6 text-center text-xs text-slate-400">
                     No unpaid billing statements found.
                   </td>
                 </tr>
               ) : (
                 invoices.map((inv) => (
-                  <tr key={inv._id} className="text-xs hover:bg-slate-50/50 dark:hover:bg-slate-800/10">
-                    <td className="px-6 py-3.5 font-bold text-slate-800 dark:text-slate-200">
+                  <tr key={inv._id} className="text-xs glass-table-row">
+                    <td className="px-6 py-4 font-bold text-white">
                       {inv.invoiceNumber}
                     </td>
-                    <td className="px-6 py-3.5 text-slate-500">
+                    <td className="px-6 py-4 text-slate-300">
                       {new Date(inv.createdAt).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-3.5 font-bold text-slate-800 dark:text-slate-200">
+                    <td className="px-6 py-4 font-bold text-white">
                       ₹{inv.finalAmount.toLocaleString('en-IN')}
                     </td>
 
-                    <td className="px-6 py-3.5">
+                    <td className="px-6 py-4">
                       {inv.status !== 'Paid' ? (
                         <Button
                           size="sm"
                           onClick={() => navigate(`/pay-invoice/${inv._id}`)}
-                          className="py-1 px-3 text-[11px] font-semibold"
+                          className="py-1.5 px-4 text-xs font-semibold glass-button"
                         >
                           Pay Now
                         </Button>
                       ) : (
                         <div className="flex items-center gap-2">
-                          <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-0.5">
-                            <FileCheck className="h-3.5 w-3.5" />
+                          <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
+                            <FileCheck className="h-4 w-4" />
                             Settled
                           </span>
                           <button
                             onClick={() => handleDownloadInvoice(inv.invoiceNumber)}
                             disabled={downloadingInvoice !== null}
-                            className="p-1 text-slate-500 hover:text-primary-600 dark:text-slate-400 dark:hover:text-primary-400 rounded transition-colors"
+                            className="p-1.5 text-slate-300 hover:text-white rounded-xl transition-colors glass-button-secondary"
                             title="Download PDF Invoice"
                           >
                             <Download className="h-4 w-4" />
@@ -390,12 +374,12 @@ export const CustomerDashboard: React.FC = () => {
         </Card>
 
         {/* Purchases vs Payments Chart */}
-        <Card className="flex flex-col justify-between p-6">
+        <Card className="glass-card flex flex-col justify-between p-7">
           <div className="mb-4">
-            <h3 className="text-sm font-semibold text-slate-850 dark:text-slate-100">
+            <h3 className="text-base font-bold text-white dark:text-white">
               Purchases vs Payments
             </h3>
-            <p className="text-[11px] text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-400 mt-1">
               Monthly purchases vs actual settled payments.
             </p>
           </div>
@@ -407,45 +391,48 @@ export const CustomerDashboard: React.FC = () => {
                   data={chartData}
                   margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.08)" />
                   <XAxis 
                     dataKey="month" 
-                    tick={{ fontSize: 9 }} 
-                    stroke="#94a3b8" 
+                    tick={{ fontSize: 10, fill: '#cbd5e1' }} 
+                    stroke="rgba(255,255,255,0.2)" 
                     axisLine={false} 
                     tickLine={false}
                   />
                   <YAxis 
-                    tick={{ fontSize: 9 }} 
-                    stroke="#94a3b8" 
+                    tick={{ fontSize: 10, fill: '#cbd5e1' }} 
+                    stroke="rgba(255,255,255,0.2)" 
                     axisLine={false} 
                     tickLine={false}
                   />
                   <Tooltip 
                     contentStyle={{ 
-                      fontSize: '10px', 
-                      borderRadius: '8px', 
-                      border: '1px solid #e2e8f0', 
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.05)' 
+                      fontSize: '11px', 
+                      borderRadius: '14px', 
+                      background: 'rgba(20,20,28,0.85)',
+                      backdropFilter: 'blur(20px)',
+                      border: '1px solid rgba(255,255,255,0.2)', 
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.8)',
+                      color: '#fff'
                     }} 
                   />
-                  <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '5px' }} />
+                  <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '8px', color: '#cbd5e1' }} />
                   <Line 
                     type="monotone" 
                     dataKey="purchases" 
                     name="Purchases" 
-                    stroke="#6366f1" 
-                    strokeWidth={2}
-                    dot={{ r: 3, fill: "#6366f1", strokeWidth: 2 }}
+                    stroke="#a855f7" 
+                    strokeWidth={3}
+                    dot={{ r: 3.5, fill: "#a855f7", strokeWidth: 2 }}
                     activeDot={{ r: 5 }}
                   />
                   <Line 
                     type="monotone" 
                     dataKey="payments" 
                     name="Payments" 
-                    stroke="#10b981" 
-                    strokeWidth={2}
-                    dot={{ r: 3, fill: "#10b981", strokeWidth: 2 }}
+                    stroke="#34d399" 
+                    strokeWidth={3}
+                    dot={{ r: 3.5, fill: "#34d399", strokeWidth: 2 }}
                     activeDot={{ r: 5 }}
                   />
                 </LineChart>

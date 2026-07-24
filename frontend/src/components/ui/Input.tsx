@@ -15,17 +15,17 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-300 mb-1.5 pl-1">
             {label}
           </label>
         )}
         <div className="relative w-full">
           <input
             ref={ref}
-            className={`w-full px-4 py-2 text-sm rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all duration-200 ${
+            className={`w-full px-4 py-2.5 text-sm rounded-xl border glass-input transition-all duration-200 ${
               isPassword ? 'pr-10' : ''
             } ${
-              error ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''
+              error ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500/20' : ''
             } ${className}`}
             {...props}
             type={inputType}
@@ -35,14 +35,14 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+              className="absolute inset-y-0 right-0 flex items-center pr-3.5 text-slate-400 hover:text-slate-200 transition-colors"
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           )}
         </div>
         {error && (
-          <p className="mt-1 text-xs text-red-500 font-medium">{error}</p>
+          <p className="mt-1.5 text-xs text-red-400 font-medium pl-1">{error}</p>
         )}
       </div>
     );
@@ -61,20 +61,20 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-300 mb-1.5 pl-1">
             {label}
           </label>
         )}
         <textarea
           ref={ref}
-          className={`w-full px-4 py-2 text-sm rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all duration-200 ${
-            error ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''
+          className={`w-full px-4 py-2.5 text-sm rounded-xl border glass-input transition-all duration-200 ${
+            error ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500/20' : ''
           } ${className}`}
           rows={3}
           {...props}
         />
         {error && (
-          <p className="mt-1 text-xs text-red-500 font-medium">{error}</p>
+          <p className="mt-1.5 text-xs text-red-400 font-medium pl-1">{error}</p>
         )}
       </div>
     );
@@ -94,25 +94,25 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-300 mb-1.5 pl-1">
             {label}
           </label>
         )}
         <select
           ref={ref}
-          className={`w-full px-4 py-2 text-sm rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all duration-200 ${
-            error ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''
+          className={`w-full px-4 py-2.5 text-sm rounded-xl border glass-input transition-all duration-200 ${
+            error ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500/20' : ''
           } ${className}`}
           {...props}
         >
           {options.map((opt) => (
-            <option key={opt.value} value={opt.value}>
+            <option key={opt.value} value={opt.value} className="bg-slate-900 text-white">
               {opt.label}
             </option>
           ))}
         </select>
         {error && (
-          <p className="mt-1 text-xs text-red-500 font-medium">{error}</p>
+          <p className="mt-1.5 text-xs text-red-400 font-medium pl-1">{error}</p>
         )}
       </div>
     );

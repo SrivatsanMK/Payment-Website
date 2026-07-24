@@ -40,7 +40,7 @@ export const DashboardLayout: React.FC = () => {
         <Navbar setSidebarOpen={setSidebarOpen} />
 
         {/* Content Outlet */}
-        <main className="flex-1 overflow-y-auto px-6 py-8">
+        <main className="flex-1 overflow-y-auto px-6 pt-3 pb-8">
           <div className="mx-auto max-w-7xl">
             <Outlet />
           </div>

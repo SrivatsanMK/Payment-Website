@@ -1,7 +1,7 @@
 /**
- * CinematicLogin.tsx — Authentic Apple VisionOS Liquid Glass Architecture
- * Multi-layer CSS compositing: frosted glass body blur (40px), top specular sheen,
- * beveled optical border, high-contrast carved inputs, and 100% AAA WCAG text legibility.
+ * CinematicLogin.tsx — Identical Liquid Glass Finish for Light & Dark Modes
+ * Both Light and Dark modes feature translucent frosted glass body fills (0.48 / 0.72 opacity),
+ * top specular reflection overlays, beveled optical borders, and glassy pill inputs.
  */
 import React, {
   useState, useEffect, useRef, useCallback
@@ -86,17 +86,17 @@ const PillGlassInput: React.FC<PillGlassInputProps> = ({
           borderRadius: 18,
           border: isDark
             ? (focused ? '1px solid rgba(255,255,255,0.5)' : '1px solid rgba(255,255,255,0.22)')
-            : (focused ? '1px solid rgba(15,23,42,0.4)' : '1px solid rgba(0,0,0,0.15)'),
+            : (focused ? '1px solid rgba(15,23,42,0.3)' : '1px solid rgba(255,255,255,0.9)'),
           background: isDark
             ? (focused ? 'rgba(0,0,0,0.65)' : 'rgba(0,0,0,0.52)')
-            : (focused ? 'rgba(255,255,255,0.98)' : 'rgba(245,245,248,0.92)'),
+            : (focused ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.52)'),
           boxShadow: isDark
             ? (focused
                 ? '0 4px 16px rgba(0,0,0,0.5), inset 0 1px 1px rgba(255,255,255,0.25)'
                 : 'inset 0 1px 2px rgba(0,0,0,0.6)')
             : (focused
-                ? '0 6px 20px rgba(0,0,0,0.08), inset 0 1px 1px rgba(255,255,255,1)'
-                : '0 2px 8px rgba(0,0,0,0.04), inset 0 1px 1px rgba(255,255,255,0.9)'),
+                ? '0 6px 20px rgba(0,0,0,0.06), inset 0 1px 1px rgba(255,255,255,1)'
+                : '0 2px 8px rgba(0,0,0,0.03), inset 0 1px 1px rgba(255,255,255,0.9)'),
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
           color: isDark ? '#ffffff' : '#0f172a',
@@ -190,7 +190,7 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
       transition: 'background 400ms ease',
     }}>
 
-      {/* ── 3D Fullscreen Particle Wave Canvas (Direct Import) ───────────── */}
+      {/* ── 3D Fullscreen Particle Wave Canvas ───────────────────────────── */}
       <CinematicScene mouse={mouseRef} theme={theme} />
 
       {/* ── Top Right Theme Toggle Button ─────────────────────────────────── */}
@@ -201,12 +201,12 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
           position: 'fixed', top: 24, right: 24, zIndex: 60,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           width: 42, height: 42, borderRadius: '50%',
-          background: isDark ? 'rgba(28, 28, 36, 0.85)' : 'rgba(255, 255, 255, 0.9)',
+          background: isDark ? 'rgba(28, 28, 36, 0.75)' : 'rgba(255, 255, 255, 0.75)',
           boxShadow: isDark
             ? '0 8px 24px rgba(0,0,0,0.6), inset 0 1px rgba(255,255,255,0.3)'
-            : '0 8px 24px rgba(0,0,0,0.1), inset 0 1px rgba(255,255,255,1)',
+            : '0 8px 24px rgba(0,0,0,0.08), inset 0 1px rgba(255,255,255,1)',
           cursor: 'pointer',
-          border: isDark ? '1px solid rgba(255,255,255,0.3)' : '1px solid rgba(255,255,255,0.95)',
+          border: isDark ? '1px solid rgba(255,255,255,0.25)' : '1px solid rgba(255,255,255,0.9)',
           backdropFilter: 'blur(24px)',
           WebkitBackdropFilter: 'blur(24px)',
         }}
@@ -261,7 +261,7 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
             onMouseLeave={onCardLeave}
           >
 
-            {/* Authentic Apple VisionOS Liquid Glass Card Slab */}
+            {/* Authentic Apple VisionOS Liquid Glass Card Slab (Identical Glass Finish for Both Modes) */}
             <div style={{
               position: 'relative',
               width: 380,
@@ -272,22 +272,22 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              // Masterpiece Apple Liquid Glass Body Fill
+              // Translucent Frosted Glass Finish for BOTH Light & Dark Modes
               background: isDark
-                ? 'rgba(20, 20, 28, 0.76)'
-                : 'rgba(255, 255, 255, 0.82)',
-              backdropFilter: 'blur(40px) saturate(190%)',
-              WebkitBackdropFilter: 'blur(40px) saturate(190%)',
+                ? 'rgba(20, 20, 28, 0.72)'
+                : 'rgba(255, 255, 255, 0.48)',
+              backdropFilter: 'blur(30px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(30px) saturate(180%)',
               border: isDark
                 ? '1px solid rgba(255, 255, 255, 0.24)'
-                : '1px solid rgba(255, 255, 255, 0.95)',
+                : '1px solid rgba(255, 255, 255, 0.85)',
               boxShadow: isDark
                 ? `0 35px 80px rgba(0,0,0,0.8), 
                    inset 0 1px 1px rgba(255,255,255,0.45), 
                    inset 0 0 24px rgba(255,255,255,0.06)`
-                : `0 28px 70px rgba(0,0,0,0.08), 
+                : `0 28px 70px rgba(0,0,0,0.06), 
                    inset 0 1px 2px rgba(255,255,255,1), 
-                   inset 0 0 18px rgba(255,255,255,0.6)`,
+                   inset 0 0 18px rgba(255,255,255,0.5)`,
               overflow: 'hidden',
             }}>
 
@@ -300,7 +300,7 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
                 height: '40%',
                 background: isDark
                   ? 'linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 100%)'
-                  : 'linear-gradient(180deg, rgba(255,255,255,0.6) 0%, transparent 100%)',
+                  : 'linear-gradient(180deg, rgba(255,255,255,0.5) 0%, transparent 100%)',
                 pointerEvents: 'none',
               }} />
 
@@ -474,12 +474,12 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
                       fontFamily: 'inherit',
                       overflow: 'hidden',
                       opacity: loading ? 0.75 : 1,
-                      boxShadow: '0 4px 16px rgba(0,0,0,0.2), inset 0 1px rgba(255,255,255,1)',
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.15), inset 0 1px rgba(255,255,255,1)',
                       transition: 'all 250ms ease',
                     } as React.CSSProperties}
                     whileHover={loading ? {} : {
                       y: -2,
-                      boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.22)',
                     } as any}
                     whileTap={loading ? {} : { scale: 0.98 } as any}
                   >
@@ -508,8 +508,6 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
                 </div>
 
               </motion.form>
-
-
 
             </div>
           </motion.div>

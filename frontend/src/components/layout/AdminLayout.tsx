@@ -26,7 +26,7 @@ export const AdminLayout: React.FC = () => {
       <AdminSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
       <div className="flex flex-1 flex-col overflow-hidden">
         <AdminNavbar setSidebarOpen={setSidebarOpen} />
-        <main className="flex-1 overflow-y-auto px-6 py-8">
+        <main className="flex-1 overflow-y-auto px-6 pt-3 pb-8">
           <div className="mx-auto max-w-7xl">
             <Outlet />
           </div>
