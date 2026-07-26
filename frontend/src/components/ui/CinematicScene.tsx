@@ -21,9 +21,9 @@ function ParticleWave({ mouse, theme }: ParticleWaveProps) {
   const pointsRef = useRef<THREE.Points>(null!)
   const isDark = theme === 'dark'
 
-  // Grid Dimensions
-  const cols = 130
-  const rows = 85
+  // Grid Dimensions (Optimized for 60FPS Hardware Scroll Speed)
+  const cols = 80
+  const rows = 50
   const numParticles = cols * rows
 
   // Initial grid position generation

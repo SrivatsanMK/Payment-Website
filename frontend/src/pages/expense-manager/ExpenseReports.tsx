@@ -3,11 +3,13 @@ import { useAxios } from '../../hooks/useAxios';
 import { endpoints } from '../../services/api';
 import { useToast } from '../../components/ui/Toast';
 import { exportToExcel } from '../../utils/exportExcel';
+import { motion } from 'framer-motion';
 import { 
   Download, 
   Calendar, 
   BarChart3, 
   IndianRupee,
+  ArrowRight,
   PieChart as PieChartIcon
 } from 'lucide-react';
 import { 
@@ -110,6 +112,13 @@ export const ExpenseReports: React.FC = () => {
     }).format(val);
   };
 
+  const formatDateDisplay = (dateStr: string) => {
+    if (!dateStr) return null;
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
+
   const COLORS = ['#0ea5e9', '#8b5cf6', '#f59e0b', '#ef4444', '#10b981', '#6366f1', '#ec4899', '#14b8a6'];
 
   return (
@@ -137,44 +146,68 @@ export const ExpenseReports: React.FC = () => {
         </div>
       </div>
 
-      <Card className="p-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex flex-wrap gap-2">
-          {['monthly', '3months', '6months', 'yearly', 'custom'].map((r) => (
-            <button
-              key={r}
-              onClick={() => setRange(r)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                range === r 
-                  ? 'bg-primary-600 text-white shadow-sm' 
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-              }`}
-            >
-              {r === 'monthly' && 'This Month'}
-              {r === '3months' && 'Last 3 Months'}
-              {r === '6months' && 'Last 6 Months'}
-              {r === 'yearly' && 'This Year'}
-              {r === 'custom' && 'Custom Date'}
-            </button>
-          ))}
-        </div>
-        
-        {range === 'custom' && (
-          <div className="flex items-center gap-2">
-            <input
-              type="date"
-              value={customStart}
-              onChange={(e) => setCustomStart(e.target.value)}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-primary-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-            />
-            <span className="text-slate-500">to</span>
-            <input
-              type="date"
-              value={customEnd}
-              onChange={(e) => setCustomEnd(e.target.value)}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-primary-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-            />
+      {/* Liquid Glass Date Filter Bar */}
+      <Card className="p-3 sm:p-4 shadow-xl overflow-hidden">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Preset Buttons */}
+          <div className="flex flex-wrap items-center gap-2">
+            {[
+              { id: 'monthly', label: 'This Month' },
+              { id: '3months', label: 'Last 3 Months' },
+              { id: '6months', label: 'Last 6 Months' },
+              { id: 'yearly', label: 'This Year' },
+              { id: 'custom', label: 'Custom Date' }
+            ].map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setRange(item.id)}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 ${
+                  range === item.id 
+                    ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/30 border border-purple-400/30 scale-[1.02]' 
+                    : 'bg-slate-100/80 text-slate-700 hover:bg-slate-200 dark:bg-white/[0.06] dark:text-slate-300 dark:hover:bg-white/[0.12] border border-transparent'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
           </div>
-        )}
+          
+          {/* Custom Date From / To Inputs - Fits right in the empty space beside 'Custom Date' button! */}
+          {range === 'custom' && (
+            <motion.div 
+              initial={{ opacity: 0, x: -10, scale: 0.98 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              transition={{ duration: 0.2 }}
+              className="flex flex-wrap items-center gap-2.5 bg-purple-50/80 dark:bg-black/80 p-2 rounded-xl border border-purple-200 dark:border-purple-500/40 shadow-lg backdrop-blur-md max-w-full"
+            >
+              {/* FROM DATE */}
+              <div className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-white dark:bg-white/[0.08] border border-purple-200 dark:border-white/20 hover:border-purple-500 focus-within:border-purple-500 focus-within:ring-2 focus-within:ring-purple-500/30 transition-all flex-1 sm:flex-initial min-w-[170px]">
+                <Calendar className="h-4 w-4 text-purple-600 dark:text-purple-400 flex-shrink-0" />
+                <span className="text-[10px] font-black uppercase tracking-wider text-purple-700 dark:text-purple-300 flex-shrink-0">FROM</span>
+                <input
+                  type="date"
+                  value={customStart}
+                  onChange={(e) => setCustomStart(e.target.value)}
+                  className="glass-date-input text-xs w-full text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <ArrowRight className="h-4 w-4 text-purple-600 dark:text-purple-400 flex-shrink-0 hidden sm:block" />
+
+              {/* TO DATE */}
+              <div className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-white dark:bg-white/[0.08] border border-purple-200 dark:border-white/20 hover:border-purple-500 focus-within:border-purple-500 focus-within:ring-2 focus-within:ring-purple-500/30 transition-all flex-1 sm:flex-initial min-w-[170px]">
+                <Calendar className="h-4 w-4 text-purple-600 dark:text-purple-400 flex-shrink-0" />
+                <span className="text-[10px] font-black uppercase tracking-wider text-purple-700 dark:text-purple-300 flex-shrink-0">TO</span>
+                <input
+                  type="date"
+                  value={customEnd}
+                  onChange={(e) => setCustomEnd(e.target.value)}
+                  className="glass-date-input text-xs w-full text-slate-900 dark:text-white"
+                />
+              </div>
+            </motion.div>
+          )}
+        </div>
       </Card>
 
       {loading ? (

@@ -47,15 +47,24 @@ export const Navbar: React.FC<NavbarProps> = ({ setSidebarOpen }) => {
     if (!isCustomer || unreadCount === 0) return;
     setRefreshing(true);
     try {
-      const res = await api.put(endpoints.notifications.read);
-      if (res.data.success) {
-        setUnreadCount(0);
-        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-      }
+      setUnreadCount(0);
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      await api.put(endpoints.notifications.read);
     } catch (err) {
       console.error('Failed to mark notifications read:', err);
+      fetchNotifications();
     } finally {
       setRefreshing(false);
+    }
+  };
+
+  const markSingleRead = async (id: string) => {
+    try {
+      setNotifications(prev => prev.map(n => (n._id === id || n.id === id ? { ...n, isRead: true } : n)));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+      await api.put(`/notifications/${id}/read`);
+    } catch (err) {
+      console.error('Failed to mark notification read:', err);
     }
   };
 
@@ -121,52 +130,64 @@ export const Navbar: React.FC<NavbarProps> = ({ setSidebarOpen }) => {
                   onClick={() => setShowNotifications(false)}
                   className="fixed inset-0 z-40"
                 />
-                <div className="absolute right-0 top-full mt-3 w-80 z-50 rounded-3xl glass-card border border-slate-200 dark:border-white/20 shadow-2xl overflow-hidden flex flex-col">
+                <div className="absolute right-0 top-full mt-3 w-80 sm:w-96 glass-dropdown flex flex-col shadow-2xl">
                   {/* Dropdown Header */}
-                  <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-white/10">
-                    <span className="text-xs font-bold text-slate-900 dark:text-white">
-                      Notifications ({unreadCount})
+                  <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.02]">
+                    <span className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                      Notifications {unreadCount > 0 ? `(${unreadCount})` : ''}
                     </span>
-                    {unreadCount > 0 && (
+                    <div className="flex items-center gap-2">
                       <button
-                        onClick={markAllAsRead}
-                        disabled={refreshing}
-                        className="text-[11px] font-bold text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1 disabled:opacity-50"
+                        onClick={fetchNotifications}
+                        title="Refresh notifications"
+                        className="p-1.5 rounded-xl hover:bg-slate-200/60 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 transition-colors"
                       >
-                        {refreshing ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-                        Mark read
+                        <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
                       </button>
-                    )}
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={markAllAsRead}
+                          disabled={refreshing}
+                          className="text-[11px] font-bold text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1 disabled:opacity-50"
+                        >
+                          {refreshing ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                          Mark read
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Dropdown Body */}
-                  <div className="max-h-72 overflow-y-auto divide-y divide-slate-200 dark:divide-white/10">
+                  <div className="max-h-[380px] overflow-y-auto divide-y divide-slate-200 dark:divide-white/10">
                     {notifications.length === 0 ? (
-                      <div className="p-6 text-center text-xs text-slate-400">
+                      <div className="py-10 text-center text-xs text-slate-400 font-medium">
                         No notifications to show
                       </div>
                     ) : (
                       notifications.map((n) => (
                         <div 
-                          key={n._id} 
-                          className={`p-4 flex flex-col gap-1 transition-colors ${
+                          key={n._id || n.id} 
+                          onClick={() => markSingleRead(n._id || n.id)}
+                          className={`p-4 flex flex-col gap-1 transition-colors cursor-pointer hover:bg-slate-100/50 dark:hover:bg-white/[0.03] ${
                             n.isRead ? '' : 'bg-purple-500/10'
                           }`}
                         >
-                          <div className="flex justify-between items-start">
-                            <span className="text-xs font-bold text-slate-900 dark:text-white truncate w-4/5">
+                          <div className="flex justify-between items-start gap-2">
+                            <span className="text-xs font-bold text-slate-900 dark:text-white leading-snug">
                               {n.title}
                             </span>
                             {!n.isRead && (
-                              <span className="h-1.5 w-1.5 rounded-full bg-purple-500 mt-1" />
+                              <span className="h-2 w-2 rounded-full bg-purple-500 flex-shrink-0 mt-1" />
                             )}
                           </div>
                           <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
                             {n.message}
                           </p>
-                          <span className="text-[9px] text-slate-400 mt-1 font-medium">
-                            {new Date(n.createdAt).toLocaleDateString()} at {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </span>
+                          {n.createdAt && (
+                            <span className="text-[9px] text-slate-400 font-medium mt-0.5">
+                              {new Date(n.createdAt).toLocaleDateString('en-GB')} at {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          )}
                         </div>
                       ))
                     )}

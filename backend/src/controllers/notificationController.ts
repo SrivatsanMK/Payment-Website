@@ -3,7 +3,7 @@ import { AuthRequest } from '../types';
 import Notification from '../models/Notification';
 
 /**
- * Get Customer Notifications (Customer Only)
+ * Get Notifications (Admin sees all, Customer sees their own)
  */
 export const getCustomerNotifications = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -40,10 +40,22 @@ export const getCustomerNotifications = async (req: AuthRequest, res: Response, 
 };
 
 /**
- * Mark All Customer Notifications as Read (Customer Only)
+ * Mark All Notifications as Read (Admin updates all, Customer updates their own)
  */
 export const markNotificationsAsRead = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
+    const role = req.user?.role;
+    if (role && ['ADMIN_1', 'ADMIN_2'].includes(role)) {
+      await Notification.updateMany(
+        { isRead: false },
+        { $set: { isRead: true } }
+      );
+      return res.status(200).json({
+        success: true,
+        message: 'All admin notifications marked as read'
+      });
+    }
+
     await Notification.updateMany(
       { customer: req.user?.id, isRead: false },
       { $set: { isRead: true } }
@@ -51,7 +63,23 @@ export const markNotificationsAsRead = async (req: AuthRequest, res: Response, n
 
     res.status(200).json({
       success: true,
-      message: 'All notifications marked as read'
+      message: 'All customer notifications marked as read'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Mark Single Notification as Read
+ */
+export const markSingleNotificationAsRead = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    await Notification.findByIdAndUpdate(id, { $set: { isRead: true } });
+    res.status(200).json({
+      success: true,
+      message: 'Notification marked as read'
     });
   } catch (error) {
     next(error);

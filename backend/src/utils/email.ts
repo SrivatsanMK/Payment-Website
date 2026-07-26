@@ -9,7 +9,7 @@ interface EmailOptions {
 
 export const sendEmail = async ({ to, subject, html, attachments }: EmailOptions): Promise<boolean> => {
   const from = process.env.EMAIL_FROM || '"Dealer Payment System" <noreply@dealer.com>';
-  
+
   try {
     await transporter.sendMail({
       from,
@@ -49,7 +49,7 @@ export const sendOTPEmail = async (email: string, name: string, otp: string): Pr
       </p>
     </div>
   `;
-  
+
   return sendEmail({
     to: email,
     subject: 'Your Password Reset OTP - Dealer Payments',
@@ -61,10 +61,10 @@ export const sendOTPEmail = async (email: string, name: string, otp: string): Pr
  * Sends a new invoice creation email notification.
  */
 export const sendInvoiceEmail = async (
-  email: string, 
-  name: string, 
-  invoiceNumber: string, 
-  amount: number, 
+  email: string,
+  name: string,
+  invoiceNumber: string,
+  amount: number,
   dueDate: string,
   products: any[] = [],
   subtotal: number = 0,
@@ -73,7 +73,7 @@ export const sendInvoiceEmail = async (
 ): Promise<boolean> => {
   const cgst = gstRate / 2;
   const sgst = gstRate / 2;
-  
+
   let productsHtml = '';
   if (products && products.length > 0) {
     productsHtml = `
@@ -157,11 +157,11 @@ export const sendInvoiceEmail = async (
       <p>Please log in to your account dashboard to view the complete details and complete the payment using UPI, QR Code, or other options.</p>
       
       <div style="text-align: center; margin-top: 30px;">
-        <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/login" style="background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; display: inline-block;">Log in & Pay Now</a>
+        <a href="${process.env.FRONTEND_URL || 'http://13.203.232.36/login'}/login" style="background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; display: inline-block;">Log in & Pay Now</a>
       </div>
     </div>
   `;
-  
+
   return sendEmail({
     to: email,
     subject: `Invoice ${invoiceNumber} Created - Dealer Payments`,
@@ -210,7 +210,7 @@ export const sendPaymentConfirmationEmail = async (
       <p>All records have been updated in your dashboard. If you have any questions, please contact our support team.</p>
     </div>
   `;
-  
+
   return sendEmail({
     to: email,
     subject: `Payment Receipt for ${invoiceNumber} - Dealer Payments`,
@@ -246,7 +246,7 @@ export const sendInvoiceUpdateEmail = async (
       </div>
     </div>
   `;
-  
+
   return sendEmail({
     to: email,
     subject: `Update on Invoice ${invoiceNumber} - Dealer Payments`,
@@ -294,7 +294,7 @@ export const sendPaymentAttemptAlertEmail = async (
       </table>
     </div>
   `;
-  
+
   return sendEmail({
     to: adminEmail,
     subject: `⚠️ Payment Alert: ₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })} initiated by ${customerName}`,
@@ -335,7 +335,7 @@ export const sendPaymentConfirmationWithPdfEmail = async (
       ${adminPhone}</p>
     </div>
   `;
-  
+
   return sendEmail({
     to: email,
     subject: `Payment Confirmation & Invoice Attached - ${invoiceNumber}`,

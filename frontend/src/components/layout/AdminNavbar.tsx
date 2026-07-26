@@ -61,10 +61,26 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ setSidebarOpen }) => {
 
   const markAllRead = async () => {
     try {
-      await api.put(endpoints.notifications.read);
+      setRefreshing(true);
       setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
-    } catch {}
+      await api.put(endpoints.notifications.read);
+    } catch (err) {
+      console.error('Failed to mark all notifications as read:', err);
+      fetchNotifications();
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const markSingleRead = async (id: string) => {
+    try {
+      setNotifications((prev) => prev.map((n) => ((n._id === id || n.id === id) ? { ...n, isRead: true } : n)));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+      await api.put(`/notifications/${id}/read`);
+    } catch (err) {
+      console.error('Failed to mark notification as read:', err);
+    }
   };
 
   return (
@@ -122,36 +138,74 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ setSidebarOpen }) => {
           </motion.button>
 
           {showNotifications && (
-            <div className="absolute right-0 top-full mt-3 w-80 rounded-3xl glass-card border border-slate-200 dark:border-white/20 shadow-2xl z-50 overflow-hidden">
-              <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 px-5 py-4">
-                <span className="text-sm font-bold text-slate-900 dark:text-white">Notifications</span>
-                <div className="flex items-center gap-2">
-                  <button onClick={fetchNotifications} className="p-1.5 rounded-xl hover:bg-slate-200/60 dark:hover:bg-white/10 transition-colors">
-                    <RefreshCw className={`h-4 w-4 text-slate-600 dark:text-slate-300 ${refreshing ? 'animate-spin' : ''}`} />
-                  </button>
-                  {unreadCount > 0 && (
-                    <button onClick={markAllRead} className="flex items-center gap-1 text-[11px] font-bold text-purple-600 dark:text-purple-400 hover:underline">
-                      <Check className="h-3.5 w-3.5" /> Mark all read
+            <>
+              {/* Invisible backdrop to dismiss notifications when clicking outside */}
+              <div
+                onClick={() => setShowNotifications(false)}
+                className="fixed inset-0 z-40"
+              />
+              <div className="absolute right-0 top-full mt-3 w-80 sm:w-96 glass-dropdown flex flex-col shadow-2xl">
+                {/* Header */}
+                <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 px-5 py-4 bg-slate-50/50 dark:bg-white/[0.02]">
+                  <span className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                    Notifications {unreadCount > 0 ? `(${unreadCount})` : ''}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={fetchNotifications}
+                      title="Refresh notifications"
+                      className="p-1.5 rounded-xl hover:bg-slate-200/60 dark:hover:bg-white/10 text-slate-600 dark:text-slate-300 transition-colors"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
                     </button>
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={markAllRead}
+                        className="flex items-center gap-1 text-[11px] font-bold text-purple-600 dark:text-purple-400 hover:underline"
+                      >
+                        <Check className="h-3.5 w-3.5" /> Mark all read
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Notification List */}
+                <div className="max-h-[380px] overflow-y-auto divide-y divide-slate-200 dark:divide-white/10">
+                  {notifications.length === 0 ? (
+                    <div className="py-10 text-center text-xs text-slate-400 font-medium">
+                      No notifications yet
+                    </div>
+                  ) : (
+                    notifications.map((n: any) => (
+                      <div
+                        key={n._id || n.id}
+                        onClick={() => markSingleRead(n._id || n.id)}
+                        className={`p-4 flex flex-col gap-1 transition-colors cursor-pointer hover:bg-slate-100/50 dark:hover:bg-white/[0.03] ${
+                          !n.isRead ? 'bg-purple-500/10' : ''
+                        }`}
+                      >
+                        <div className="flex justify-between items-start gap-2">
+                          <span className="text-xs font-bold text-slate-900 dark:text-white leading-snug">
+                            {n.title}
+                          </span>
+                          {!n.isRead && (
+                            <span className="h-2 w-2 rounded-full bg-purple-500 flex-shrink-0 mt-1" />
+                          )}
+                        </div>
+                        <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                          {n.message}
+                        </p>
+                        {n.createdAt && (
+                          <span className="text-[9px] text-slate-400 font-medium mt-0.5">
+                            {new Date(n.createdAt).toLocaleDateString('en-GB')} at {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        )}
+                      </div>
+                    ))
                   )}
                 </div>
               </div>
-              <div className="max-h-64 overflow-y-auto divide-y divide-slate-200 dark:divide-white/10">
-                {notifications.length === 0 ? (
-                  <div className="py-8 text-center text-sm text-slate-400">No notifications</div>
-                ) : (
-                  notifications.slice(0, 10).map((n: any) => (
-                    <div
-                      key={n._id}
-                      className={`px-5 py-3.5 text-sm ${!n.isRead ? 'bg-purple-500/10' : ''}`}
-                    >
-                      <p className="font-bold text-slate-900 dark:text-white">{n.title}</p>
-                      <p className="mt-0.5 text-xs text-slate-600 dark:text-slate-300 font-medium">{n.message}</p>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
+            </>
           )}
         </div>
 

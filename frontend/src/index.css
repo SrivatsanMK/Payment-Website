@@ -28,6 +28,21 @@
   body {
     @apply antialiased selection:bg-primary-500 selection:text-white;
   }
+
+  /* High Performance Hardware Scroll Acceleration */
+  main {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: auto !important;
+    will-change: scroll-position;
+    transform: translateZ(0);
+  }
+
+  .glass-card,
+  .glass-panel,
+  .glass-input {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -100,6 +115,26 @@ html:not(.dark) .glass-panel {
   color: #0f172a;
 }
 
+/* Liquid Glass Dropdowns (Notification & Popover Menus) */
+.glass-dropdown {
+  position: absolute !important;
+  background: rgba(18, 18, 26, 0.95);
+  backdrop-filter: blur(32px) saturate(200%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), inset 0 1px 1px rgba(255, 255, 255, 0.4);
+  overflow: hidden;
+  z-index: 50 !important;
+}
+
+html:not(.dark) .glass-dropdown {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.15), inset 0 1px 2px rgba(255, 255, 255, 1);
+  color: #0f172a;
+}
+
 /* Liquid Glass Inputs */
 .glass-input {
   background: rgba(0, 0, 0, 0.52) !important;
@@ -121,6 +156,51 @@ html:not(.dark) .glass-input {
   border-color: rgba(139, 92, 246, 0.6) !important;
   box-shadow: 0 0 18px rgba(139, 92, 246, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.25) !important;
   outline: none;
+}
+
+/* Calendar Picker Indicator Styling for Date Inputs */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: invert(75%) sepia(80%) saturate(1000%) hue-rotate(220deg);
+  opacity: 0.95;
+  transition: all 200ms ease;
+  margin-left: 4px;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+html:not(.dark) input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(30%) sepia(80%) saturate(800%) hue-rotate(220deg);
+}
+
+/* Sleek Date Input Styling */
+.glass-date-input {
+  color-scheme: dark;
+  background: transparent !important;
+  color: #ffffff !important;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  border: none !important;
+  outline: none !important;
+  padding: 0 !important;
+  cursor: pointer;
+}
+
+html:not(.dark) .glass-date-input {
+  color-scheme: light;
+  color: #0f172a !important;
+}
+
+.color-scheme-dark {
+  color-scheme: dark !important;
+}
+
+html:not(.dark) .color-scheme-dark {
+  color-scheme: light !important;
 }
 
 /* Liquid Glass Buttons */

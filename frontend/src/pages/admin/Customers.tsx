@@ -421,13 +421,6 @@ export const Customers: React.FC = () => {
                         <Eye className="h-4 w-4" />
                       </button>
                       <button
-                        onClick={() => openQuickInvoiceModal(c)}
-                        className="p-1.5 text-slate-500 hover:text-primary-650 dark:hover:text-primary-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-                        title="Log Purchase Invoice"
-                      >
-                        <Receipt className="h-4 w-4" />
-                      </button>
-                      <button
                         onClick={() => openEditModal(c)}
                         className="p-1.5 text-slate-500 hover:text-indigo-650 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                         title="Edit Info"

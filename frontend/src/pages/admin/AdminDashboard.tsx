@@ -109,20 +109,20 @@ export const AdminDashboard: React.FC = () => {
       <div className="space-y-5">
         {/* Top Highlighted Revenue Card */}
         <div className="w-full lg:w-1/2">
-          <Card hoverable className="relative overflow-hidden bg-gradient-to-br from-purple-900 via-indigo-900 to-purple-950 text-white border border-purple-500/40 flex flex-col justify-between h-40 py-6 px-7 shadow-2xl shadow-purple-900/25">
+          <Card hoverable className="relative overflow-hidden glass-card border-l-4 border-purple-500 flex flex-col justify-between h-40 py-6 px-7 shadow-xl">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-purple-200">
+              <span className="text-xs font-bold uppercase tracking-wider text-purple-700 dark:text-purple-300">
                 Total Packing Revenue
               </span>
-              <div className="p-2.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20">
-                <TrendingUp className="h-6 w-6 text-purple-300" />
+              <div className="p-2.5 rounded-2xl bg-purple-500/10 dark:bg-white/10 backdrop-blur-md border border-purple-500/20 dark:border-white/20">
+                <TrendingUp className="h-6 w-6 text-purple-600 dark:text-purple-400" />
               </div>
             </div>
             <div className="mt-3">
-              <span className="text-4xl font-black text-white tracking-tight">
+              <span className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">
                 ₹{(stats?.totalSales || 0).toLocaleString('en-IN')}
               </span>
-              <p className="text-xs text-purple-200 mt-1 font-medium">
+              <p className="text-xs text-purple-700 dark:text-purple-300/90 mt-1 font-medium">
                 Cumulative invoice volume
               </p>
             </div>
