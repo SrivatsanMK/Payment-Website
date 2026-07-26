@@ -3,13 +3,13 @@ import { useAxios } from '../../hooks/useAxios';
 import { endpoints } from '../../services/api';
 import { useToast } from '../../components/ui/Toast';
 import { useSocket } from '../../context/SocketContext';
-import { 
-  Search, 
-  FilePlus, 
-  Trash2, 
-  Edit2, 
-  Printer, 
-  Plus, 
+import {
+  Search,
+  FilePlus,
+  Trash2,
+  Edit2,
+  Printer,
+  Plus,
   Minus,
   Mail,
   ChevronLeft,
@@ -29,6 +29,7 @@ import Badge from '../../components/ui/Badge';
 import Spinner from '../../components/ui/Spinner';
 import { generateInvoicePdf } from '../../utils/pdfGenerator';
 import { numberToWords } from '../../utils/numberToWords';
+import { DEFAULT_INVOICE_LOGO } from '../../utils/logoAsset';
 
 
 const flowerOptions: Record<string, string[]> = {
@@ -64,7 +65,7 @@ export const Invoices: React.FC = () => {
   // Form states (Create)
   const [selectedCustId, setSelectedCustId] = useState('');
   const [qrCodeFile, setQrCodeFile] = useState<File | null>(null);
-const [discount, setDiscount] = useState<number | string>(0);
+  const [discount, setDiscount] = useState<number | string>(0);
   const [cgst, setCgst] = useState<number | string>(9); // Support empty
   const [sgst, setSgst] = useState<number | string>(9); // Support empty
   const [productsList, setProductsList] = useState<{ productName: string; productColor: string; weightValue: string; weightUnit: string; quantity: string; price: string }[]>([
@@ -149,7 +150,7 @@ const [discount, setDiscount] = useState<number | string>(0);
   };
 
   // Products List functions
-const addProductRow = () => {
+  const addProductRow = () => {
     setProductsList([...productsList, { productName: '', productColor: '', weightValue: '100', weightUnit: 'grams', quantity: '', price: '' }]);
   };
 
@@ -168,7 +169,7 @@ const addProductRow = () => {
   };
 
   // Running calculations
-const calculateTotal = () => {
+  const calculateTotal = () => {
     let subtotal = 0;
     productsList.forEach(p => {
       subtotal += (parseFloat(p.price) || 0) * (parseInt(p.quantity) || 0);
@@ -176,7 +177,7 @@ const calculateTotal = () => {
     const discountVal = parseFloat(discount as string) || 0;
     const cgstVal = parseFloat(cgst as string) || 0;
     const sgstVal = parseFloat(sgst as string) || 0;
-    
+
     const afterDiscount = Math.max(0, subtotal - discountVal);
     const gstRate = cgstVal + sgstVal;
     const gstValue = afterDiscount * (gstRate / 100);
@@ -184,7 +185,7 @@ const calculateTotal = () => {
     return { subtotal, grand, discountVal, cgstVal, sgstVal };
   };
 
-const openCreateModal = () => {
+  const openCreateModal = () => {
     setSelectedCustId(customers[0]?._id || '');
     setDiscount(0);
     setCgst(9);
@@ -195,13 +196,13 @@ const openCreateModal = () => {
   };
 
   // Submit Create Invoice
-const handleCreateSubmit = async (e: React.FormEvent) => {
+  const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCustId) {
       showToast('Please Select a customer', 'error');
       return;
     }
-    
+
     // Check if empty rows exist
     const emptyRow = productsList.some(p => !p.productName || !p.productColor || !p.quantity || !p.weightValue || !p.price);
     if (emptyRow) {
@@ -307,18 +308,18 @@ const handleCreateSubmit = async (e: React.FormEvent) => {
 
   const handleMarkPaid = async (invoice: any) => {
     if (!window.confirm(`Mark invoice ${invoice.invoiceNumber} as fully paid and email customer?`)) return;
-    
+
     setIsMarkingPaid(invoice._id);
     try {
       const settingsRes = await api.get('/settings');
       const settings = settingsRes.data.settings || {};
       const doc = await generateInvoicePdf(invoice, settings);
       const base64Pdf = doc.output('datauristring');
-      
+
       const res = await api.put(endpoints.invoices.markPaid(invoice._id), {
         invoicePdf: base64Pdf
       });
-      
+
       if (res.data.success) {
         showToast(`Invoice ${invoice.invoiceNumber} marked as paid and emailed`, 'success');
         fetchInvoices();
@@ -557,7 +558,7 @@ const handleCreateSubmit = async (e: React.FormEvent) => {
             </select>
           </div>
 
-{/* Products Builder Section */}
+          {/* Products Builder Section */}
           <div className="border border-slate-100 dark:border-slate-800 p-4 rounded-xl space-y-4 bg-slate-50/50 dark:bg-slate-900/10">
             <div className="flex justify-between items-center">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Products & Scope Items</span>
@@ -573,40 +574,40 @@ const handleCreateSubmit = async (e: React.FormEvent) => {
                   {/* Top row: Item Name, Color */}
                   <div className="flex flex-col sm:flex-row gap-3 items-start">
                     <div className="flex-1 w-full">
-                       <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
-                         Item Name
-                       </label>
-                       <select
-                         value={prod.productName}
-                         onChange={(e) => handleProductChange(idx, 'productName', e.target.value)}
-                         className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none"
-                         required
-                       >
-                         <option value="" disabled>Select Item</option>
-                         {Object.keys(flowerOptions).map(flower => (
-                           <option key={flower} value={flower}>{flower}</option>
-                         ))}
-                       </select>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                        Item Name
+                      </label>
+                      <select
+                        value={prod.productName}
+                        onChange={(e) => handleProductChange(idx, 'productName', e.target.value)}
+                        className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none"
+                        required
+                      >
+                        <option value="" disabled>Select Item</option>
+                        {Object.keys(flowerOptions).map(flower => (
+                          <option key={flower} value={flower}>{flower}</option>
+                        ))}
+                      </select>
                     </div>
                     <div className="flex-1 w-full">
-                       <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
-                         Item Color
-                       </label>
-                       <select
-                         value={prod.productColor}
-                         onChange={(e) => handleProductChange(idx, 'productColor', e.target.value)}
-                         className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none"
-                         required
-                         disabled={!prod.productName}
-                       >
-                         <option value="" disabled>Select Color</option>
-                         {(flowerOptions[prod.productName] || []).map(color => (
-                           <option key={color} value={color}>{color}</option>
-                         ))}
-                       </select>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                        Item Color
+                      </label>
+                      <select
+                        value={prod.productColor}
+                        onChange={(e) => handleProductChange(idx, 'productColor', e.target.value)}
+                        className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none"
+                        required
+                        disabled={!prod.productName}
+                      >
+                        <option value="" disabled>Select Color</option>
+                        {(flowerOptions[prod.productName] || []).map(color => (
+                          <option key={color} value={color}>{color}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
-                  
+
                   {/* Bottom row: Packets Number, Quantity Per Packet, Price, Remove */}
                   <div className="flex flex-col sm:flex-row gap-3 items-end">
                     <div className="w-full sm:w-28">
@@ -674,8 +675,8 @@ const handleCreateSubmit = async (e: React.FormEvent) => {
             </div>
           </div>
 
-{/* Taxes & Summaries */}
-<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Taxes & Summaries */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Input
               label="Flat Discount (₹)"
               type="number"
@@ -712,8 +713,8 @@ const handleCreateSubmit = async (e: React.FormEvent) => {
             <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
               Upload QR Code (Optional)
             </label>
-            <input 
-              type="file" 
+            <input
+              type="file"
               accept="image/*"
               onChange={(e) => setQrCodeFile(e.target.files?.[0] || null)}
               className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
@@ -810,15 +811,15 @@ const handleCreateSubmit = async (e: React.FormEvent) => {
           <div className="space-y-6 print-card bg-white text-slate-900 p-6 rounded-2xl border border-slate-200">
             {/* Printable Container */}
             <div id="printable-tax-invoice" className="space-y-4 text-slate-900 bg-white">
-              
+
               {/* Header: Logo & Title */}
               <div className="flex justify-between items-start">
                 <div className="flex items-center gap-3">
-                  <img src="/invoice-logo.png" alt="Green Glide Logistics" className="h-14 object-contain" />
+                  <img src={DEFAULT_INVOICE_LOGO} alt="Green Glide Logistics" className="h-32 sm:h-40 w-auto object-contain drop-shadow-sm" />
                 </div>
                 <div className="text-right">
                   <h2 className="text-2xl font-black text-[#002D62] tracking-wider uppercase">TAX INVOICE</h2>
-                  
+
                   {/* Meta Table Box */}
                   <div className="mt-2 border border-slate-300 text-xs rounded overflow-hidden w-64 ml-auto">
                     <div className="flex justify-between border-b border-slate-200 px-3 py-1 bg-slate-50">

@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import { numberToWords } from './numberToWords';
+import { DEFAULT_INVOICE_LOGO } from './logoAsset';
 
 /**
  * Loads an image asset from public directory as Base64 Data URL for jsPDF
@@ -52,7 +53,10 @@ export const generateInvoicePdf = async (invoice: any, settings: any = {}): Prom
   const pageWidth = 210;
 
   // Load logo and signature images
-  const logoBase64 = await getImageBase64('/invoice-logo.png');
+  let logoBase64 = await getImageBase64('/invoice-logo.png');
+  if (!logoBase64 || !logoBase64.startsWith('data:image')) {
+    logoBase64 = DEFAULT_INVOICE_LOGO;
+  }
   const signatureBase64 = await getImageBase64('/signature.png');
 
   // Colors matching official reference image
@@ -71,31 +75,31 @@ export const generateInvoicePdf = async (invoice: any, settings: any = {}): Prom
   // Company Logo (Top Left)
   if (logoBase64) {
     try {
-      doc.addImage(logoBase64, 'PNG', 10, 8, 62, 20);
+      doc.addImage(logoBase64, 'PNG', 10, 4, 54, 36);
     } catch (e) {
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(16);
+      doc.setFontSize(18);
       doc.setTextColor(...greenAccent);
       doc.text("GREEN GLIDE LOGISTICS", 10, 18);
     }
   } else {
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(16);
+    doc.setFontSize(18);
     doc.setTextColor(...greenAccent);
     doc.text("GREEN GLIDE LOGISTICS", 10, 18);
   }
 
   // Document Title (Top Right)
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(20);
+  doc.setFontSize(22);
   doc.setTextColor(...navyColor);
-  doc.text("TAX INVOICE", 200, 17, { align: "right" });
+  doc.text("TAX INVOICE", 200, 13, { align: "right" });
 
   // Meta Table Box (Top Right under title)
   const metaBoxX = 132;
-  const metaBoxY = 21;
+  const metaBoxY = 16;
   const metaBoxW = 68;
-  const metaBoxH = 26;
+  const metaBoxH = 25;
 
   doc.setDrawColor(...borderColor);
   doc.setLineWidth(0.3);
@@ -131,7 +135,7 @@ export const generateInvoicePdf = async (invoice: any, settings: any = {}): Prom
   // ═══════════════════════════════════════════════════════════
   // 2. COMPANY CONTACT STRIP
   // ═══════════════════════════════════════════════════════════
-  const contactY = 51;
+  const contactY = 47;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.5);
   doc.setTextColor(...slateColor);
@@ -145,7 +149,7 @@ export const generateInvoicePdf = async (invoice: any, settings: any = {}): Prom
   // ═══════════════════════════════════════════════════════════
   // 3. BILL TO / SHIP TO / TRANSPORT CARDS
   // ═══════════════════════════════════════════════════════════
-  const cardY = 57;
+  const cardY = 54;
   const cardH = 32;
   const customer = invoice.customer || {};
 
