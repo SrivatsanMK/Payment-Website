@@ -1,0 +1,206 @@
+import React, { useRef, useMemo, memo } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
+import { useTheme } from '../../../context/ThemeContext';
+
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+// ─── 3D Sweeping Dot Matrix Wave ──────────────────────────────────────────────
+
+interface DotMatrixWaveProps {
+  isDark: boolean;
+}
+
+function DotMatrixWave({ isDark }: DotMatrixWaveProps) {
+  const pointsRef = useRef<THREE.Points>(null!);
+  const geometryRef = useRef<THREE.BufferGeometry>(null!);
+
+  // Grid Dimensions (Optimized for 60FPS)
+  const cols = 85;
+  const rows = 55;
+  const numParticles = cols * rows;
+
+  // Initial grid coordinates
+  const { positions, baseCoords } = useMemo(() => {
+    const pos = new Float32Array(numParticles * 3);
+    const base = new Float32Array(numParticles * 2);
+
+    let idx = 0;
+    let bIdx = 0;
+    const xSpan = 85;
+    const zSpan = 55;
+
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const u = c / (cols - 1);
+        const v = r / (rows - 1);
+
+        const x = (u - 0.5) * xSpan;
+        const z = (v - 0.5) * zSpan - 4;
+        const y = 0;
+
+        pos[idx] = x;
+        pos[idx + 1] = y;
+        pos[idx + 2] = z;
+
+        base[bIdx] = x;
+        base[bIdx + 1] = z;
+
+        idx += 3;
+        bIdx += 2;
+      }
+    }
+
+    return { positions: pos, baseCoords: base };
+  }, [numParticles, cols, rows]);
+
+  // Particle Colors (Theme-aware: White/Silver for Dark mode, Slate/Charcoal for Light mode)
+  const colors = useMemo(() => {
+    const colArray = new Float32Array(numParticles * 3);
+    const colorObj = new THREE.Color();
+
+    for (let i = 0; i < numParticles; i++) {
+      const rand = Math.random();
+
+      if (isDark) {
+        // Dark Mode: Crisp White & Silver on Pure Black
+        if (rand > 0.75) {
+          colorObj.set('#ffffff');
+        } else if (rand > 0.35) {
+          colorObj.set('#cbd5e1');
+        } else {
+          colorObj.set('#94a3b8');
+        }
+      } else {
+        // Light Mode: High Contrast Dark Slate on Light Soft Gradient
+        if (rand > 0.75) {
+          colorObj.set('#020617');
+        } else if (rand > 0.35) {
+          colorObj.set('#0f172a');
+        } else {
+          colorObj.set('#1e293b');
+        }
+      }
+
+      colArray[i * 3] = colorObj.r;
+      colArray[i * 3 + 1] = colorObj.g;
+      colArray[i * 3 + 2] = colorObj.b;
+    }
+
+    return colArray;
+  }, [numParticles, isDark]);
+
+  // Wave Physics Animation Loop
+  useFrame(({ clock }) => {
+    if (!geometryRef.current) return;
+
+    const t = clock.getElapsedTime() * 0.75;
+    const posAttr = geometryRef.current.attributes.position as THREE.BufferAttribute;
+    const posArray = posAttr.array as Float32Array;
+
+    for (let i = 0; i < numParticles; i++) {
+      const x = baseCoords[i * 2];
+      const z = baseCoords[i * 2 + 1];
+
+      let y = Math.sin(x * 0.18 + z * 0.15 + t * 1.1) * 3.2;
+      y += Math.cos(x * 0.1 - z * 0.2 + t * 0.8) * 2.2;
+      y += Math.sin((x + z) * 0.06 + t * 0.5) * 1.5;
+
+      posArray[i * 3 + 1] = y;
+    }
+
+    posAttr.needsUpdate = true;
+  });
+
+  return (
+    <points ref={pointsRef}>
+      <bufferGeometry ref={geometryRef}>
+        <bufferAttribute
+          attach="attributes-position"
+          args={[positions, 3]}
+        />
+        <bufferAttribute
+          attach="attributes-color"
+          args={[colors, 3]}
+        />
+      </bufferGeometry>
+      <pointsMaterial
+        size={isDark ? 0.085 : 0.095}
+        vertexColors
+        transparent
+        opacity={isDark ? 0.9 : 0.95}
+        sizeAttenuation
+        depthWrite={false}
+        blending={isDark ? THREE.AdditiveBlending : THREE.NormalBlending}
+      />
+    </points>
+  );
+}
+
+// ─── Camera Rig ─────────────────────────────────────────────────────────────
+
+function CameraRig() {
+  useFrame(({ camera }) => {
+    camera.position.x = lerp(camera.position.x, 0, 0.035);
+    camera.position.y = lerp(camera.position.y, 12.0, 0.035);
+    camera.lookAt(0, -1, -2);
+  });
+
+  return null;
+}
+
+// ─── Main Export ParticleScene Component ─────────────────────────────────────
+
+export const ParticleScene: React.FC = memo(() => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  const bgColor = isDark ? '#000000' : '#F8FAFC';
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100dvh',
+        minHeight: '100vh',
+        zIndex: 0,
+        overflow: 'hidden',
+        pointerEvents: 'none',
+      }}
+    >
+      {/* Light Mode soft background gradient */}
+      {!isDark && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'radial-gradient(circle at 50% 40%, #F8FAFC 0%, #E2E8F0 100%)',
+            pointerEvents: 'none',
+          }}
+        />
+      )}
+
+      <Canvas
+        camera={{ position: [0, 12, 19], fov: 50, near: 0.1, far: 140 }}
+        gl={{ antialias: true, powerPreference: 'high-performance', alpha: false }}
+        dpr={[1, Math.min(typeof devicePixelRatio !== 'undefined' ? devicePixelRatio : 2, 2)]}
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+      >
+        <color attach="background" args={[bgColor]} />
+        <fog attach="fog" args={[bgColor, isDark ? 12 : 28, isDark ? 50 : 90]} />
+
+        <ambientLight intensity={isDark ? 0.5 : 1.0} />
+        <directionalLight position={[10, 20, 15]} intensity={isDark ? 0.9 : 1.4} />
+
+        <DotMatrixWave isDark={isDark} />
+        <CameraRig />
+      </Canvas>
+    </div>
+  );
+});
+
+ParticleScene.displayName = 'ParticleScene';
+
+export default ParticleScene;

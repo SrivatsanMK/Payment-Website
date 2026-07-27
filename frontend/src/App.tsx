@@ -84,6 +84,7 @@ export const App: React.FC = () => {
 
                   {/* ── ADMIN PUBLIC ROUTES ─────────────────────────────────── */}
                   <Route path="/admin/login" element={<AdminLogin />} />
+                  <Route path="/admin/forgot-password" element={<ForgotPassword forcedRole="Admin" />} />
 
                   {/* Admin 1 profile selection — outside AdminLayout (no sidebar) */}
                   <Route

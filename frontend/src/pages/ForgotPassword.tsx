@@ -2,20 +2,28 @@ import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useToast } from '../components/ui/Toast';
-import { Mail, ArrowLeft } from 'lucide-react';
+import { Mail, ArrowLeft, Sun, Moon } from 'lucide-react';
 import Button from '../components/ui/Button';
+import { useTheme } from '../context/ThemeContext';
 
 import { API_URL } from '../utils/config';
+import ParticleScene from '../components/ui/particles/ParticleScene';
 
-export const ForgotPassword: React.FC = () => {
+interface ForgotPasswordProps {
+  forcedRole?: 'Customer' | 'Admin';
+}
+
+export const ForgotPassword: React.FC<ForgotPasswordProps> = ({ forcedRole }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { showToast } = useToast();
+  const { theme, toggleTheme } = useTheme();
+  const isDark = theme === 'dark';
+
+  const isAdminPage = forcedRole === 'Admin' || location.pathname.startsWith('/admin');
+  const role: 'Customer' | 'Admin' = forcedRole || (isAdminPage ? 'Admin' : (location.state as any)?.role || 'Customer');
 
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<'Customer' | 'Admin'>(() => {
-    return (location.state as any)?.role || 'Customer';
-  });
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,64 +47,61 @@ export const ForgotPassword: React.FC = () => {
     }
   };
 
+  const loginLink = isAdminPage ? '/admin/login' : '/login';
+  const loginText = isAdminPage ? 'Back to Admin Login' : 'Back to Customer Login';
+  const pageTitle = isAdminPage ? 'Admin Forgot Password' : 'Forgot Password';
+
   return (
-    <div className="flex min-h-screen w-screen items-center justify-center bg-slate-50 dark:bg-slate-950 px-4">
-      <div className="w-full max-w-md bg-white dark:bg-slate-850 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800/80 p-8">
+    <div className="relative flex min-h-screen w-screen items-center justify-center bg-slate-50 dark:bg-slate-950 px-4 overflow-hidden">
+      {/* 3D Particle Wave Background */}
+      <ParticleScene />
+
+      {/* Top Right Theme Toggle */}
+      <div className="absolute top-6 right-6 z-20">
+        <button
+          onClick={toggleTheme}
+          className="p-2.5 rounded-full bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:scale-105 active:scale-95 shadow-lg transition-all"
+          title="Toggle theme"
+        >
+          {isDark ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-slate-600" />}
+        </button>
+      </div>
+
+      {/* Liquid Glass Card Container */}
+      <div className="relative z-10 w-full max-w-md bg-white/80 dark:bg-slate-900/50 backdrop-blur-2xl rounded-3xl shadow-2xl shadow-slate-300/40 dark:shadow-black/60 border border-slate-200/80 dark:border-white/10 p-8 overflow-hidden transition-all">
+        {/* Top inner specular sheen highlight */}
+        <div
+          className="absolute top-0 left-0 right-0 h-28 pointer-events-none"
+          style={{
+            background: isDark
+              ? 'linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 100%)'
+              : 'linear-gradient(180deg, rgba(255,255,255,0.6) 0%, transparent 100%)',
+          }}
+        />
         
         {/* Back Link */}
         <Link 
-          to="/login" 
-          className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 mb-6 transition-colors"
+          to={loginLink} 
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 mb-6 transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          Back to Login
+          {loginText}
         </Link>
 
         {/* Title */}
         <div className="mb-6">
-          <h2 className="text-xl font-bold text-slate-800 dark:text-slate-150">
-            Forgot Password
+          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+            {pageTitle}
           </h2>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
             We will send a 6-digit OTP code to verify your identity.
           </p>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Role selector representation */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
-              Confirm Account Type
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setRole('Customer')}
-                className={`py-2 text-xs font-semibold rounded-lg border transition-all ${
-                  role === 'Customer'
-                    ? 'border-primary-500 bg-primary-500/5 text-primary-600 dark:text-primary-400'
-                    : 'border-slate-200 dark:border-slate-800 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50'
-                }`}
-              >
-                Customer
-              </button>
-              <button
-                type="button"
-                onClick={() => setRole('Admin')}
-                className={`py-2 text-xs font-semibold rounded-lg border transition-all ${
-                  role === 'Admin'
-                    ? 'border-primary-500 bg-primary-500/5 text-primary-600 dark:text-primary-400'
-                    : 'border-slate-200 dark:border-slate-800 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50'
-                }`}
-              >
-                Admin
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-400 mb-1.5">
               Registered Email Address
             </label>
             <div className="relative">
@@ -108,7 +113,7 @@ export const ForgotPassword: React.FC = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="w-full pl-10 pr-4 py-2 text-sm rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
+                className="w-full pl-10 pr-4 py-2.5 text-sm rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
                 required
               />
             </div>
