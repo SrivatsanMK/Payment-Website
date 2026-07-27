@@ -8,6 +8,7 @@ import { useTheme } from '../context/ThemeContext';
 
 import { API_URL } from '../utils/config';
 import ParticleScene from '../components/ui/particles/ParticleScene';
+import OtpVerifyAnimation from '../components/ui/OtpVerifyAnimation';
 
 export const VerifyOTP: React.FC = () => {
   const navigate = useNavigate();
@@ -20,6 +21,7 @@ export const VerifyOTP: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [timer, setTimer] = useState(60); // 60 seconds resend cooldown
+  const [status, setStatus] = useState<'idle' | 'verifying' | 'success' | 'error'>('idle');
 
   const email = (location.state as any)?.email || '';
   const role = (location.state as any)?.role || 'Customer';
@@ -41,25 +43,43 @@ export const VerifyOTP: React.FC = () => {
     return () => clearInterval(interval);
   }, [timer]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!otp || otp.length < 6) {
-      showToast('Please enter the full 6-digit OTP code', 'error');
+  const executeVerify = async (codeToVerify: string) => {
+    if (!codeToVerify || codeToVerify.length < 6 || loading || status === 'verifying' || status === 'success') {
+      if (!codeToVerify || codeToVerify.length < 6) {
+        setStatus('error');
+        showToast('Please enter the full 6-digit OTP code', 'error');
+        setTimeout(() => setStatus('idle'), 1500);
+      }
       return;
     }
 
     setLoading(true);
+    setStatus('verifying'); // Trigger Stage 3 Orbit Animation
+
     try {
-      const res = await axios.post(`${API_URL}/auth/verify-otp`, { email, otp });
+      const res = await axios.post(`${API_URL}/auth/verify-otp`, { email, otp: codeToVerify });
       if (res.data.success) {
+        setStatus('success'); // Trigger Stage 4 Emerald Ring & Checkmark Morph
         showToast('OTP verified. Set your new password.', 'success');
-        navigate('/reset-password', { state: { resetToken: res.data.resetToken, role } });
+        setTimeout(() => {
+          navigate('/reset-password', { state: { resetToken: res.data.resetToken, role } });
+        }, 1400);
       }
     } catch (err: any) {
+      setStatus('error'); // Trigger 3D Shake sequence
       showToast(err.response?.data?.message || 'Verification failed. Try again.', 'error');
+      setTimeout(() => {
+        setStatus('idle');
+        setOtp(''); // Clear OTP on error so user can re-type
+      }, 1500);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    executeVerify(otp);
   };
 
   const handleResend = async () => {
@@ -117,28 +137,39 @@ export const VerifyOTP: React.FC = () => {
 
         {/* Title */}
         <div className="mb-6">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-            Verify Code
+          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 transition-all">
+            {status === 'success' ? 'Verified Successfully' : 'Verify Code'}
           </h2>
-          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
-            We sent a verification code to <strong className="text-slate-900 dark:text-slate-200 font-semibold">{email}</strong>.
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 transition-all">
+            {status === 'success' ? (
+              'Your account has been verified successfully.'
+            ) : (
+              <>
+                We sent a verification code to <strong className="text-slate-900 dark:text-slate-200 font-semibold">{email}</strong>.
+              </>
+            )}
           </p>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-400 mb-2 text-center">
-              Enter 6-Digit OTP Code
-            </label>
-            <input
-              type="text"
-              maxLength={6}
+            {status !== 'success' && (
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-400 mb-3 text-center">
+                Enter 6-Digit OTP Code
+              </label>
+            )}
+            <OtpVerifyAnimation
               value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))} // Numeric only
-              placeholder="000000"
-              className="w-full tracking-[1em] text-center text-xl font-bold py-3 rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition-all"
-              required
+              onChange={(val) => {
+                setOtp(val);
+                if (status === 'error') setStatus('idle');
+              }}
+              status={status}
+              onComplete={(code) => {
+                executeVerify(code);
+              }}
+              disabled={loading || status === 'success'}
             />
           </div>
 

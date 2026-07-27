@@ -357,7 +357,7 @@ export const Customers: React.FC = () => {
             Register new clients, edit billing info, review balances or freeze accounts.
           </p>
         </div>
-        <Button onClick={openCreateModal} className="flex gap-2 text-xs font-semibold py-2">
+        <Button onClick={openCreateModal} variant="primary" className="flex gap-2 text-xs font-bold py-2.5 px-4 shadow-lg shadow-primary-600/30">
           <UserPlus className="h-4 w-4" />
           Create Customer
         </Button>
@@ -501,7 +501,7 @@ export const Customers: React.FC = () => {
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               error={formErrors.email}
-              placeholder="john@example.com"
+              placeholder="Enter email address"
               required
             />
             <Input
@@ -673,26 +673,26 @@ export const Customers: React.FC = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="border border-slate-100 dark:border-slate-800 p-4 rounded-xl text-center space-y-1 bg-white dark:bg-slate-900/10">
-                    <span className="text-[9px] font-bold text-slate-450 uppercase tracking-wider">Total Purchases</span>
-                    <div className="text-sm font-extrabold text-slate-800 dark:text-slate-150">
+                  <div className="border border-slate-100 dark:border-slate-800 p-4 rounded-xl text-center space-y-1 bg-white dark:bg-slate-900/40">
+                    <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Purchases</span>
+                    <div className="text-sm font-extrabold text-slate-900 dark:text-white">
                       ₹{(customerMetrics.totalPurchased || 0).toLocaleString('en-IN')}
                     </div>
-                    <div className="text-[9px] text-slate-400">{customerMetrics.totalInvoices || 0} invoices</div>
+                    <div className="text-[9px] text-slate-500 dark:text-slate-400">{customerMetrics.totalInvoices || 0} invoices</div>
                   </div>
-                  <div className="border border-slate-100 dark:border-slate-800 p-4 rounded-xl text-center space-y-1 bg-white dark:bg-slate-900/10">
-                    <span className="text-[9px] font-bold text-slate-455 uppercase tracking-wider">Settled Amount</span>
+                  <div className="border border-slate-100 dark:border-slate-800 p-4 rounded-xl text-center space-y-1 bg-white dark:bg-slate-900/40">
+                    <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Settled Amount</span>
                     <div className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400">
                       ₹{(customerMetrics.totalPaid || 0).toLocaleString('en-IN')}
                     </div>
-                    <div className="text-[9px] text-slate-400">{customerMetrics.completedPaymentsCount || 0} bills paid</div>
+                    <div className="text-[9px] text-slate-500 dark:text-slate-400">{customerMetrics.completedPaymentsCount || 0} bills paid</div>
                   </div>
-                  <div className="border border-slate-100 dark:border-slate-800 p-4 rounded-xl text-center space-y-1 bg-white dark:bg-slate-900/10">
-                    <span className="text-[9px] font-bold text-slate-455 uppercase tracking-wider">Due Balance</span>
-                    <div className="text-sm font-extrabold text-rose-600 dark:text-rose-455">
+                  <div className="border border-slate-100 dark:border-slate-800 p-4 rounded-xl text-center space-y-1 bg-white dark:bg-slate-900/40">
+                    <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Due Balance</span>
+                    <div className="text-sm font-extrabold text-rose-600 dark:text-rose-400">
                       ₹{(customerMetrics.remainingBalance || 0).toLocaleString('en-IN')}
                     </div>
-                    <div className="text-[9px] text-slate-400">{customerMetrics.pendingPaymentsCount || 0} unpaid bills</div>
+                    <div className="text-[9px] text-slate-500 dark:text-slate-400">{customerMetrics.pendingPaymentsCount || 0} unpaid bills</div>
                   </div>
                 </div>
               )}

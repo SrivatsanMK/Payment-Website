@@ -363,7 +363,7 @@ export const Invoices: React.FC = () => {
             Create invoices, track customer payment statuses, and print billing records.
           </p>
         </div>
-        <Button onClick={openCreateModal} className="flex gap-2 text-xs font-semibold py-2">
+        <Button onClick={openCreateModal} variant="primary" className="flex gap-2 text-xs font-bold py-2.5 px-4 shadow-lg shadow-primary-600/30">
           <FilePlus className="h-4 w-4" />
           Create Invoice
         </Button>
@@ -465,7 +465,7 @@ export const Invoices: React.FC = () => {
                   <td className="px-6 py-4 text-xs font-bold text-emerald-650 dark:text-emerald-400">
                     ₹{inv.paidAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
-                  <td className="px-6 py-4 text-xs font-bold text-rose-650 dark:text-rose-455">
+                  <td className="px-6 py-4 text-xs font-bold text-rose-600 dark:text-rose-400">
                     ₹{inv.remainingAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
 
