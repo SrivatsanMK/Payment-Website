@@ -155,7 +155,7 @@ export const sendInvoiceEmail = async (
       </div>
       
       <p>Please log in to your account dashboard to view the complete details and complete the payment using UPI, QR Code, or other options.</p>
-      
+
       <div style="text-align: center; margin-top: 30px;">
         <a href="${process.env.FRONTEND_URL || 'http://13.203.232.36/login'}/login" style="background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; display: inline-block;">Log in & Pay Now</a>
       </div>

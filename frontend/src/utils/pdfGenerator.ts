@@ -1,13 +1,15 @@
 import jsPDF from 'jspdf';
 import { numberToWords } from './numberToWords';
-import { DEFAULT_INVOICE_LOGO } from './logoAsset';
 
 /**
- * Loads an image asset from public directory as Base64 Data URL for jsPDF
+ * Loads an image from public directory as Base64 Data URL.
+ * Adds a cache-busting timestamp to ensure the latest file is always fetched.
  */
 const getImageBase64 = async (url: string): Promise<string | null> => {
   try {
-    const response = await fetch(url);
+    const cacheBust = `${url}?v=${Date.now()}`;
+    const response = await fetch(cacheBust, { cache: 'no-store' });
+    if (!response.ok) return null;
     const blob = await response.blob();
     return new Promise((resolve) => {
       const reader = new FileReader();
@@ -52,11 +54,8 @@ export const generateInvoicePdf = async (invoice: any, settings: any = {}): Prom
 
   const pageWidth = 210;
 
-  // Load logo and signature images
-  let logoBase64 = await getImageBase64('/invoice-logo.png');
-  if (!logoBase64 || !logoBase64.startsWith('data:image')) {
-    logoBase64 = DEFAULT_INVOICE_LOGO;
-  }
+  // Load logo fresh from public folder with cache-busting (always gets latest file)
+  const logoBase64 = await getImageBase64('/invoice-logo.png');
   const signatureBase64 = await getImageBase64('/signature.png');
 
   // Colors matching official reference image
@@ -72,10 +71,25 @@ export const generateInvoicePdf = async (invoice: any, settings: any = {}): Prom
   // 1. TOP HEADER SECTION
   // ═══════════════════════════════════════════════════════════
 
-  // Company Logo (Top Left)
+  // Company Logo (Top Left - Clean Auto Aspect Ratio)
   if (logoBase64) {
     try {
-      doc.addImage(logoBase64, 'PNG', 10, 4, 54, 36);
+      // Original logo aspect ratio (1.5 : 1)
+      const originalWidth = 1536;
+      const originalHeight = 1024;
+
+      // Desired display width & height
+      const logoWidth = 72;
+      const logoHeight = (logoWidth * originalHeight) / originalWidth; // 48mm
+
+      doc.addImage(
+        logoBase64,
+        "PNG",
+        8,          // X
+        4,          // Y
+        logoWidth,
+        logoHeight
+      );
     } catch (e) {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(18);
@@ -89,17 +103,11 @@ export const generateInvoicePdf = async (invoice: any, settings: any = {}): Prom
     doc.text("GREEN GLIDE LOGISTICS", 10, 18);
   }
 
-  // Document Title (Top Right)
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(22);
-  doc.setTextColor(...navyColor);
-  doc.text("TAX INVOICE", 200, 13, { align: "right" });
-
   // Meta Table Box (Top Right under title)
-  const metaBoxX = 132;
-  const metaBoxY = 16;
-  const metaBoxW = 68;
-  const metaBoxH = 25;
+  const metaBoxX = 126;
+  const metaBoxY = 17;
+  const metaBoxW = 74;
+  const metaBoxH = 27;
 
   doc.setDrawColor(...borderColor);
   doc.setLineWidth(0.3);
@@ -113,15 +121,15 @@ export const generateInvoicePdf = async (invoice: any, settings: any = {}): Prom
     { key: "Place of Supply", val: settings.placeOfSupply || "Tamil Nadu (33)" }
   ];
 
-  let metaY = metaBoxY + 5;
+  let metaY = metaBoxY + 5.5;
   metaRows.forEach((row, idx) => {
     if (idx > 0) {
       doc.setDrawColor(...borderColor);
-      doc.line(metaBoxX, metaY - 3.5, metaBoxX + metaBoxW, metaY - 3.5);
+      doc.line(metaBoxX, metaY - 4, metaBoxX + metaBoxW, metaY - 4);
     }
 
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
+    doc.setFontSize(8.5);
     doc.setTextColor(...slateColor);
     doc.text(`${row.key}   :`, metaBoxX + 3, metaY);
 
@@ -135,7 +143,7 @@ export const generateInvoicePdf = async (invoice: any, settings: any = {}): Prom
   // ═══════════════════════════════════════════════════════════
   // 2. COMPANY CONTACT STRIP
   // ═══════════════════════════════════════════════════════════
-  const contactY = 47;
+  const contactY = 57;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7.5);
   doc.setTextColor(...slateColor);
@@ -149,8 +157,8 @@ export const generateInvoicePdf = async (invoice: any, settings: any = {}): Prom
   // ═══════════════════════════════════════════════════════════
   // 3. BILL TO / SHIP TO / TRANSPORT CARDS
   // ═══════════════════════════════════════════════════════════
-  const cardY = 54;
-  const cardH = 32;
+  const cardY = 64;
+  const cardH = 30;
   const customer = invoice.customer || {};
 
   // --- BILL TO CARD ---
@@ -234,8 +242,8 @@ export const generateInvoicePdf = async (invoice: any, settings: any = {}): Prom
   // ═══════════════════════════════════════════════════════════
   // 4. PRODUCTS & SERVICES TABLE
   // ═══════════════════════════════════════════════════════════
-  const tableY = 94;
-  const tableH = 85;
+  const tableY = 98;
+  const tableH = 82;
 
   // Exact non-overlapping column definitions
   const columns = [

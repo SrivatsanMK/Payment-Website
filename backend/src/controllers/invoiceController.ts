@@ -465,7 +465,10 @@ export const markAsPaid = async (req: AuthRequest, res: Response, next: NextFunc
       return res.status(404).json({ success: false, message: 'Invoice not found' });
     }
 
-    const customer: any = invoice.customer;
+    const customer: any = invoice.customer || {};
+    const customerId = customer._id || invoice.customer || null;
+    const customerEmail = customer.email || '';
+    const customerName = customer.name || customer.companyName || 'Valued Customer';
 
     // 1. Update Invoice status
     invoice.paidAmount = invoice.finalAmount;
@@ -479,23 +482,25 @@ export const markAsPaid = async (req: AuthRequest, res: Response, next: NextFunc
     );
 
     // 3. Create Payment record
-    await Payment.create({
-      invoiceNumber: invoice.invoiceNumber,
-      customer: customer._id,
-      amount: invoice.finalAmount,
-      paymentMethod: 'Manual Admin Approval',
-      transactionId: 'MANUAL-' + Date.now().toString().slice(-6),
-      status: 'Settled',
-      date: new Date(),
-      time: new Date().toLocaleTimeString('en-US', { hour12: false })
-    });
+    if (customerId) {
+      await Payment.create({
+        invoiceNumber: invoice.invoiceNumber,
+        customer: customerId,
+        amount: invoice.finalAmount,
+        paymentMethod: 'Manual Admin Approval',
+        transactionId: 'MANUAL-' + Date.now().toString().slice(-6),
+        status: 'Settled',
+        date: new Date(),
+        time: new Date().toLocaleTimeString('en-US', { hour12: false })
+      });
+    }
 
-    // 4. Trigger Email with PDF Attachment
-    if (invoicePdf) {
+    // 4. Trigger Email with PDF Attachment (if customer email exists)
+    if (invoicePdf && customerEmail) {
       try {
         await sendPaymentConfirmationWithPdfEmail(
-          customer.email,
-          customer.name,
+          customerEmail,
+          customerName,
           invoice.invoiceNumber,
           invoice.finalAmount,
           req.user?.name || 'Admin',

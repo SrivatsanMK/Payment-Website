@@ -353,7 +353,7 @@ export const Customers: React.FC = () => {
           <h1 className="text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100">
             Customer Management
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
             Register new clients, edit billing info, review balances or freeze accounts.
           </p>
         </div>

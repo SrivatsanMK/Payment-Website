@@ -436,7 +436,7 @@ export const ProfileSelection: React.FC = () => {
               zIndex: 2,
             }}>
               <img
-                src="/logo.png"
+                src={`/logo.png?v=${Date.now()}`}
                 alt="Green Glide Logistics Logo"
                 style={{
                   width: '100%',
