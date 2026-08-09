@@ -41,6 +41,8 @@ const flowerOptions: Record<string, string[]> = {
   "Marigold": ["yellow", "orange"]
 };
 
+const vegetableOptions = ["Cabbage", "Carrot", "Potato", "Onion", "Tomato"];
+
 export const Invoices: React.FC = () => {
   const api = useAxios();
   const { showToast } = useToast();
@@ -70,8 +72,8 @@ export const Invoices: React.FC = () => {
   const [discount, setDiscount] = useState<number | string>(0);
   const [cgst, setCgst] = useState<number | string>(9); // Support empty
   const [sgst, setSgst] = useState<number | string>(9); // Support empty
-  const [productsList, setProductsList] = useState<{ productName: string; productColor: string; weightValue: string; weightUnit: string; quantity: string; price: string }[]>([
-    { productName: '', productColor: '', weightValue: '100', weightUnit: 'grams', quantity: '', price: '' }
+  const [productsList, setProductsList] = useState<{ category: string; productName: string; productColor: string; weightValue: string; weightUnit: string; quantity: string; price: string }[]>([
+    { category: '', productName: '', productColor: '', weightValue: '100', weightUnit: 'grams', quantity: '', price: '' }
   ]);
 
   // Form states (Edit)
@@ -153,7 +155,7 @@ export const Invoices: React.FC = () => {
 
   // Products List functions
   const addProductRow = () => {
-    setProductsList([...productsList, { productName: '', productColor: '', weightValue: '100', weightUnit: 'grams', quantity: '', price: '' }]);
+    setProductsList([...productsList, { category: '', productName: '', productColor: '', weightValue: '100', weightUnit: 'grams', quantity: '', price: '' }]);
   };
 
   const removeProductRow = (idx: number) => {
@@ -164,11 +166,17 @@ export const Invoices: React.FC = () => {
   const handleProductChange = (idx: number, field: string, value: string) => {
     const updated = [...productsList];
     updated[idx] = { ...updated[idx], [field]: value };
+    if (field === 'category') {
+      updated[idx].productName = '';   // Reset item when category changes
+      updated[idx].productColor = '';  // Reset color when category changes
+    }
     if (field === 'productName') {
       updated[idx].productColor = ''; // Reset color when product changes
     }
     setProductsList(updated);
   };
+
+  const isVegetable = (category: string) => category === 'Vegetables';
 
   // Running calculations
   const calculateTotal = () => {
@@ -192,7 +200,7 @@ export const Invoices: React.FC = () => {
     setDiscount(0);
     setCgst(9);
     setSgst(9);
-    setProductsList([{ productName: '', productColor: '', weightValue: '100', weightUnit: 'grams', quantity: '', price: '' }]);
+    setProductsList([{ category: '', productName: '', productColor: '', weightValue: '100', weightUnit: 'grams', quantity: '', price: '' }]);
     setQrCodeFile(null);
     setIsCreateOpen(true);
   };
@@ -206,7 +214,11 @@ export const Invoices: React.FC = () => {
     }
 
     // Check if empty rows exist
-    const emptyRow = productsList.some(p => !p.productName || !p.productColor || !p.quantity || !p.weightValue || !p.price);
+    const emptyRow = productsList.some(p => {
+      if (!p.category || !p.productName || !p.quantity || !p.weightValue || !p.price) return true;
+      if (!isVegetable(p.category) && !p.productColor) return true; // color required for flowers only
+      return false;
+    });
     if (emptyRow) {
       showToast('Fill in all product fields completely', 'error');
       return;
@@ -215,7 +227,9 @@ export const Invoices: React.FC = () => {
     setActionLoading(true);
     try {
       const mappedProducts = productsList.map(p => ({
-        name: `${p.productName} (${p.productColor}) - ${p.weightValue} ${p.weightUnit}`,
+        name: isVegetable(p.category)
+          ? `${p.productName} - ${p.weightValue} ${p.weightUnit}`
+          : `${p.productName} (${p.productColor}) - ${p.weightValue} ${p.weightUnit}`,
         quantity: parseInt(p.quantity) || 0,
         price: parseFloat(p.price) || 0
       }));
@@ -585,8 +599,27 @@ export const Invoices: React.FC = () => {
             <div className="space-y-4">
               {productsList.map((prod, idx) => (
                 <div key={idx} className="flex flex-col border-b border-dashed border-slate-200 dark:border-slate-700 pb-4 last:border-0 last:pb-0 gap-3">
-                  {/* Top row: Item Name, Color */}
+                  {/* Row 1: Category + Item Name + Item Color (conditional) */}
                   <div className="flex flex-col sm:flex-row gap-3 items-start">
+
+                    {/* Category Selector */}
+                    <div className="flex-1 w-full">
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                        Category
+                      </label>
+                      <select
+                        value={prod.category}
+                        onChange={(e) => handleProductChange(idx, 'category', e.target.value)}
+                        className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none"
+                        required
+                      >
+                        <option value="" disabled>Select Category</option>
+                        <option value="Flowers">🌸 Flowers</option>
+                        <option value="Vegetables">🥦 Vegetables</option>
+                      </select>
+                    </div>
+
+                    {/* Item Name — depends on selected category */}
                     <div className="flex-1 w-full">
                       <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
                         Item Name
@@ -594,32 +627,45 @@ export const Invoices: React.FC = () => {
                       <select
                         value={prod.productName}
                         onChange={(e) => handleProductChange(idx, 'productName', e.target.value)}
-                        className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none"
+                        className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none disabled:opacity-50"
                         required
+                        disabled={!prod.category}
                       >
                         <option value="" disabled>Select Item</option>
-                        {Object.keys(flowerOptions).map(flower => (
-                          <option key={flower} value={flower}>{flower}</option>
-                        ))}
+                        {prod.category === 'Flowers'
+                          ? Object.keys(flowerOptions).map(flower => (
+                              <option key={flower} value={flower}>{flower}</option>
+                            ))
+                          : prod.category === 'Vegetables'
+                          ? vegetableOptions.map(veg => (
+                              <option key={veg} value={veg}>{veg}</option>
+                            ))
+                          : null
+                        }
                       </select>
                     </div>
-                    <div className="flex-1 w-full">
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
-                        Item Color
-                      </label>
-                      <select
-                        value={prod.productColor}
-                        onChange={(e) => handleProductChange(idx, 'productColor', e.target.value)}
-                        className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none"
-                        required
-                        disabled={!prod.productName}
-                      >
-                        <option value="" disabled>Select Color</option>
-                        {(flowerOptions[prod.productName] || []).map(color => (
-                          <option key={color} value={color}>{color}</option>
-                        ))}
-                      </select>
-                    </div>
+
+                    {/* Item Color — only for Flowers */}
+                    {!isVegetable(prod.category) && (
+                      <div className="flex-1 w-full">
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                          Item Color
+                        </label>
+                        <select
+                          value={prod.productColor}
+                          onChange={(e) => handleProductChange(idx, 'productColor', e.target.value)}
+                          className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none disabled:opacity-50"
+                          required={!isVegetable(prod.category)}
+                          disabled={!prod.productName}
+                        >
+                          <option value="" disabled>Select Color</option>
+                          {(flowerOptions[prod.productName] || []).map(color => (
+                            <option key={color} value={color}>{color}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
                   </div>
 
                   {/* Bottom row: Packets Number, Quantity Per Packet, Price, Remove */}
