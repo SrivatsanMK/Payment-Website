@@ -66,5 +66,23 @@ export const endpoints = {
     single: (id: string) => `/expenses/${id}`,
     dashboard: '/expenses/summary/dashboard',
     detailedReport: '/expenses/reports/detailed',
+  },
+  privateBusiness: {
+    dashboard: '/private-business/dashboard',
+    reports: '/private-business/reports',
+    vegetables: {
+      base: '/private-business/vegetables',
+      single: (id: string) => `/private-business/vegetables/${id}`,
+    },
+    suppliers: {
+      base: '/private-business/suppliers',
+      single: (id: string) => `/private-business/suppliers/${id}`,
+    },
+    purchases: {
+      base: '/private-business/purchases',
+      single: (id: string) => `/private-business/purchases/${id}`,
+    },
+    settings: '/private-business/settings',
   }
 };
+

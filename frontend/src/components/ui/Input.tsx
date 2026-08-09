@@ -15,15 +15,15 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-300 mb-1.5 pl-1">
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-300 mb-2.5 pl-1">
             {label}
           </label>
         )}
         <div className="relative w-full">
           <input
             ref={ref}
-            className={`w-full px-4 py-2.5 text-sm rounded-xl border glass-input transition-all duration-200 ${
-              isPassword ? 'pr-10' : ''
+            className={`w-full px-4 py-3 text-sm font-medium tracking-wide rounded-xl border glass-input transition-all duration-200 ${
+              isPassword ? 'pr-11' : ''
             } ${
               error ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500/20' : ''
             } ${className}`}
@@ -42,7 +42,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           )}
         </div>
         {error && (
-          <p className="mt-1.5 text-xs text-red-400 font-medium pl-1">{error}</p>
+          <p className="mt-2 text-xs text-red-400 font-medium pl-1">{error}</p>
         )}
       </div>
     );
@@ -61,20 +61,20 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-300 mb-1.5 pl-1">
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-300 mb-2.5 pl-1">
             {label}
           </label>
         )}
         <textarea
           ref={ref}
-          className={`w-full px-4 py-2.5 text-sm rounded-xl border glass-input transition-all duration-200 ${
+          className={`w-full px-4 py-3 text-sm font-medium tracking-wide leading-relaxed rounded-xl border glass-input transition-all duration-200 ${
             error ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500/20' : ''
           } ${className}`}
           rows={3}
           {...props}
         />
         {error && (
-          <p className="mt-1.5 text-xs text-red-400 font-medium pl-1">{error}</p>
+          <p className="mt-2 text-xs text-red-400 font-medium pl-1">{error}</p>
         )}
       </div>
     );
@@ -94,25 +94,25 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-300 mb-1.5 pl-1">
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-300 mb-2.5 pl-1">
             {label}
           </label>
         )}
         <select
           ref={ref}
-          className={`w-full px-4 py-2.5 text-sm rounded-xl border glass-input transition-all duration-200 ${
+          className={`w-full px-4 py-3 text-sm font-medium tracking-wide rounded-xl border glass-input transition-all duration-200 ${
             error ? 'border-red-500/80 focus:border-red-500 focus:ring-red-500/20' : ''
           } ${className}`}
           {...props}
         >
           {options.map((opt) => (
-            <option key={opt.value} value={opt.value} className="bg-slate-900 text-white">
+            <option key={opt.value} value={opt.value} className="bg-slate-900 text-white py-1.5">
               {opt.label}
             </option>
           ))}
         </select>
         {error && (
-          <p className="mt-1.5 text-xs text-red-400 font-medium pl-1">{error}</p>
+          <p className="mt-2 text-xs text-red-400 font-medium pl-1">{error}</p>
         )}
       </div>
     );

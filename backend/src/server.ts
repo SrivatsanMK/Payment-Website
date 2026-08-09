@@ -20,6 +20,7 @@ import reportRoutes from './routes/reportRoutes';
 import settingRoutes from './routes/settingRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import expenseRoutes from './routes/expenseRoutes';
+import privateBusinessRoutes from './routes/privateBusinessRoutes';
 
 // Load Env variables
 dotenv.config();
@@ -104,6 +105,7 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/settings', settingRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/expenses', expenseRoutes);
+app.use('/api/private-business', privateBusinessRoutes);
 
 // Root route
 app.get('/', (req, res) => {

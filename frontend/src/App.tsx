@@ -12,6 +12,7 @@ import { GlobalBackground } from './components/ui/GlobalBackground';
 // Layouts
 import DashboardLayout from './components/layout/DashboardLayout';
 import AdminLayout from './components/layout/AdminLayout';
+import PrivateBusinessLayout from './components/layout/PrivateBusinessLayout';
 
 // ─── CUSTOMER AUTH PAGES ──────────────────────────────────────────────────────
 import Login from './pages/Login';
@@ -23,7 +24,7 @@ import ResetPassword from './pages/ResetPassword';
 import AdminLogin from './pages/admin/AdminLogin';
 import ProfileSelection from './pages/admin/ProfileSelection';
 
-// ─── ADMIN DASHBOARD PAGES ────────────────────────────────────────────────────
+// ─── GREEN GLIDE LOGISTICS ADMIN DASHBOARD PAGES ──────────────────────────────
 import AdminDashboard from './pages/admin/AdminDashboard';
 import Customers from './pages/admin/Customers';
 import Invoices from './pages/admin/Invoices';
@@ -37,6 +38,15 @@ import AddExpense from './pages/expense-manager/AddExpense';
 import { ExpenseHistory } from './pages/expense-manager/ExpenseHistory';
 import { ExpenseReports } from './pages/expense-manager/ExpenseReports';
 import { ExpenseSettings } from './pages/expense-manager/ExpenseSettings';
+
+// ─── PRIVATE BUSINESS (VEGETABLE PURCHASING) PAGES ────────────────────────────
+import PrivateBusinessDashboard from './pages/private-business/PrivateBusinessDashboard';
+import AddPurchase from './pages/private-business/AddPurchase';
+import PurchaseHistory from './pages/private-business/PurchaseHistory';
+import Vegetables from './pages/private-business/Vegetables';
+import Suppliers from './pages/private-business/Suppliers';
+import PrivateBusinessReports from './pages/private-business/PrivateBusinessReports';
+import PrivateBusinessSettings from './pages/private-business/PrivateBusinessSettings';
 
 // ─── CUSTOMER PORTAL PAGES ───────────────────────────────────────────────────
 import CustomerDashboard from './pages/customer/CustomerDashboard';
@@ -96,7 +106,18 @@ export const App: React.FC = () => {
                     }
                   />
 
-                  {/* ── ADMIN PROTECTED ROUTES ──────────────────────────────── */}
+                  {/* ── PRIVATE BUSINESS (VEGETABLE PURCHASE WORKSPACE) ───────── */}
+                  <Route path="/admin/private-business" element={<PrivateBusinessLayout />}>
+                    <Route path="dashboard" element={<PrivateBusinessDashboard />} />
+                    <Route path="purchases/add" element={<AddPurchase />} />
+                    <Route path="purchases" element={<PurchaseHistory />} />
+                    <Route path="vegetables" element={<Vegetables />} />
+                    <Route path="suppliers" element={<Suppliers />} />
+                    <Route path="reports" element={<PrivateBusinessReports />} />
+                    <Route path="settings" element={<PrivateBusinessSettings />} />
+                  </Route>
+
+                  {/* ── GREEN GLIDE LOGISTICS ADMIN PROTECTED ROUTES ───────────── */}
                   <Route path="/admin" element={<AdminLayout />}>
                     <Route path="dashboard" element={<AdminDashboard />} />
                     <Route path="customers" element={<Customers />} />

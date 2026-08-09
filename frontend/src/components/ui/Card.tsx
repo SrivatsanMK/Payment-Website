@@ -4,12 +4,14 @@ import { motion } from 'framer-motion';
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   glass?: boolean;
   hoverable?: boolean;
+  scrollable?: boolean; // set true for cards that contain a scrollable table
 }
 
 export const Card: React.FC<CardProps> = ({
   children,
   glass = true,
   hoverable = true,
+  scrollable = false,
   className = '',
   style,
   ...props
@@ -18,7 +20,7 @@ export const Card: React.FC<CardProps> = ({
     <motion.div
       whileHover={hoverable ? { y: -4, scale: 1.008 } : undefined}
       transition={{ duration: 0.35, ease: [0.22, 0.61, 0.36, 1] }}
-      className={`glass-card p-6 ${className}`}
+      className={`glass-card ${scrollable ? 'glass-card-table' : ''} p-6 ${className}`}
       style={style}
       {...(props as any)}
     >

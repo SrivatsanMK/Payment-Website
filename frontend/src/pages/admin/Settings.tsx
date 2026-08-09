@@ -139,12 +139,12 @@ export const Settings: React.FC = () => {
           <form onSubmit={handleSettingsSubmit} className="space-y-6">
             {/* Branding details */}
             <Card className="space-y-4">
-              <h3 className="text-sm font-bold text-slate-850 dark:text-slate-150 flex items-center gap-2">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Building2 className="h-4 w-4 text-primary-500" />
                 Company Profile & Branding
               </h3>
               
-              <div className="flex flex-col sm:flex-row gap-6 items-center border-b border-slate-100 dark:border-slate-850 pb-4">
+              <div className="flex flex-col sm:flex-row gap-6 items-center border-b border-slate-100 dark:border-slate-800 pb-4">
                 <div className="flex-1 w-full space-y-4">
                   <Input
                     label="Business Name"
@@ -178,7 +178,7 @@ export const Settings: React.FC = () => {
 
             {/* Backups Configuration */}
             <Card className="space-y-4">
-              <h3 className="text-sm font-bold text-slate-850 dark:text-slate-150 flex items-center gap-2">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Database className="h-4 w-4 text-primary-500" />
                 Automatic System Backups
               </h3>
@@ -215,7 +215,7 @@ export const Settings: React.FC = () => {
         {/* Database Utility Sidecard */}
         <div className="space-y-6">
           <Card className="space-y-4">
-            <h3 className="text-sm font-bold text-slate-850 dark:text-slate-150 flex items-center gap-2">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <Database className="h-4 w-4 text-emerald-500" />
               Database Operations
             </h3>
@@ -228,7 +228,7 @@ export const Settings: React.FC = () => {
                 onClick={triggerManualBackup}
                 loading={backupLoading}
                 variant="outline"
-                className="w-full text-xs font-semibold py-2.5 flex gap-1.5 border-slate-300 dark:border-slate-805"
+                className="w-full text-xs font-semibold py-2.5 flex gap-1.5 border-slate-300 dark:border-slate-700"
               >
                 <Database className="h-4 w-4" />
                 Run Database Backup
@@ -238,7 +238,7 @@ export const Settings: React.FC = () => {
             <div className="flex gap-2 items-start border-t border-slate-100 dark:border-slate-800 pt-4 text-[10px] text-slate-400">
               <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0 mt-0.5" />
               <div>
-                <strong className="text-slate-500 dark:text-slate-350 block">Frequency schedule active</strong>
+                <strong className="text-slate-500 dark:text-slate-200 block">Frequency schedule active</strong>
                 Weekly automated cron jobs dump collections and log history events safely.
               </div>
             </div>

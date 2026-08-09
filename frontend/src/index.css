@@ -3,7 +3,10 @@
 @tailwind utilities;
 
 @layer base {
-  html, body, #root {
+
+  html,
+  body,
+  #root {
     background-color: #000000;
     margin: 0;
     padding: 0;
@@ -95,6 +98,20 @@ html:not(.dark) .glass-card {
 html:not(.dark) .glass-card:hover {
   border-color: rgba(0, 0, 0, 0.15);
   box-shadow: 0 28px 60px rgba(15, 23, 42, 0.12), inset 0 1px 2px rgba(255, 255, 255, 1);
+}
+
+/* Table Card Variant – allows inner overflow-x-auto to work on mobile */
+.glass-card-table,
+.glass-card-table>div,
+.glass-card-table>div>div {
+  overflow: visible !important;
+}
+
+/* The actual scrollable table wrapper retains its scroll behaviour */
+.glass-card-table .overflow-x-auto {
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Liquid Glass Panels (Sidebar, Navbar, Modals) */
@@ -292,24 +309,31 @@ html:not(.dark) .glass-table-row:hover {
   .perspective-1000 {
     perspective: 1000px;
   }
+
   .preserve-3d {
     transform-style: preserve-3d;
   }
+
   .transform-style-3d {
     transform-style: preserve-3d;
   }
+
   .backface-hidden {
     backface-visibility: hidden;
   }
+
   .rotate-y-180 {
     transform: rotateY(180deg);
   }
 }
 
 @keyframes float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0px) rotate(0deg);
   }
+
   50% {
     transform: translateY(-12px) rotate(3deg);
   }
@@ -348,6 +372,7 @@ html:not(.dark) ::-webkit-scrollbar-thumb {
     background: white !important;
     color: black !important;
   }
+
   .no-print {
     display: none !important;
   }
@@ -359,6 +384,7 @@ input::-webkit-inner-spin-button {
   -webkit-appearance: none !important;
   margin: 0 !important;
 }
+
 input[type=number] {
   -moz-appearance: textfield !important;
   appearance: textfield !important;

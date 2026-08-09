@@ -22,7 +22,7 @@ export const Badge: React.FC<BadgeProps> = ({ status, className = '' }) => {
     SUSPENDED: 'bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-450 border border-rose-200/50 dark:border-rose-900/30',
   };
 
-  const currentStyle = colors[normStatus] || 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-350 border border-slate-200 dark:border-slate-750';
+  const currentStyle = colors[normStatus] || 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700';
 
   return (
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider ${currentStyle} ${className}`}>

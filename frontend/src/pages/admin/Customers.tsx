@@ -390,7 +390,7 @@ export const Customers: React.FC = () => {
           <Spinner size="lg" />
         </div>
       ) : (
-        <Card className="p-0 overflow-hidden">
+        <Card className="p-0 overflow-hidden" scrollable>
           <Table headers={['Customer ID', 'Client Name', 'Email & Phone', 'Actions']}>
             {customers.length === 0 ? (
               <tr>
@@ -401,17 +401,17 @@ export const Customers: React.FC = () => {
             ) : (
               customers.map((c) => (
                 <tr key={c._id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
-                  <td className="px-6 py-4 text-xs font-bold text-slate-800 dark:text-slate-200">
+                  <td className="px-6 py-4 text-xs font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">
                     {c.customerId}
                   </td>
-                  <td className="px-6 py-4 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  <td className="px-6 py-4 text-xs font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">
                     {c.name}
                   </td>
-                  <td className="px-6 py-4 text-[11px] text-slate-500">
+                  <td className="px-6 py-4 text-[11px] text-slate-500 whitespace-nowrap">
                     <div>{c.email}</div>
                     <div className="mt-0.5 text-slate-400">{c.phone}</div>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => openDetailModal(c)}
@@ -464,7 +464,7 @@ export const Customers: React.FC = () => {
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <span className="px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-350">
+                <span className="px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200">
                   {page} / {totalPages}
                 </span>
                 <Button
@@ -650,15 +650,15 @@ export const Customers: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div className="space-y-1 bg-slate-50 dark:bg-slate-900/30 p-3 rounded-lg">
                 <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Email Address</span>
-                <p className="font-semibold text-slate-750 dark:text-slate-350">{selectedCustomer.email}</p>
+                <p className="font-bold text-slate-900 dark:text-white">{selectedCustomer.email}</p>
               </div>
               <div className="space-y-1 bg-slate-50 dark:bg-slate-900/30 p-3 rounded-lg">
                 <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Phone Number</span>
-                <p className="font-semibold text-slate-750 dark:text-slate-350">{selectedCustomer.phone}</p>
+                <p className="font-bold text-slate-900 dark:text-white">{selectedCustomer.phone}</p>
               </div>
               <div className="space-y-1 bg-slate-50 dark:bg-slate-900/30 p-3 rounded-lg sm:col-span-2">
                 <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Full Address</span>
-                <p className="font-semibold text-slate-750 dark:text-slate-350">{selectedCustomer.address}</p>
+                <p className="font-bold text-slate-900 dark:text-white">{selectedCustomer.address}</p>
               </div>
             </div>
 
@@ -731,7 +731,6 @@ export const Customers: React.FC = () => {
                       type="number"
                       value={prod.quantity || ''}
                       onChange={(e) => handleQiChange(idx, 'quantity', e.target.value)}
-                      placeholder="e.g. 500"
                       min="1"
                       required
                     />
@@ -752,14 +751,13 @@ export const Customers: React.FC = () => {
                           onChange={(e) => handleQiChange(idx, 'weightValue', e.target.value)}
                           className="w-full px-3 py-2 text-sm bg-transparent border-0 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-0"
                           style={{ MozAppearance: 'textfield', appearance: 'textfield', WebkitAppearance: 'none' } as React.CSSProperties}
-                          placeholder="e.g. 100"
                           min="1"
                           required
                         />
                         <select
                           value={prod.weightUnit}
                           onChange={(e) => handleQiChange(idx, 'weightUnit', e.target.value)}
-                          className="px-3 py-2 text-sm bg-slate-50 dark:bg-slate-850 border-l border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer"
+                          className="px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer"
                         >
                           <option value="grams">grams</option>
                           <option value="kg">kg</option>
@@ -775,7 +773,6 @@ export const Customers: React.FC = () => {
                       type="number"
                       value={prod.price || ''}
                       onChange={(e) => handleQiChange(idx, 'price', e.target.value)}
-                      placeholder="e.g. 10"
                       min="0"
                       required
                     />

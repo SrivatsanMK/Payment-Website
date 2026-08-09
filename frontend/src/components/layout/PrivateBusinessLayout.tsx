@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAdminAuth } from '../../context/AdminAuthContext';
-import AdminSidebar from './AdminSidebar';
+import PrivateBusinessSidebar from './PrivateBusinessSidebar';
 import AdminNavbar from './AdminNavbar';
 import Spinner from '../ui/Spinner';
 
-export const AdminLayout: React.FC = () => {
+export const PrivateBusinessLayout: React.FC = () => {
   const { admin, loading } = useAdminAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -23,7 +23,7 @@ export const AdminLayout: React.FC = () => {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-slate-50 dark:bg-[#2A2A2A]">
-      <AdminSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
+      <PrivateBusinessSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
       <div className="flex flex-1 flex-col overflow-hidden">
         <AdminNavbar setSidebarOpen={setSidebarOpen} />
         <main className="flex-1 overflow-y-auto px-6 pt-6 sm:pt-8 pb-8">
@@ -36,4 +36,4 @@ export const AdminLayout: React.FC = () => {
   );
 };
 
-export default AdminLayout;
+export default PrivateBusinessLayout;

@@ -145,7 +145,7 @@ export const Reports: React.FC = () => {
                   CSV / XLS
                 </span>
               </div>
-              <h3 className="text-sm font-bold text-slate-850 dark:text-slate-100">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
                 {report.title}
               </h3>
               <p className="text-[11px] text-slate-400 leading-relaxed">
@@ -169,7 +169,7 @@ export const Reports: React.FC = () => {
       <Card className="p-6 space-y-4 print:hidden">
         <div className="flex justify-between items-center">
           <div>
-            <h3 className="text-sm font-bold text-slate-850 dark:text-slate-100">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
               Printable Business Summary
             </h3>
             <p className="text-[11px] text-slate-400 mt-0.5">

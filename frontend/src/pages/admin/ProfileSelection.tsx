@@ -22,7 +22,11 @@ export const ProfileSelection: React.FC = () => {
     setSelectedProfile(profile);
     localStorage.setItem('adminProfile', profile);
     setTimeout(() => {
-      navigate('/admin/dashboard');
+      if (profile === 'private') {
+        navigate('/admin/private-business/dashboard');
+      } else {
+        navigate('/admin/dashboard');
+      }
     }, 280);
   };
 

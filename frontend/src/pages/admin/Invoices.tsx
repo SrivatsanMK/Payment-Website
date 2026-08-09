@@ -438,8 +438,8 @@ export const Invoices: React.FC = () => {
           <Spinner size="lg" />
         </div>
       ) : (
-        <Card className="p-0 overflow-hidden">
-          <Table headers={['Invoice No', 'Customer ID & Name', 'Issue Date', 'Total', 'Paid', 'Due Balance', 'Actions']}>
+        <Card className="p-0 overflow-hidden" scrollable>
+          <Table headers={['Invoice No', 'Customer ID & Name', 'Issue Date', 'Total', 'Paid', 'Due Balance', 'Actions']} minWidth="min-w-[850px]">
             {invoices.length === 0 ? (
               <tr>
                 <td colSpan={8} className="px-6 py-8 text-center text-xs text-slate-400">
@@ -449,33 +449,33 @@ export const Invoices: React.FC = () => {
             ) : (
               invoices.map((inv) => (
                 <tr key={inv._id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
-                  <td className="px-6 py-4 text-xs font-bold text-slate-800 dark:text-slate-200">
+                  <td className="px-6 py-4 text-xs font-bold text-slate-900 dark:text-white whitespace-nowrap">
                     {inv.invoiceNumber}
                   </td>
-                  <td className="px-6 py-4 text-xs font-semibold text-slate-700 dark:text-slate-350">
+                  <td className="px-6 py-4 text-xs font-bold text-slate-900 dark:text-white whitespace-nowrap">
                     <div>{inv.customer?.name}</div>
-                    <div className="text-[10px] text-slate-400 mt-0.5">{inv.customer?.customerId}</div>
+                    <div className="text-[10px] font-semibold text-purple-600 dark:text-purple-300 mt-0.5">{inv.customer?.customerId}</div>
                   </td>
-                  <td className="px-6 py-4 text-xs text-slate-650 dark:text-slate-400 font-semibold">
+                  <td className="px-6 py-4 text-xs text-slate-600 dark:text-slate-300 font-semibold whitespace-nowrap">
                     {new Date(inv.createdAt).toLocaleDateString()}
                   </td>
-                  <td className="px-6 py-4 text-xs font-bold text-slate-855 dark:text-slate-150">
+                  <td className="px-6 py-4 text-xs font-extrabold text-slate-900 dark:text-white whitespace-nowrap">
                     ₹{inv.finalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
-                  <td className="px-6 py-4 text-xs font-bold text-emerald-650 dark:text-emerald-400">
+                  <td className="px-6 py-4 text-xs font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                     ₹{inv.paidAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
-                  <td className="px-6 py-4 text-xs font-bold text-rose-600 dark:text-rose-400">
+                  <td className="px-6 py-4 text-xs font-bold text-rose-600 dark:text-rose-400 whitespace-nowrap">
                     ₹{inv.remainingAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
 
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-2">
                       {inv.remainingAmount > 0 && (
                         <button
                           onClick={() => handleMarkPaid(inv)}
                           disabled={isMarkingPaid === inv._id}
-                          className="p-1.5 text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-lg transition-colors disabled:opacity-50"
+                          className="p-1.5 text-slate-500 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-lg transition-colors disabled:opacity-50"
                           title="Mark as Paid & Email Customer"
                         >
                           {isMarkingPaid === inv._id ? <Spinner size="sm" /> : <CheckCircle className="h-4 w-4" />}
@@ -484,28 +484,28 @@ export const Invoices: React.FC = () => {
                       <button
                         onClick={() => handleDownloadInvoice(inv)}
                         disabled={downloadingInvoice === inv._id}
-                        className="p-1.5 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 rounded-lg transition-colors disabled:opacity-50"
+                        className="p-1.5 text-slate-500 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 rounded-lg transition-colors disabled:opacity-50"
                         title="Download Invoice PDF"
                       >
                         {downloadingInvoice === inv._id ? <Spinner size="sm" /> : <Download className="h-4 w-4" />}
                       </button>
                       <button
                         onClick={() => openViewModal(inv)}
-                        className="p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                        className="p-1.5 text-slate-500 dark:text-slate-300 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                         title="Preview & Print"
                       >
                         <Eye className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => openEditModal(inv)}
-                        className="p-1.5 text-slate-500 hover:text-indigo-650 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                        className="p-1.5 text-slate-500 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                         title="Update Dues"
                       >
                         <Edit2 className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(inv)}
-                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/10 rounded-lg transition-colors"
+                        className="p-1.5 text-slate-500 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition-colors"
                         title="Delete Invoice"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -533,7 +533,7 @@ export const Invoices: React.FC = () => {
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <span className="px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-350">
+                <span className="px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200">
                   {page} / {totalPages}
                 </span>
                 <Button
@@ -630,7 +630,6 @@ export const Invoices: React.FC = () => {
                         type="number"
                         value={prod.quantity}
                         onChange={(e) => handleProductChange(idx, 'quantity', e.target.value)}
-                        placeholder="e.g. 5"
                         min="1"
                         required
                       />
@@ -647,7 +646,6 @@ export const Invoices: React.FC = () => {
                             onChange={(e) => handleProductChange(idx, 'weightValue', e.target.value)}
                             className="w-full px-3 py-2 text-sm bg-transparent border-0 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-0"
                             style={{ MozAppearance: 'textfield', appearance: 'textfield', WebkitAppearance: 'none' } as React.CSSProperties}
-                            placeholder="e.g. 100"
                             min="1"
                             onWheel={(e) => (e.target as HTMLElement).blur()}
                             required
@@ -655,7 +653,7 @@ export const Invoices: React.FC = () => {
                           <select
                             value={prod.weightUnit}
                             onChange={(e) => handleProductChange(idx, 'weightUnit', e.target.value)}
-                            className="px-3 py-2 text-sm bg-slate-50 dark:bg-slate-850 border-l border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer"
+                            className="px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer"
                           >
                             <option value="grams">grams</option>
                             <option value="kg">kg</option>
@@ -669,7 +667,6 @@ export const Invoices: React.FC = () => {
                         type="number"
                         value={prod.price}
                         onChange={(e) => handleProductChange(idx, 'price', e.target.value)}
-                        placeholder="e.g. 10"
                         min="0"
                         step="0.01"
                         required
@@ -740,7 +737,7 @@ export const Invoices: React.FC = () => {
           <div className="border-t border-slate-100 dark:border-slate-800 pt-4 flex flex-col items-end text-xs space-y-1.5">
             <div className="flex justify-between w-64 text-slate-500">
               <span>Items Subtotal:</span>
-              <span className="font-semibold text-slate-700 dark:text-slate-350">₹{calculateTotal().subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              <span className="font-semibold text-slate-700 dark:text-slate-200">₹{calculateTotal().subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
             <div className="flex justify-between w-64 text-slate-500">
               <span>Discount deduction:</span>
@@ -748,13 +745,13 @@ export const Invoices: React.FC = () => {
             </div>
             <div className="flex justify-between w-64 text-slate-500">
               <span>CGST ({calculateTotal().cgstVal}%):</span>
-              <span className="font-semibold text-slate-700 dark:text-slate-350">
+              <span className="font-semibold text-slate-700 dark:text-slate-200">
                 ₹{(Math.max(0, calculateTotal().subtotal - calculateTotal().discountVal) * (calculateTotal().cgstVal / 100)).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
             <div className="flex justify-between w-64 text-slate-500">
               <span>SGST ({calculateTotal().sgstVal}%):</span>
-              <span className="font-semibold text-slate-700 dark:text-slate-350">
+              <span className="font-semibold text-slate-700 dark:text-slate-200">
                 ₹{(Math.max(0, calculateTotal().subtotal - calculateTotal().discountVal) * (calculateTotal().sgstVal / 100)).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
