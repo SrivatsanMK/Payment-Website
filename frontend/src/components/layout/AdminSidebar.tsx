@@ -11,7 +11,8 @@ import {
   LogOut,
   Building,
   ChevronDown,
-  ShieldCheck
+  ShieldCheck,
+  User
 } from 'lucide-react';
 import { Logo } from '../ui/Logo';
 import { getAssetUrl } from '../../utils/config';
@@ -43,9 +44,10 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, setIsOpen })
       ]
     },
     { to: '/admin/settings', label: 'Settings', icon: <Settings className="h-5 w-5" /> },
+    { to: '/admin/profile', label: 'My Profile', icon: <User className="h-5 w-5" /> },
   ];
 
-  const roleLabel = admin?.role === 'ADMIN_1' ? 'Owner Admin' : 'Partner Admin';
+  const roleLabel = admin?.role === 'ADMIN_1' ? 'Akash Admin' : 'Hrithik Admin';
 
   return (
     <>

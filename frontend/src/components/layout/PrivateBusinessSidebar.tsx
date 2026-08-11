@@ -10,7 +10,8 @@ import {
   BarChart3,
   Settings,
   LogOut,
-  ShieldCheck
+  ShieldCheck,
+  User
 } from 'lucide-react';
 import { getAssetUrl } from '../../utils/config';
 
@@ -32,9 +33,10 @@ export const PrivateBusinessSidebar: React.FC<PrivateBusinessSidebarProps> = ({ 
     { to: '/admin/private-business/suppliers', label: 'Suppliers', icon: <Truck className="h-5 w-5" /> },
     { to: '/admin/private-business/reports', label: 'Reports', icon: <BarChart3 className="h-5 w-5" /> },
     { to: '/admin/private-business/settings', label: 'Settings', icon: <Settings className="h-5 w-5" /> },
+    { to: '/admin/private-business/profile', label: 'My Profile', icon: <User className="h-5 w-5" /> },
   ];
 
-  const roleLabel = admin?.role === 'ADMIN_1' ? 'Owner Admin' : 'Partner Admin';
+  const roleLabel = admin?.role === 'ADMIN_1' ? 'Akash Admin' : 'Hrithik Admin';
 
   return (
     <>

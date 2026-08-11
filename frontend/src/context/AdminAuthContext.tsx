@@ -6,6 +6,8 @@ export interface AdminUser {
   role: 'ADMIN_1' | 'ADMIN_2';
   email: string;
   name: string;
+  adminId?: string;
+  displayName?: string;
   profilePicture?: string;
 }
 

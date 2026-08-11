@@ -31,6 +31,7 @@ import Invoices from './pages/admin/Invoices';
 import Payments from './pages/admin/Payments';
 import Reports from './pages/admin/Reports';
 import Settings from './pages/admin/Settings';
+import { AdminProfile } from './pages/admin/AdminProfile';
 
 // ─── EXPENSE MANAGER PAGES ───────────────────────────────────────────────────
 import ExpenseDashboard from './pages/expense-manager/ExpenseDashboard';
@@ -115,6 +116,7 @@ export const App: React.FC = () => {
                     <Route path="suppliers" element={<Suppliers />} />
                     <Route path="reports" element={<PrivateBusinessReports />} />
                     <Route path="settings" element={<PrivateBusinessSettings />} />
+                    <Route path="profile" element={<AdminProfile />} />
                   </Route>
 
                   {/* ── GREEN GLIDE LOGISTICS ADMIN PROTECTED ROUTES ───────────── */}
@@ -125,6 +127,7 @@ export const App: React.FC = () => {
                     <Route path="payments" element={<Payments />} />
                     <Route path="reports" element={<Reports />} />
                     <Route path="settings" element={<Settings />} />
+                    <Route path="profile" element={<AdminProfile />} />
                     {/* Expense Manager sub-routes */}
                     <Route path="expense-manager" element={<ExpenseDashboard />} />
                     <Route path="expense-manager/add" element={<AddExpense />} />

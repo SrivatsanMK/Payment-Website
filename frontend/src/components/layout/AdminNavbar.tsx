@@ -100,7 +100,7 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ setSidebarOpen }) => {
         <div className="hidden sm:flex items-center gap-2 rounded-xl bg-teal-500/10 border border-teal-500/30 px-3.5 py-1.5 backdrop-blur-md">
           <ShieldCheck className="h-4 w-4 text-teal-600 dark:text-teal-400" />
           <span className="text-[11px] font-bold text-teal-700 dark:text-teal-300 uppercase tracking-wider">
-            {admin?.role === 'ADMIN_1' ? 'Owner Admin' : 'Partner Admin'}
+            {admin?.role === 'ADMIN_1' ? 'Akash Admin' : 'Hrithik Admin'}
           </span>
         </div>
       </div>
@@ -180,9 +180,8 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ setSidebarOpen }) => {
                       <div
                         key={n._id || n.id}
                         onClick={() => markSingleRead(n._id || n.id)}
-                        className={`p-4 flex flex-col gap-1 transition-colors cursor-pointer hover:bg-slate-100/50 dark:hover:bg-white/[0.03] ${
-                          !n.isRead ? 'bg-purple-500/10' : ''
-                        }`}
+                        className={`p-4 flex flex-col gap-1 transition-colors cursor-pointer hover:bg-slate-100/50 dark:hover:bg-white/[0.03] ${!n.isRead ? 'bg-purple-500/10' : ''
+                          }`}
                       >
                         <div className="flex justify-between items-start gap-2">
                           <span className="text-xs font-bold text-slate-900 dark:text-white leading-snug">

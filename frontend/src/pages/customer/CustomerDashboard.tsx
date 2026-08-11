@@ -150,22 +150,22 @@ export const CustomerDashboard: React.FC = () => {
       </div>
 
       {/* Metrics Grid */}
-      <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
         {metricCards.map((card, idx) => (
-          <Card key={idx} hoverable className={`glass-card border-l-4 ${card.borderColor} flex flex-col justify-between h-36 py-5 px-6`}>
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-300 dark:text-slate-300">
+          <Card key={idx} hoverable className={`glass-card border-l-4 ${card.borderColor} flex flex-col justify-between py-5 px-4 min-h-[9rem]`}>
+            <div className="flex items-start justify-between gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300 dark:text-slate-300 leading-tight">
                 {card.title}
               </span>
-              <div className="p-2 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md">
+              <div className="flex-shrink-0 p-1.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md">
                 {card.icon}
               </div>
             </div>
             <div className="mt-3">
-              <span className="text-2xl font-bold text-white dark:text-white">
+              <span className="block text-lg font-bold text-white dark:text-white break-all leading-tight">
                 {card.value}
               </span>
-              <p className="text-[11px] text-slate-400 mt-1 font-medium">
+              <p className="text-[10px] text-slate-400 mt-1 font-medium leading-snug">
                 {card.subtext}
               </p>
             </div>
@@ -175,70 +175,80 @@ export const CustomerDashboard: React.FC = () => {
 
       {/* Invoices and Actions */}
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Recent Invoices list */}
-        <Card className="lg:col-span-2 glass-card p-0 overflow-hidden flex flex-col justify-between">
-          <div className="p-7 border-b border-white/10">
-            <h3 className="text-base font-bold text-white dark:text-white">
-              Recent Bills & Statements
-            </h3>
-            <p className="text-xs text-slate-400 mt-1">
-              Your newly issued invoices.
-            </p>
-          </div>
+        <div className="lg:col-span-2 flex flex-col">
+          <Card className="glass-card p-0 flex flex-col justify-between" hoverable={false}>
+            <div className="p-7 border-b border-white/10 flex-shrink-0">
+              <h3 className="text-base font-bold text-white dark:text-white">
+                Recent Bills & Statements
+              </h3>
+              <p className="text-xs text-slate-400 mt-1">
+                Your newly issued invoices.
+              </p>
+            </div>
 
-          <div className="flex-grow max-h-[300px] overflow-y-auto">
-            <Table headers={['Invoice No', 'Issue Date', 'Total', 'Actions']}>
-              {invoices.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="px-6 py-6 text-center text-xs text-slate-400">
-                    No unpaid billing statements found.
-                  </td>
-                </tr>
-              ) : (
-                invoices.map((inv) => (
-                  <tr key={inv._id} className="text-xs glass-table-row">
-                    <td className="px-6 py-4 font-bold text-white">
-                      {inv.invoiceNumber}
-                    </td>
-                    <td className="px-6 py-4 text-slate-300">
-                      {new Date(inv.createdAt).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 font-bold text-white">
-                      ₹{inv.finalAmount.toLocaleString('en-IN')}
-                    </td>
-
-                    <td className="px-6 py-4">
-                      {inv.status !== 'Paid' ? (
-                        <Button
-                          size="sm"
-                          onClick={() => navigate(`/pay-invoice/${inv._id}`)}
-                          className="py-1.5 px-4 text-xs font-semibold glass-button"
-                        >
-                          Pay Now
-                        </Button>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
-                            <FileCheck className="h-4 w-4" />
-                            Settled
-                          </span>
-                          <button
-                            onClick={() => handleDownloadInvoice(inv.invoiceNumber)}
-                            disabled={downloadingInvoice !== null}
-                            className="p-1.5 text-slate-300 hover:text-white rounded-xl transition-colors glass-button-secondary"
-                            title="Download PDF Invoice"
-                          >
-                            <Download className="h-4 w-4" />
-                          </button>
-                        </div>
-                      )}
-                    </td>
+            <div className="flex-grow max-h-[300px] overflow-y-auto overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
+              <table className="w-full min-w-[480px] text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-white/10 bg-white/5">
+                    {['Invoice No', 'Issue Date', 'Total', 'Actions'].map((h, i) => (
+                      <th key={i} className="px-5 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 whitespace-nowrap">
+                        {h}
+                      </th>
+                    ))}
                   </tr>
-                ))
-              )}
-            </Table>
-          </div>
-        </Card>
+                </thead>
+                <tbody className="divide-y divide-white/10 text-xs">
+                  {invoices.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="px-6 py-6 text-center text-xs text-slate-400">
+                        No unpaid billing statements found.
+                      </td>
+                    </tr>
+                  ) : (
+                    invoices.map((inv) => (
+                      <tr key={inv._id} className="text-xs glass-table-row hover:bg-white/5 transition-colors">
+                        <td className="px-5 py-4 font-bold text-white whitespace-nowrap">
+                          {inv.invoiceNumber}
+                        </td>
+                        <td className="px-5 py-4 text-slate-300 whitespace-nowrap">
+                          {new Date(inv.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-5 py-4 font-bold text-white whitespace-nowrap">
+                          ₹{inv.finalAmount.toLocaleString('en-IN')}
+                        </td>
+                        <td className="px-5 py-4 whitespace-nowrap">
+                          {inv.status !== 'Paid' ? (
+                            <button
+                              onClick={() => navigate(`/pay-invoice/${inv._id}`)}
+                              className="inline-flex items-center justify-center py-1.5 px-4 text-xs font-semibold rounded-lg bg-purple-600 hover:bg-purple-500 text-white transition-colors shadow-lg shadow-purple-900/40 whitespace-nowrap"
+                            >
+                              Pay Now
+                            </button>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1 whitespace-nowrap">
+                                <FileCheck className="h-4 w-4" />
+                                Settled
+                              </span>
+                              <button
+                                onClick={() => handleDownloadInvoice(inv.invoiceNumber)}
+                                disabled={downloadingInvoice !== null}
+                                className="p-1.5 text-slate-300 hover:text-white rounded-xl transition-colors"
+                                title="Download PDF Invoice"
+                              >
+                                <Download className="h-4 w-4" />
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
 
         {/* Purchases vs Payments Chart */}
         <Card className="glass-card flex flex-col justify-between p-7">
