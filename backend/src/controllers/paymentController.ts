@@ -141,6 +141,28 @@ export const recordPayment = async (req: AuthRequest, res: Response, next: NextF
       message: `We received ₹${amount.toLocaleString('en-IN')} for Invoice ${invoiceNumber}. Transaction ID: ${payment.transactionId}`
     });
 
+    // Notify BOTH ADMIN_1 and ADMIN_2 registered emails
+    try {
+      await sendPaymentAttemptAlertEmail(
+        '',
+        '',
+        customer.name,
+        invoiceNumber,
+        amount,
+        now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+        customer.customerId
+      );
+    } catch (eErr) {
+      console.error('Non-fatal admin payment email notification error:', eErr);
+    }
+
+    // Create in-app notification for both admin portals
+    await Notification.create({
+      isAdminNotification: true,
+      title: 'New Customer Payment Submitted',
+      message: `Customer ${customer.name} (${customer.customerId || 'N/A'}) submitted ₹${amount.toLocaleString('en-IN')} for Invoice ${invoiceNumber}.`
+    });
+
     // Send confirmation email
     await sendPaymentConfirmationEmail(
       customer.email,
@@ -225,34 +247,140 @@ export const notifyPaymentAttempt = async (req: AuthRequest, res: Response, next
   try {
     const { invoiceId } = req.body;
 
-    const invoice = await Invoice.findById(invoiceId).populate('customer', 'name');
+    const invoice = await Invoice.findById(invoiceId).populate('customer', 'customerId name email phone');
     if (!invoice) {
       return res.status(404).json({ success: false, message: 'Invoice not found' });
     }
 
-    const adminSettings = await Setting.findOne();
-    const adminEmail = process.env.ADMIN_INITIAL_EMAIL || 'admin@example.com';
-    const adminName = 'Admin';
-    const customerName = (invoice.customer as any)?.name || 'Customer';
+    // Send email to BOTH ADMIN_1 and ADMIN_2 registered emails
+    const customer = invoice.customer as any;
+    const customerName = customer?.name || 'Customer';
+    const customerId = customer?.customerId || '';
     const timestamp = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
 
-    // We can run this async without awaiting if we don't want to block the response,
-    // but waiting ensures it sends. Let's await it.
     await sendPaymentAttemptAlertEmail(
-      adminEmail,
-      adminName,
+      '',
+      '',
       customerName,
       invoice.invoiceNumber,
       invoice.remainingAmount,
-      timestamp
+      timestamp,
+      customerId
     );
 
-    req.app.get('io').emit('DATA_UPDATED');
+    // Create in-app notification for both admin portals
+    await Notification.create({
+      isAdminNotification: true,
+      title: 'New Customer Payment Attempt',
+      message: `Customer ${customerName} (${customerId || 'N/A'}) initiated payment for Invoice ${invoice.invoiceNumber} (₹${invoice.remainingAmount.toLocaleString('en-IN')}).`
+    });
+
+    req.app.get('io')?.emit('DATA_UPDATED');
     res.status(200).json({
-      success: true, message: 'Admin notified successfully' });
+      success: true,
+      message: 'Both Admins notified successfully'
+    });
   } catch (error) {
     console.error('Error in notifyPaymentAttempt:', error);
-    // Even if email fails, we shouldn't break the user's flow, but we can log it.
-    res.status(500).json({ success: false, message: 'Failed to notify admin' });
+    res.status(500).json({ success: false, message: 'Failed to notify admins' });
+  }
+};
+
+/**
+ * Approve / Confirm Customer Payment (ADMIN_1 or ADMIN_2)
+ * Uses atomic database update to prevent race conditions and double approval.
+ * Approving admin identity is kept server-side in ActivityLog only and NEVER returned in API or rendered in UI.
+ */
+export const approvePayment = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const role = req.user?.role;
+    const adminObjId = req.user?.id;
+
+    if (!role || !['ADMIN_1', 'ADMIN_2'].includes(role)) {
+      return res.status(403).json({ success: false, message: 'Access denied. Admin authorization required.' });
+    }
+
+    // Atomic update: transition status from 'Pending' to 'Received'
+    const payment = await Payment.findOneAndUpdate(
+      { _id: id, status: 'Pending' },
+      { $set: { status: 'Received', approvedAt: new Date() } },
+      { new: true }
+    ).populate('customer', 'customerId name email phone');
+
+    if (!payment) {
+      const existing = await Payment.findById(id);
+      if (!existing) {
+        return res.status(404).json({ success: false, message: 'Payment record not found' });
+      }
+      return res.status(400).json({ success: false, message: 'Payment has already been approved or processed.' });
+    }
+
+    // Update invoice balance
+    const invoice = await Invoice.findOne({ invoiceNumber: payment.invoiceNumber });
+    if (invoice) {
+      invoice.paidAmount += payment.amount;
+      invoice.remainingAmount = Math.max(0, invoice.finalAmount - invoice.paidAmount);
+
+      if (invoice.remainingAmount === 0) {
+        await Order.updateMany(
+          { invoiceNumber: payment.invoiceNumber },
+          { invoiceStatus: 'Paid' }
+        );
+      }
+      await invoice.save();
+    }
+
+    // Notify customer
+    const customer: any = payment.customer;
+    if (customer) {
+      await Notification.create({
+        customer: customer._id,
+        title: 'Payment Received',
+        message: `We received ₹${payment.amount.toLocaleString('en-IN')} for Invoice ${payment.invoiceNumber}. Transaction ID: ${payment.transactionId}`
+      });
+
+      try {
+        await sendPaymentConfirmationEmail(
+          customer.email,
+          customer.name,
+          payment.invoiceNumber,
+          payment.amount,
+          payment.transactionId,
+          payment.paymentMethod
+        );
+      } catch (eErr) {
+        console.error('Non-fatal customer confirmation email error:', eErr);
+      }
+    }
+
+    // Internal Server-Side Audit Log ONLY (never returned to frontend or shown in UI)
+    await ActivityLog.create({
+      userId: adminObjId,
+      userRole: role,
+      action: 'Payment Approved',
+      details: `Payment ID ${id} of ₹${payment.amount} for invoice ${payment.invoiceNumber} approved. Status: Received`,
+      ipAddress: req.ip || '',
+      userAgent: req.headers['user-agent'] || ''
+    });
+
+    req.app.get('io')?.emit('DATA_UPDATED');
+
+    res.status(200).json({
+      success: true,
+      message: 'Payment received and confirmed successfully.',
+      payment: {
+        _id: payment._id,
+        invoiceNumber: payment.invoiceNumber,
+        amount: payment.amount,
+        status: payment.status,
+        date: payment.date,
+        time: payment.time,
+        transactionId: payment.transactionId,
+        paymentMethod: payment.paymentMethod
+      }
+    });
+  } catch (error) {
+    next(error);
   }
 };

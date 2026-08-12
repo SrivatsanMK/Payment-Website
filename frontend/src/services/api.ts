@@ -56,6 +56,7 @@ export const endpoints = {
     history: '/payments/history',
     record: '/payments/record',
     upiDetails: (id: string) => `/payments/upi-details/${id}`,
+    approve: (id: string) => `/payments/${id}/approve`,
   },
   reports: {
     dashboard: '/reports/dashboard',

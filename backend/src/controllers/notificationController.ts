@@ -4,17 +4,31 @@ import Notification from '../models/Notification';
 
 /**
  * Get Notifications (Admin sees all, Customer sees their own)
+ * Admin read/unread state is tracked independently per admin ID
  */
 export const getCustomerNotifications = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const role = req.user?.role;
+    const adminId = req.user?.id;
+
     if (role && ['ADMIN_1', 'ADMIN_2'].includes(role)) {
-      const notifications = await Notification.find()
+      const rawNotifications = await Notification.find()
         .populate('customer', 'name customerId')
         .sort({ createdAt: -1 })
         .limit(30);
 
-      const unreadCount = await Notification.countDocuments({ isRead: false });
+      // Map read state per-admin: isRead is true if global isRead OR adminId is in readByAdmins
+      const notifications = rawNotifications.map((n: any) => {
+        const doc = n.toObject ? n.toObject() : n;
+        const readByArray = (doc.readByAdmins || []).map((id: any) => id.toString());
+        const isReadForThisAdmin = doc.isRead || (adminId && readByArray.includes(adminId.toString()));
+        return {
+          ...doc,
+          isRead: isReadForThisAdmin
+        };
+      });
+
+      const unreadCount = notifications.filter(n => !n.isRead).length;
 
       return res.status(200).json({
         success: true,
@@ -40,15 +54,17 @@ export const getCustomerNotifications = async (req: AuthRequest, res: Response, 
 };
 
 /**
- * Mark All Notifications as Read (Admin updates all, Customer updates their own)
+ * Mark All Notifications as Read (Admin updates their own read array, Customer updates their own)
  */
 export const markNotificationsAsRead = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const role = req.user?.role;
-    if (role && ['ADMIN_1', 'ADMIN_2'].includes(role)) {
+    const adminId = req.user?.id;
+
+    if (role && ['ADMIN_1', 'ADMIN_2'].includes(role) && adminId) {
       await Notification.updateMany(
-        { isRead: false },
-        { $set: { isRead: true } }
+        { readByAdmins: { $ne: adminId } },
+        { $addToSet: { readByAdmins: adminId } }
       );
       return res.status(200).json({
         success: true,
@@ -76,7 +92,15 @@ export const markNotificationsAsRead = async (req: AuthRequest, res: Response, n
 export const markSingleNotificationAsRead = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    await Notification.findByIdAndUpdate(id, { $set: { isRead: true } });
+    const role = req.user?.role;
+    const adminId = req.user?.id;
+
+    if (role && ['ADMIN_1', 'ADMIN_2'].includes(role) && adminId) {
+      await Notification.findByIdAndUpdate(id, { $addToSet: { readByAdmins: adminId } });
+    } else {
+      await Notification.findByIdAndUpdate(id, { $set: { isRead: true } });
+    }
+
     res.status(200).json({
       success: true,
       message: 'Notification marked as read'

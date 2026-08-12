@@ -1,4 +1,5 @@
 import transporter from '../config/mail';
+import Admin from '../models/Admin';
 
 interface EmailOptions {
   to: string;
@@ -302,49 +303,91 @@ export const sendInvoiceUpdateEmail = async (
 /**
  * Sends an alert to the Admin when a customer clicks the "Pay via UPI Apps" button.
  */
+/**
+ * Fetch all unique registered admin email addresses from MongoDB (ADMIN_1 and ADMIN_2)
+ */
+export const getAdminEmails = async (): Promise<string[]> => {
+  try {
+    const admins = await Admin.find({ role: { $in: ['ADMIN_1', 'ADMIN_2'] } }).select('email');
+    const emails = admins
+      .map(a => a.email ? a.email.toLowerCase().trim() : '')
+      .filter(e => e.length > 0);
+    return Array.from(new Set(emails));
+  } catch (err) {
+    console.error('Error fetching admin emails:', err);
+    return [];
+  }
+};
+
+/**
+ * Sends an alert to BOTH ADMIN_1 and ADMIN_2 registered emails when a customer submits/attempts payment.
+ */
 export const sendPaymentAttemptAlertEmail = async (
-  adminEmail: string,
-  adminName: string,
+  adminEmailIgnored: string,
+  adminNameIgnored: string,
   customerName: string,
   invoiceNumber: string,
   amount: number,
-  timestamp: string
+  timestamp: string,
+  customerId?: string
 ): Promise<boolean> => {
+  const adminEmails = await getAdminEmails();
+  if (adminEmails.length === 0) return false;
+
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; background-color: #121212; color: #ffffff; border-radius: 8px;">
-      <p style="margin-top: 0;">Hi <strong>${adminName}</strong>,</p>
+      <p style="margin-top: 0;">Hello Administrator,</p>
       <p style="color: #e0e0e0; line-height: 1.5;">
-        A customer has just clicked the payment button for a direct UPI transfer. Please verify if the funds have reached your account and manually update the invoice status.
+        A customer has submitted / initiated a payment transfer for invoice <strong>${invoiceNumber}</strong>. Please verify the transaction details in the Admin Portal and confirm payment receipt.
       </p>
       
-      <h3 style="color: #ffffff; border-bottom: 1px solid #333; padding-bottom: 8px; margin-top: 30px;">Payment Attempt Details</h3>
+      <h3 style="color: #ffffff; border-bottom: 1px solid #333; padding-bottom: 8px; margin-top: 25px;">Payment Details</h3>
       
       <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
         <tr style="border-bottom: 1px solid #333;">
-          <th style="padding: 12px 0; text-align: left; color: #a0a0a0; font-weight: bold;">Customer</th>
-          <td style="padding: 12px 0; text-align: left; color: #ffffff;">${customerName}</td>
+          <th style="padding: 10px 0; text-align: left; color: #a0a0a0; font-weight: bold;">Customer Name</th>
+          <td style="padding: 10px 0; text-align: left; color: #ffffff;">${customerName}</td>
+        </tr>
+        ${customerId ? `
+        <tr style="border-bottom: 1px solid #333;">
+          <th style="padding: 10px 0; text-align: left; color: #a0a0a0; font-weight: bold;">Customer ID</th>
+          <td style="padding: 10px 0; text-align: left; color: #ffffff;">${customerId}</td>
+        </tr>
+        ` : ''}
+        <tr style="border-bottom: 1px solid #333;">
+          <th style="padding: 10px 0; text-align: left; color: #a0a0a0; font-weight: bold;">Invoice #</th>
+          <td style="padding: 10px 0; text-align: left; color: #6366f1; font-weight: bold;">${invoiceNumber}</td>
         </tr>
         <tr style="border-bottom: 1px solid #333;">
-          <th style="padding: 12px 0; text-align: left; color: #a0a0a0; font-weight: bold;">Invoice #</th>
-          <td style="padding: 12px 0; text-align: left; color: #ffffff;">${invoiceNumber}</td>
+          <th style="padding: 10px 0; text-align: left; color: #a0a0a0; font-weight: bold;">Amount</th>
+          <td style="padding: 10px 0; text-align: left; color: #10b981; font-weight: bold;">₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
         </tr>
         <tr style="border-bottom: 1px solid #333;">
-          <th style="padding: 12px 0; text-align: left; color: #a0a0a0; font-weight: bold;">Amount</th>
-          <td style="padding: 12px 0; text-align: left; color: #ffffff;">₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-        </tr>
-        <tr style="border-bottom: 1px solid #333;">
-          <th style="padding: 12px 0; text-align: left; color: #a0a0a0; font-weight: bold;">Timestamp</th>
-          <td style="padding: 12px 0; text-align: left; color: #ffffff;">${timestamp}</td>
+          <th style="padding: 10px 0; text-align: left; color: #a0a0a0; font-weight: bold;">Timestamp</th>
+          <td style="padding: 10px 0; text-align: left; color: #ffffff;">${timestamp}</td>
         </tr>
       </table>
+
+      <div style="text-align: center; margin-top: 25px;">
+        <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/admin/payments" style="background-color: #4f46e5; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; display: inline-block;">Open Admin Portal</a>
+      </div>
     </div>
   `;
 
-  return sendEmail({
-    to: adminEmail,
-    subject: `⚠️ Payment Alert: ₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })} initiated by ${customerName}`,
-    html,
-  });
+  let sent = false;
+  for (const email of adminEmails) {
+    try {
+      const ok = await sendEmail({
+        to: email,
+        subject: `💳 Payment Notification: ₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })} for Invoice ${invoiceNumber}`,
+        html,
+      });
+      if (ok) sent = true;
+    } catch (err) {
+      console.error(`Failed to send payment alert email to admin ${email}:`, err);
+    }
+  }
+  return sent;
 };
 
 /**

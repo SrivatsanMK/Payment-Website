@@ -7,7 +7,9 @@ const PaymentSchema = new Schema({
   date: { type: Date, default: Date.now },
   time: { type: String, required: true }, // e.g. "14:35:00"
   transactionId: { type: String, trim: true, default: '' },
-  paymentMethod: { type: String, required: true }
+  paymentMethod: { type: String, required: true },
+  status: { type: String, enum: ['Pending', 'Received', 'Settled', 'Completed', 'Rejected'], default: 'Pending' },
+  approvedAt: { type: Date }
 }, {
   timestamps: true
 });
