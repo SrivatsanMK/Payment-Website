@@ -220,19 +220,50 @@ export const getPaymentsHistory = async (req: AuthRequest, res: Response, next: 
       ];
     }
 
+    const isAdmin = ['ADMIN_1', 'ADMIN_2'].includes(req.user?.role || '');
+
     const total = await Payment.countDocuments(query);
-    const payments = await Payment.find(query)
+    const rawPayments = await Payment.find(query)
       .populate('customer', 'customerId name email phone')
+      .populate('approvedBy', 'username displayName role email adminId')
+      .populate('createdBy', 'username displayName role email adminId')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
+
+    let processedPayments: any[] = [];
+
+    if (isAdmin) {
+      const invoiceNumbers = Array.from(new Set(rawPayments.map(p => p.invoiceNumber)));
+      const invoices = await Invoice.find({ invoiceNumber: { $in: invoiceNumbers } }).populate('createdBy', 'username displayName role email adminId');
+      const invoiceMap: Record<string, any> = {};
+      invoices.forEach(inv => {
+        invoiceMap[inv.invoiceNumber] = inv;
+      });
+
+      processedPayments = rawPayments.map(p => {
+        const doc = p.toObject();
+        if (!doc.createdBy && invoiceMap[p.invoiceNumber]?.createdBy) {
+          doc.createdBy = invoiceMap[p.invoiceNumber].createdBy;
+        }
+        return doc;
+      });
+    } else {
+      processedPayments = rawPayments.map(p => {
+        const doc = p.toObject();
+        delete doc.approvedBy;
+        delete doc.approvedAt;
+        delete doc.createdBy;
+        return doc;
+      });
+    }
 
     res.status(200).json({
       success: true,
       total,
       page,
       pages: Math.ceil(total / limit),
-      payments
+      payments: processedPayments
     });
 
   } catch (error) {

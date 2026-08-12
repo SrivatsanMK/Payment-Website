@@ -348,7 +348,7 @@ export const ProfileSelection: React.FC = () => {
             </div>
           </motion.div>
 
-          {/* Workspace Name: Private Business */}
+          {/* Workspace Name: Prime Harvest Organic */}
           <span style={{
             marginTop: 20,
             fontSize: 'clamp(22px, 2.5vw, 30px)',
@@ -358,7 +358,7 @@ export const ProfileSelection: React.FC = () => {
             textAlign: 'center',
             transition: 'color 300ms ease',
           }}>
-            Private Business
+            Prime Harvest Organic
           </span>
         </motion.div>
 

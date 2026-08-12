@@ -80,7 +80,8 @@ export const createInvoice = async (req: AuthRequest, res: Response, next: NextF
       paidAmount: 0,
       remainingAmount: finalAmount,
       qrCodeImage,
-      dueDate: dueDate ? new Date(dueDate) : invoiceDate
+      dueDate: dueDate ? new Date(dueDate) : invoiceDate,
+      createdBy: req.user?.id
     });
 
     // Create Order records for each product item so it reflects in Order History
@@ -155,7 +156,7 @@ export const createInvoice = async (req: AuthRequest, res: Response, next: NextF
 };
 
 /**
- * List Invoices (Admin sees all, Customer sees their own)
+ * List Invoices (Admin sees all with createdBy/approvedBy, Customer sees their own without admin audit fields)
  */
 export const getInvoices = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -168,6 +169,8 @@ export const getInvoices = async (req: AuthRequest, res: Response, next: NextFun
 
     const skip = (page - 1) * limit;
     const query: any = {};
+
+    const isAdmin = ['ADMIN_1', 'ADMIN_2'].includes(req.user?.role || '');
 
     // Role restrictions: Customer only sees their own invoices
     if (req.user?.role === 'Customer') {
@@ -196,7 +199,7 @@ export const getInvoices = async (req: AuthRequest, res: Response, next: NextFun
 
     // Search (by invoice number or customer name)
     if (search) {
-      if (req.user?.role === 'ADMIN_1' || req.user?.role === 'ADMIN_2') {
+      if (isAdmin) {
         const matchingCustomers = await Customer.find({
           $or: [
             { name: { $regex: search, $options: 'i' } },
@@ -216,18 +219,51 @@ export const getInvoices = async (req: AuthRequest, res: Response, next: NextFun
     }
 
     const total = await Invoice.countDocuments(query);
-    const invoices = await Invoice.find(query)
+    const rawInvoices = await Invoice.find(query)
       .populate('customer', 'customerId name email phone address gstNumber')
+      .populate('createdBy', 'username displayName role email adminId')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
+
+    // Fetch corresponding payments to resolve approvedBy for each invoice (Admin Only)
+    let processedInvoices: any[] = [];
+    if (isAdmin) {
+      const invoiceNumbers = rawInvoices.map(inv => inv.invoiceNumber);
+      const payments = await Payment.find({ invoiceNumber: { $in: invoiceNumbers } })
+        .populate('approvedBy', 'username displayName role email adminId');
+
+      const paymentMap: Record<string, any> = {};
+      payments.forEach(p => {
+        if (p.approvedBy || !paymentMap[p.invoiceNumber]) {
+          paymentMap[p.invoiceNumber] = p;
+        }
+      });
+
+      processedInvoices = rawInvoices.map(inv => {
+        const doc: any = inv.toObject();
+        const linkedPayment = paymentMap[inv.invoiceNumber];
+        doc.approvedBy = linkedPayment?.approvedBy || null;
+        doc.approvedAt = linkedPayment?.approvedAt || null;
+        return doc;
+      });
+    } else {
+      // Customer: strictly sanitize and remove all admin audit fields
+      processedInvoices = rawInvoices.map(inv => {
+        const doc: any = inv.toObject();
+        delete doc.createdBy;
+        delete doc.approvedBy;
+        delete doc.approvedAt;
+        return doc;
+      });
+    }
 
     res.status(200).json({
       success: true,
       total,
       page,
       pages: Math.ceil(total / limit),
-      invoices
+      invoices: processedInvoices
     });
 
   } catch (error) {
@@ -241,20 +277,36 @@ export const getInvoices = async (req: AuthRequest, res: Response, next: NextFun
 export const getInvoiceById = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
+    const isAdmin = ['ADMIN_1', 'ADMIN_2'].includes(req.user?.role || '');
 
-    const invoice = await Invoice.findById(id).populate('customer', 'customerId name email phone address gstNumber');
-    if (!invoice) {
+    const rawInvoice = await Invoice.findById(id)
+      .populate('customer', 'customerId name email phone address gstNumber')
+      .populate('createdBy', 'username displayName role email adminId');
+
+    if (!rawInvoice) {
       return res.status(404).json({ success: false, message: 'Invoice not found' });
     }
 
-    // Role check
-    if (req.user?.role === 'Customer' && (invoice.customer as any)._id.toString() !== req.user.id) {
+    // Role check for customer
+    if (req.user?.role === 'Customer' && (rawInvoice.customer as any)._id.toString() !== req.user.id) {
       return res.status(403).json({ success: false, message: 'Access denied to view other invoices' });
+    }
+
+    const doc: any = rawInvoice.toObject();
+    if (isAdmin) {
+      const payment = await Payment.findOne({ invoiceNumber: rawInvoice.invoiceNumber })
+        .populate('approvedBy', 'username displayName role email adminId');
+      doc.approvedBy = payment?.approvedBy || null;
+      doc.approvedAt = payment?.approvedAt || null;
+    } else {
+      delete doc.createdBy;
+      delete doc.approvedBy;
+      delete doc.approvedAt;
     }
 
     res.status(200).json({
       success: true,
-      invoice
+      invoice: doc
     });
 
   } catch (error) {
@@ -418,6 +470,8 @@ export const deleteInvoice = async (req: AuthRequest, res: Response, next: NextF
 export const getCustomerOrders = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const query: any = {};
+    const isAdmin = ['ADMIN_1', 'ADMIN_2'].includes(req.user?.role || '');
+
     if (req.user?.role === 'Customer') {
       query.customer = req.user.id;
     }
@@ -427,21 +481,47 @@ export const getCustomerOrders = async (req: AuthRequest, res: Response, next: N
       .sort({ purchaseDate: -1 })
       .lean();
 
-    // Fetch corresponding invoices to check their status (Paid, Pending, etc.)
-    const invoiceNumbers = orders.map(o => o.invoiceNumber);
-    const invoices = await Invoice.find({ invoiceNumber: { $in: invoiceNumbers } });
+    const invoiceNumbers = Array.from(new Set(orders.map(o => o.invoiceNumber)));
+    const invoices = await Invoice.find({ invoiceNumber: { $in: invoiceNumbers } })
+      .populate('createdBy', 'username displayName role email adminId');
+    const payments = await Payment.find({ invoiceNumber: { $in: invoiceNumbers } })
+      .populate('approvedBy', 'username displayName role email adminId');
 
-    // Map invoiceNumber to status
-    const invoiceStatusMap: Record<string, string> = {};
+    const invoiceMap: Record<string, any> = {};
     invoices.forEach(inv => {
-      invoiceStatusMap[inv.invoiceNumber] = inv.remainingAmount === 0 ? 'Paid' : 'Pending';
+      invoiceMap[inv.invoiceNumber] = inv;
     });
 
-    // Attach invoiceStatus to orders
-    const ordersWithInvoiceStatus = orders.map(o => ({
-      ...o,
-      invoiceStatus: invoiceStatusMap[o.invoiceNumber] || 'Pending'
-    }));
+    const paymentMap: Record<string, any> = {};
+    payments.forEach(p => {
+      if (p.approvedBy || !paymentMap[p.invoiceNumber]) {
+        paymentMap[p.invoiceNumber] = p;
+      }
+    });
+
+    const ordersWithInvoiceStatus = orders.map(o => {
+      const inv = invoiceMap[o.invoiceNumber];
+      const pymt = paymentMap[o.invoiceNumber];
+      const status = inv ? (inv.remainingAmount === 0 ? 'Paid' : 'Pending') : 'Pending';
+
+      const baseObj: any = {
+        ...o,
+        invoiceStatus: status,
+        paymentId: pymt?._id || null
+      };
+
+      if (isAdmin) {
+        baseObj.createdBy = inv?.createdBy || null;
+        baseObj.approvedBy = pymt?.approvedBy || null;
+        baseObj.approvedAt = pymt?.approvedAt || null;
+      } else {
+        delete baseObj.createdBy;
+        delete baseObj.approvedBy;
+        delete baseObj.approvedAt;
+      }
+
+      return baseObj;
+    });
 
     res.status(200).json({
       success: true,
@@ -491,7 +571,10 @@ export const markAsPaid = async (req: AuthRequest, res: Response, next: NextFunc
         transactionId: 'MANUAL-' + Date.now().toString().slice(-6),
         status: 'Settled',
         date: new Date(),
-        time: new Date().toLocaleTimeString('en-US', { hour12: false })
+        time: new Date().toLocaleTimeString('en-US', { hour12: false }),
+        approvedBy: req.user?.id,
+        approvedAt: new Date(),
+        createdBy: req.user?.id
       });
     }
 

@@ -16,7 +16,8 @@ const InvoiceSchema = new Schema({
   paidAmount: { type: Number, default: 0 },
   remainingAmount: { type: Number, required: true },
   qrCodeImage: { type: String }, // Optional path to uploaded QR Code image
-  dueDate: { type: Date, default: Date.now }
+  dueDate: { type: Date, default: Date.now },
+  createdBy: { type: Schema.Types.ObjectId, ref: 'Admin' }
 }, {
   timestamps: true
 });

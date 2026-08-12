@@ -9,7 +9,9 @@ const PaymentSchema = new Schema({
   transactionId: { type: String, trim: true, default: '' },
   paymentMethod: { type: String, required: true },
   status: { type: String, enum: ['Pending', 'Received', 'Settled', 'Completed', 'Rejected'], default: 'Pending' },
-  approvedAt: { type: Date }
+  approvedBy: { type: Schema.Types.ObjectId, ref: 'Admin' },
+  approvedAt: { type: Date },
+  createdBy: { type: Schema.Types.ObjectId, ref: 'Admin' }
 }, {
   timestamps: true
 });

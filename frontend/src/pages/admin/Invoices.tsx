@@ -453,10 +453,10 @@ export const Invoices: React.FC = () => {
         </div>
       ) : (
         <Card className="p-0 overflow-hidden" scrollable>
-          <Table headers={['Invoice No', 'Customer ID & Name', 'Issue Date', 'Total', 'Paid', 'Due Balance', 'Actions']} minWidth="min-w-[850px]">
+          <Table headers={['Invoice No', 'Customer ID & Name', 'Issue Date', 'Total', 'Paid', 'Due Balance', 'Created By', 'Approved By', 'Actions']} minWidth="min-w-[1050px]">
             {invoices.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-6 py-8 text-center text-xs text-slate-400">
+                <td colSpan={9} className="px-6 py-8 text-center text-xs text-slate-400">
                   No invoices found matching criteria.
                 </td>
               </tr>
@@ -481,6 +481,16 @@ export const Invoices: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 text-xs font-bold text-rose-600 dark:text-rose-400 whitespace-nowrap">
                     ₹{inv.remainingAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </td>
+                  <td className="px-6 py-4 text-xs font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
+                    {inv.createdBy
+                      ? (inv.createdBy.displayName || inv.createdBy.username || (inv.createdBy.role === 'ADMIN_1' ? 'Akash Admin' : 'Hrithik Admin'))
+                      : 'Unknown'}
+                  </td>
+                  <td className="px-6 py-4 text-xs font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                    {inv.approvedBy
+                      ? (inv.approvedBy.displayName || inv.approvedBy.username || (inv.approvedBy.role === 'ADMIN_1' ? 'Akash Admin' : 'Hrithik Admin'))
+                      : (inv.remainingAmount === 0 ? 'Not Recorded' : 'Pending')}
                   </td>
 
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -1006,6 +1016,30 @@ export const Invoices: React.FC = () => {
                       <li>Please make payment within the due date.</li>
                       <li>Subject to Coimbatore Jurisdiction.</li>
                     </ol>
+                  </div>
+
+                  {/* Admin Audit Information (Admin Only) */}
+                  <div className="border border-indigo-200 rounded p-2.5 bg-indigo-50/40 space-y-1.5 no-print">
+                    <div className="font-bold text-[#002D62] text-[11px] uppercase flex items-center justify-between border-b border-indigo-200 pb-1">
+                      <span>🛡️ Admin Record Audit</span>
+                      <span className="text-[9.5px] font-semibold text-indigo-700 bg-indigo-100 px-1.5 py-0.5 rounded">Admin Only</span>
+                    </div>
+                    <div className="flex justify-between items-center text-[10.5px]">
+                      <span className="font-bold text-slate-600">Created By:</span>
+                      <span className="font-bold text-indigo-700">
+                        {selectedInvoice.createdBy
+                          ? (selectedInvoice.createdBy.displayName || selectedInvoice.createdBy.username || (selectedInvoice.createdBy.role === 'ADMIN_1' ? 'Akash Admin' : 'Hrithik Admin'))
+                          : 'Unknown'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-[10.5px] border-t border-indigo-100 pt-1">
+                      <span className="font-bold text-slate-600">Approved By:</span>
+                      <span className="font-bold text-emerald-700">
+                        {selectedInvoice.approvedBy
+                          ? (selectedInvoice.approvedBy.displayName || selectedInvoice.approvedBy.username || (selectedInvoice.approvedBy.role === 'ADMIN_1' ? 'Akash Admin' : 'Hrithik Admin'))
+                          : (selectedInvoice.remainingAmount === 0 ? 'Not Recorded' : 'Pending')}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
