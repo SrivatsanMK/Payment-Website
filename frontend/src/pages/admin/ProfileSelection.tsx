@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Sun, Moon, Layers } from 'lucide-react';
+import { Sun, Moon } from 'lucide-react';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -63,15 +63,15 @@ export const ProfileSelection: React.FC = () => {
         top: 0,
         left: 0,
         right: 0,
-        height: 80,
-        padding: '0 32px',
+        height: 68,
+        padding: '0 16px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         zIndex: 50,
         pointerEvents: 'none',
       }}>
-        {/* Top Left: Dealer Payment Management System Branding */}
+        {/* Top Left: Green Glide Logistics Branding */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -87,21 +87,30 @@ export const ProfileSelection: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: 28,
-            height: 28,
-            borderRadius: 8,
-            background: isDark ? 'rgba(139, 92, 246, 0.15)' : 'rgba(139, 92, 246, 0.1)',
-            border: isDark ? '1px solid rgba(139, 92, 246, 0.3)' : '1px solid rgba(139, 92, 246, 0.2)',
           }}>
-            <Layers size={16} color="#8b5cf6" strokeWidth={2.2} />
+            <img
+              src={`/tab_logo.png?v=${Date.now()}`}
+              alt="Green Glide Logistics"
+              style={{
+                width: 36,
+                height: 36,
+                objectFit: 'contain',
+                flexShrink: 0,
+              }}
+            />
           </div>
+          {/* Brand text — hidden on very small screens to avoid overlap with heading */}
           <span style={{
-            fontSize: 14,
+            fontSize: 'clamp(13px, 3.5vw, 18px)',
             fontWeight: 600,
             letterSpacing: '-0.01em',
             color: isDark ? 'rgba(255, 255, 255, 0.9)' : 'rgba(17, 17, 17, 0.9)',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            maxWidth: 'clamp(100px, 35vw, 220px)',
           }}>
-            Dealer Payment Management System
+            Green Glide Logistics
           </span>
         </motion.div>
 
@@ -111,8 +120,8 @@ export const ProfileSelection: React.FC = () => {
           aria-label="Toggle theme"
           style={{
             pointerEvents: 'auto',
-            width: 56,
-            height: 56,
+            width: 44,
+            height: 44,
             borderRadius: '50%',
             display: 'flex',
             alignItems: 'center',
@@ -130,6 +139,7 @@ export const ProfileSelection: React.FC = () => {
               : '0 12px 32px rgba(0, 0, 0, 0.08), inset 0 1px 2px rgba(255, 255, 255, 1)',
             cursor: 'pointer',
             outline: 'none',
+            flexShrink: 0,
             transition: 'all 500ms cubic-bezier(0.22, 0.61, 0.36, 1)',
           }}
           whileHover={{ scale: 1.08, rotate: 12 }}
@@ -155,6 +165,9 @@ export const ProfileSelection: React.FC = () => {
         marginBottom: 56,
         maxWidth: 720,
         zIndex: 10,
+        paddingTop: 80,
+        paddingLeft: 16,
+        paddingRight: 16,
       }}>
         {/* Large Heading: Who's accessing the system? */}
         <motion.h1
@@ -257,11 +270,11 @@ export const ProfileSelection: React.FC = () => {
                 : '1px solid rgba(255, 255, 255, 0.85)',
               boxShadow: isDark
                 ? (selectedProfile === 'private'
-                    ? '0 0 0 3px #0d9488, 0 25px 60px rgba(0,0,0,0.9), inset 0 1px 1px rgba(255,255,255,0.6)'
-                    : '0 20px 50px rgba(0,0,0,0.8), inset 0 1px 1px rgba(255,255,255,0.4), inset 0 -4px 12px rgba(0,0,0,0.5)')
+                  ? '0 0 0 3px #0d9488, 0 25px 60px rgba(0,0,0,0.9), inset 0 1px 1px rgba(255,255,255,0.6)'
+                  : '0 20px 50px rgba(0,0,0,0.8), inset 0 1px 1px rgba(255,255,255,0.4), inset 0 -4px 12px rgba(0,0,0,0.5)')
                 : (selectedProfile === 'private'
-                    ? '0 0 0 3px #0d9488, 0 20px 45px rgba(0,0,0,0.1), inset 0 1px 2px rgba(255,255,255,1)'
-                    : '0 20px 50px rgba(0,0,0,0.06), inset 0 1px 2px rgba(255,255,255,1), inset 0 -4px 12px rgba(255,255,255,0.4)'),
+                  ? '0 0 0 3px #0d9488, 0 20px 45px rgba(0,0,0,0.1), inset 0 1px 2px rgba(255,255,255,1)'
+                  : '0 20px 50px rgba(0,0,0,0.06), inset 0 1px 2px rgba(255,255,255,1), inset 0 -4px 12px rgba(255,255,255,0.4)'),
               transition: 'all 450ms cubic-bezier(.22,.61,.36,1)',
               overflow: 'hidden',
             }}
@@ -395,11 +408,11 @@ export const ProfileSelection: React.FC = () => {
                 : '1px solid rgba(255, 255, 255, 0.85)',
               boxShadow: isDark
                 ? (selectedProfile === 'dashboard'
-                    ? '0 0 0 3px #10b981, 0 25px 60px rgba(0,0,0,0.9), inset 0 1px 1px rgba(255,255,255,0.6)'
-                    : '0 20px 50px rgba(0,0,0,0.8), inset 0 1px 1px rgba(255,255,255,0.4), inset 0 -4px 12px rgba(0,0,0,0.5)')
+                  ? '0 0 0 3px #10b981, 0 25px 60px rgba(0,0,0,0.9), inset 0 1px 1px rgba(255,255,255,0.6)'
+                  : '0 20px 50px rgba(0,0,0,0.8), inset 0 1px 1px rgba(255,255,255,0.4), inset 0 -4px 12px rgba(0,0,0,0.5)')
                 : (selectedProfile === 'dashboard'
-                    ? '0 0 0 3px #10b981, 0 20px 45px rgba(0,0,0,0.1), inset 0 1px 2px rgba(255,255,255,1)'
-                    : '0 20px 50px rgba(0,0,0,0.06), inset 0 1px 2px rgba(255,255,255,1), inset 0 -4px 12px rgba(255,255,255,0.4)'),
+                  ? '0 0 0 3px #10b981, 0 20px 45px rgba(0,0,0,0.1), inset 0 1px 2px rgba(255,255,255,1)'
+                  : '0 20px 50px rgba(0,0,0,0.06), inset 0 1px 2px rgba(255,255,255,1), inset 0 -4px 12px rgba(255,255,255,0.4)'),
               transition: 'all 450ms cubic-bezier(.22,.61,.36,1)',
               overflow: 'hidden',
             }}

@@ -84,7 +84,7 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ setSidebarOpen }) => {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b border-slate-200/80 dark:border-white/10 glass-panel px-4 sm:px-8">
+    <header className="sticky top-0 z-30 flex h-14 sm:h-20 items-center justify-between border-b border-slate-200/80 dark:border-white/10 glass-panel px-3 sm:px-8">
       {/* Left: hamburger */}
       <div className="flex items-center gap-4">
         <motion.button
@@ -106,7 +106,7 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ setSidebarOpen }) => {
       </div>
 
       {/* Right controls */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         {/* Switch Profile (Admin 1 only) */}
         {admin?.role === 'ADMIN_1' && (
           <motion.button
@@ -114,7 +114,7 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ setSidebarOpen }) => {
             whileTap={{ scale: 0.95 }}
             onClick={handleSwitchProfile}
             title="Switch Profile"
-            className="flex items-center gap-2 rounded-2xl px-4 py-2 text-xs font-bold glass-button-secondary"
+            className="flex items-center gap-2 rounded-2xl px-2 sm:px-4 py-2 text-xs font-bold glass-button-secondary"
           >
             <ArrowLeftRight className="h-4 w-4 text-purple-600 dark:text-purple-400" />
             <span className="hidden sm:inline">Switch Profile</span>

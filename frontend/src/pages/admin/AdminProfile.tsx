@@ -299,9 +299,6 @@ export const AdminProfile: React.FC = () => {
         <h1 className="text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100">
           Admin Account Profile
         </h1>
-        <p className="text-xs text-slate-400 mt-1">
-          Manage your admin name, contact details, profile picture, and password — all protected by email OTP verification.
-        </p>
       </div>
 
       {loading ? (
@@ -353,7 +350,7 @@ export const AdminProfile: React.FC = () => {
                   {/* Admin ID — read-only */}
                   <div>
                     <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-                      Admin ID <span className="normal-case text-[10px] text-slate-400">(used for login)</span>
+                      Admin ID
                     </label>
                     <div className="flex items-center gap-2">
                       <div className="flex-1 flex items-center gap-2 px-4 py-2.5 rounded-lg border bg-slate-100/60 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 text-sm font-mono font-bold text-purple-600 dark:text-purple-400 cursor-not-allowed">

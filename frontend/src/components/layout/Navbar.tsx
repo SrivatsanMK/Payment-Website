@@ -78,7 +78,7 @@ export const Navbar: React.FC<NavbarProps> = ({ setSidebarOpen }) => {
   }, [isCustomer]);
 
   return (
-    <header className="sticky top-0 z-30 flex h-20 w-full items-center justify-between border-b border-slate-200/80 dark:border-white/10 glass-panel px-6 sm:px-8">
+    <header className="sticky top-0 z-30 flex h-14 sm:h-20 w-full items-center justify-between border-b border-slate-200/80 dark:border-white/10 glass-panel px-3 sm:px-8">
       {/* Left items */}
       <div className="flex items-center gap-4">
         <motion.button
@@ -95,7 +95,7 @@ export const Navbar: React.FC<NavbarProps> = ({ setSidebarOpen }) => {
       </div>
 
       {/* Right items */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         {/* Dark Mode Toggle */}
         <motion.button
           whileHover={{ scale: 1.08, rotate: 12 }}
