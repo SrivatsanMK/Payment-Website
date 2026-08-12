@@ -3,7 +3,7 @@ import { Schema, model } from 'mongoose';
 const OTPSchema = new Schema({
   email: { type: String, required: true, lowercase: true, trim: true },
   otp: { type: String, required: true },
-  purpose: { type: String, required: true, enum: ['forgot_password', 'login', 'reset_password', 'profile_update'] },
+  purpose: { type: String, required: true, enum: ['forgot_password', 'login', 'reset_password', 'profile_update', 'forgot_admin_id'] },
   expiresAt: { type: Date, required: true },
   attempts: { type: Number, default: 0 }
 }, {

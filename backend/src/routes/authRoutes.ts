@@ -10,7 +10,9 @@ import {
   updateAdminProfile,
   requestProfileUpdateOTP,
   verifyProfileUpdateOTP,
-  notifyOtpIssue
+  notifyOtpIssue,
+  requestAdminIdOTP,
+  verifyAdminIdOTP
 } from '../controllers/authController';
 import { protect, adminOnly } from '../middleware/authMiddleware';
 import upload from '../middleware/uploadMiddleware';
@@ -29,6 +31,8 @@ router.post('/admin/login', adminLogin);
 router.post('/admin/forgot-password', requestOTP);
 router.post('/admin/verify-otp', verifyOTP);
 router.post('/admin/reset-password', resetPassword);
+router.post('/admin/forgot-id/request-otp', requestAdminIdOTP);
+router.post('/admin/forgot-id/verify-otp', verifyAdminIdOTP);
 
 // Admin profile routes (protected — require valid admin JWT)
 router.get('/admin/profile', protect, adminOnly, getAdminProfile);

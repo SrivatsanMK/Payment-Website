@@ -58,6 +58,51 @@ export const sendOTPEmail = async (email: string, name: string, otp: string): Pr
 };
 
 /**
+ * Sends notification email with the newly regenerated Admin ID.
+ */
+export const sendNewAdminIdEmail = async (
+  email: string,
+  name: string,
+  oldAdminId: string,
+  newAdminId: string
+): Promise<boolean> => {
+  const html = `
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 12px; background-color: #ffffff; color: #333333;">
+      <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #6366f1; padding-bottom: 10px;">
+        <h2 style="color: #4f46e5; margin: 0;">Green Glide Logistics</h2>
+      </div>
+      <p>Hello <strong>${name}</strong>,</p>
+      <p>Your Admin ID has been successfully regenerated after email OTP verification.</p>
+      
+      <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin: 20px 0;">
+        ${oldAdminId ? `
+        <div style="margin-bottom: 10px;">
+          <span style="font-size: 12px; color: #64748b; text-transform: uppercase;">Previous Admin ID</span><br>
+          <strong style="color: #94a3b8; text-decoration: line-through;">${oldAdminId}</strong>
+        </div>
+        ` : ''}
+        <div>
+          <span style="font-size: 12px; color: #64748b; text-transform: uppercase;">New Admin ID</span><br>
+          <strong style="font-size: 24px; color: #4f46e5; letter-spacing: 1px;">${newAdminId}</strong>
+        </div>
+      </div>
+      
+      <p>You can now use this new Admin ID to sign in to the Admin Portal. Your password has <strong>NOT</strong> been changed.</p>
+      
+      <p style="font-size: 13px; color: #6b7280; text-align: center; margin-top: 30px;">
+        If you did not request this change, please contact the administrator immediately.
+      </p>
+    </div>
+  `;
+
+  return sendEmail({
+    to: email,
+    subject: 'Your New Admin ID - Green Glide Logistics',
+    html,
+  });
+};
+
+/**
  * Sends a new invoice creation email notification.
  */
 export const sendInvoiceEmail = async (

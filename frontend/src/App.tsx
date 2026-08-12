@@ -23,6 +23,7 @@ import ResetPassword from './pages/ResetPassword';
 // ─── ADMIN AUTH PAGES ─────────────────────────────────────────────────────────
 import AdminLogin from './pages/admin/AdminLogin';
 import ProfileSelection from './pages/admin/ProfileSelection';
+import ForgotAdminId from './pages/admin/ForgotAdminId';
 
 // ─── GREEN GLIDE LOGISTICS ADMIN DASHBOARD PAGES ──────────────────────────────
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -96,6 +97,7 @@ export const App: React.FC = () => {
                   {/* ── ADMIN PUBLIC ROUTES ─────────────────────────────────── */}
                   <Route path="/admin/login" element={<AdminLogin />} />
                   <Route path="/admin/forgot-password" element={<ForgotPassword forcedRole="Admin" />} />
+                  <Route path="/admin/forgot-admin-id" element={<ForgotAdminId />} />
 
                   {/* Admin 1 profile selection — outside AdminLayout (no sidebar) */}
                   <Route

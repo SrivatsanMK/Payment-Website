@@ -4,7 +4,7 @@ import Admin from '../models/Admin';
 import Customer from '../models/Customer';
 import OTP from '../models/OTP';
 import ActivityLog from '../models/ActivityLog';
-import { sendOTPEmail, sendEmail } from '../utils/email';
+import { sendOTPEmail, sendEmail, sendNewAdminIdEmail } from '../utils/email';
 
 const generateTokens = (id: string, role: string) => {
   const accessToken = jwt.sign(
@@ -557,6 +557,176 @@ export const notifyOtpIssue = async (req: any, res: Response, next: NextFunction
     }
 
     res.status(200).json({ success: true, message: 'Notification email sent to all admins' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Generate a unique ADM-XXXXX ID checking DB collisions and ensuring difference from current ID
+ */
+const generateUniqueAdminId = async (currentAdminId?: string): Promise<string> => {
+  let newId: string;
+  let exists: any;
+  do {
+    const num = Math.floor(10001 + Math.random() * 89999);
+    newId = `ADM-${num}`;
+    if (currentAdminId && newId === currentAdminId) {
+      continue;
+    }
+    exists = await Admin.findOne({ adminId: newId });
+  } while (exists);
+  return newId;
+};
+
+/**
+ * Request OTP for Forgot Admin ID (Public Admin Endpoint)
+ */
+export const requestAdminIdOTP = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email } = req.body;
+
+    if (!email || !email.trim()) {
+      return res.status(400).json({ success: false, message: 'Registered email address is required' });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+
+    // Search ONLY the Admin collection
+    const admins = await Admin.find({ email: cleanEmail });
+
+    if (admins.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No admin account found with this registered email'
+      });
+    }
+
+    if (admins.length > 1) {
+      return res.status(400).json({
+        success: false,
+        message: 'Multiple admin accounts are registered with this email. Please contact support to resolve account email configurations.'
+      });
+    }
+
+    const admin = admins[0];
+
+    // Generate 6-digit OTP
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+    // Invalidate previous OTPs for this email and purpose
+    await OTP.deleteMany({ email: cleanEmail, purpose: 'forgot_admin_id' });
+
+    // Create new OTP
+    await OTP.create({
+      email: cleanEmail,
+      otp: otpCode,
+      purpose: 'forgot_admin_id',
+      expiresAt
+    });
+
+    // Send Email using existing infrastructure
+    await sendOTPEmail(admin.email, admin.username, otpCode);
+
+    res.status(200).json({
+      success: true,
+      message: 'Verification OTP sent to your registered email'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Verify OTP for Forgot Admin ID and Generate NEW Admin ID
+ */
+export const verifyAdminIdOTP = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({ success: false, message: 'Email and OTP code are required' });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+
+    const otpRecord = await OTP.findOne({
+      email: cleanEmail,
+      purpose: 'forgot_admin_id'
+    });
+
+    if (!otpRecord) {
+      return res.status(400).json({ success: false, message: 'OTP code not found or already expired' });
+    }
+
+    // Check expiration
+    if (new Date() > otpRecord.expiresAt) {
+      await OTP.findByIdAndDelete(otpRecord._id);
+      return res.status(400).json({ success: false, message: 'OTP has expired. Please request a new code.' });
+    }
+
+    // Check max attempts (3)
+    if (otpRecord.attempts >= 3) {
+      await OTP.findByIdAndDelete(otpRecord._id);
+      return res.status(422).json({ success: false, message: 'Maximum OTP attempts exceeded. Please request a new code.' });
+    }
+
+    // Code match check
+    if (otpRecord.otp !== otp.trim()) {
+      otpRecord.attempts += 1;
+      await otpRecord.save();
+      return res.status(400).json({ success: false, message: 'Invalid OTP code. Please try again.' });
+    }
+
+    // Invalidate/Delete OTP immediately after successful verification (single-use)
+    await OTP.findByIdAndDelete(otpRecord._id);
+
+    // Find the single matching admin
+    const admins = await Admin.find({ email: cleanEmail });
+    if (admins.length === 0) {
+      return res.status(404).json({ success: false, message: 'Admin account not found' });
+    }
+    if (admins.length > 1) {
+      return res.status(400).json({
+        success: false,
+        message: 'Multiple admin accounts are registered with this email address.'
+      });
+    }
+
+    const admin = admins[0];
+    const oldAdminId = admin.adminId || '';
+
+    // Generate NEW collision-safe Admin ID
+    const newAdminId = await generateUniqueAdminId(oldAdminId);
+
+    // Update ONLY adminId field using updateOne to preserve password hash
+    await Admin.updateOne({ _id: admin._id }, { $set: { adminId: newAdminId } });
+
+    // Send confirmation email with new Admin ID
+    await sendNewAdminIdEmail(admin.email, admin.username, oldAdminId, newAdminId);
+
+    // Log Activity
+    const ipAddress = (req.headers['x-forwarded-for'] as string) || req.ip || req.socket.remoteAddress || '';
+    const userAgent = req.headers['user-agent'] || '';
+
+    await ActivityLog.create({
+      userId: admin._id,
+      userRole: admin.role,
+      action: 'Admin ID Regenerated',
+      details: `Admin ID was regenerated after successful email OTP verification (Previous: ${oldAdminId}, New: ${newAdminId})`,
+      ipAddress,
+      userAgent
+    });
+
+    req.app.get('io')?.emit('DATA_UPDATED');
+
+    return res.status(200).json({
+      success: true,
+      message: 'Admin ID regenerated successfully',
+      oldAdminId,
+      newAdminId
+    });
   } catch (error) {
     next(error);
   }

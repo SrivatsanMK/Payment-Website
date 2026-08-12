@@ -38,6 +38,8 @@ export const endpoints = {
     adminProfileRequestOtp: '/auth/admin/profile/request-update-otp',
     adminProfileVerifyOtp:  '/auth/admin/profile/verify-update-otp',
     adminProfileNotifyIssue: '/auth/admin/profile/notify-otp-issue',
+    adminForgotIdRequestOtp: '/auth/admin/forgot-id/request-otp',
+    adminForgotIdVerifyOtp:  '/auth/admin/forgot-id/verify-otp',
   },
   customers: {
     base: '/customers',

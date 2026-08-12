@@ -47,6 +47,7 @@ export const AdminLogin: React.FC = () => {
       identifierPlaceholder="Enter Admin ID or Email"
       passwordLabel="Password"
       forgotPasswordLink="/admin/forgot-password"
+      forgotAdminIdLink="/admin/forgot-admin-id"
       submitLabel="Sign In"
       loading={loading}
       identifier={identifier}
