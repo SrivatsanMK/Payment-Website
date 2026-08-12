@@ -43,6 +43,21 @@ const flowerOptions: Record<string, string[]> = {
 
 const vegetableOptions = ["Cabbage", "Carrot", "Potato", "Onion", "Tomato"];
 
+const formatAdminName = (adminObj: any): string => {
+  if (!adminObj) return 'Unknown';
+  if (typeof adminObj === 'string') {
+    if (adminObj.toLowerCase().includes('srivatsan')) return 'Akash';
+    return adminObj;
+  }
+  const role = adminObj.role;
+  if (role === 'ADMIN_1') return 'Akash';
+  if (role === 'ADMIN_2') return 'Hrithik';
+  
+  const name = adminObj.displayName || adminObj.username || '';
+  if (name.toLowerCase().includes('srivatsan')) return 'Akash';
+  return name || (role === 'ADMIN_1' ? 'Akash' : 'Hrithik');
+};
+
 export const Invoices: React.FC = () => {
   const api = useAxios();
   const { showToast } = useToast();
@@ -483,14 +498,10 @@ export const Invoices: React.FC = () => {
                     ₹{inv.remainingAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
                   <td className="px-6 py-4 text-xs font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
-                    {inv.createdBy
-                      ? (inv.createdBy.displayName || inv.createdBy.username || (inv.createdBy.role === 'ADMIN_1' ? 'Akash Admin' : 'Hrithik Admin'))
-                      : 'Unknown'}
+                    {inv.createdBy ? formatAdminName(inv.createdBy) : 'Unknown'}
                   </td>
                   <td className="px-6 py-4 text-xs font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
-                    {inv.approvedBy
-                      ? (inv.approvedBy.displayName || inv.approvedBy.username || (inv.approvedBy.role === 'ADMIN_1' ? 'Akash Admin' : 'Hrithik Admin'))
-                      : (inv.remainingAmount === 0 ? 'Not Recorded' : 'Pending')}
+                    {inv.approvedBy ? formatAdminName(inv.approvedBy) : (inv.remainingAmount === 0 ? 'Not Recorded' : 'Pending')}
                   </td>
 
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -1027,17 +1038,13 @@ export const Invoices: React.FC = () => {
                     <div className="flex justify-between items-center text-[10.5px]">
                       <span className="font-bold text-slate-600">Created By:</span>
                       <span className="font-bold text-indigo-700">
-                        {selectedInvoice.createdBy
-                          ? (selectedInvoice.createdBy.displayName || selectedInvoice.createdBy.username || (selectedInvoice.createdBy.role === 'ADMIN_1' ? 'Akash Admin' : 'Hrithik Admin'))
-                          : 'Unknown'}
+                        {selectedInvoice.createdBy ? formatAdminName(selectedInvoice.createdBy) : 'Unknown'}
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-[10.5px] border-t border-indigo-100 pt-1">
                       <span className="font-bold text-slate-600">Approved By:</span>
                       <span className="font-bold text-emerald-700">
-                        {selectedInvoice.approvedBy
-                          ? (selectedInvoice.approvedBy.displayName || selectedInvoice.approvedBy.username || (selectedInvoice.approvedBy.role === 'ADMIN_1' ? 'Akash Admin' : 'Hrithik Admin'))
-                          : (selectedInvoice.remainingAmount === 0 ? 'Not Recorded' : 'Pending')}
+                        {selectedInvoice.approvedBy ? formatAdminName(selectedInvoice.approvedBy) : (selectedInvoice.remainingAmount === 0 ? 'Not Recorded' : 'Pending')}
                       </span>
                     </div>
                   </div>

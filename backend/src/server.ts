@@ -22,11 +22,36 @@ import notificationRoutes from './routes/notificationRoutes';
 import expenseRoutes from './routes/expenseRoutes';
 import privateBusinessRoutes from './routes/privateBusinessRoutes';
 
+import Admin from './models/Admin';
+
 // Load Env variables
 dotenv.config();
 
 // Connect to Database
-connectDB();
+connectDB().then(async () => {
+  try {
+    const srivatsanAdmins = await Admin.find({
+      $or: [
+        { displayName: /srivatsan/i },
+        { username: /srivatsan/i }
+      ]
+    });
+    for (const a of srivatsanAdmins) {
+      if (a.role === 'ADMIN_2') {
+        a.displayName = 'Hrithik Admin';
+        if (a.username.toLowerCase().includes('srivatsan')) a.username = 'partner';
+      } else {
+        a.displayName = 'Akash Admin';
+        if (a.username.toLowerCase().includes('srivatsan')) a.username = 'admin';
+      }
+      await a.save();
+    }
+    await Admin.updateMany({ role: 'ADMIN_1' }, { $set: { displayName: 'Akash Admin' } });
+    await Admin.updateMany({ role: 'ADMIN_2' }, { $set: { displayName: 'Hrithik Admin' } });
+  } catch (err) {
+    console.error('Admin name cleanup error:', err);
+  }
+});
 
 const app = express();
 

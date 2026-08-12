@@ -10,6 +10,21 @@ import Badge from '../../components/ui/Badge';
 import Spinner from '../../components/ui/Spinner';
 import { generateInvoicePdf } from '../../utils/pdfGenerator';
 
+const formatAdminName = (adminObj: any): string => {
+  if (!adminObj) return 'Unknown';
+  if (typeof adminObj === 'string') {
+    if (adminObj.toLowerCase().includes('srivatsan')) return 'Akash';
+    return adminObj;
+  }
+  const role = adminObj.role;
+  if (role === 'ADMIN_1') return 'Akash';
+  if (role === 'ADMIN_2') return 'Hrithik';
+  
+  const name = adminObj.displayName || adminObj.username || '';
+  if (name.toLowerCase().includes('srivatsan')) return 'Akash';
+  return name || (role === 'ADMIN_1' ? 'Akash' : 'Hrithik');
+};
+
 export const Payments: React.FC = () => {
   const api = useAxios();
   const { showToast } = useToast();
@@ -128,13 +143,8 @@ export const Payments: React.FC = () => {
               const sgst = (ord.gst || 0) / 2;
               const dynamicGrandTotal = (ord.price * ord.quantity) - (ord.discount || 0) + (ord.gst || 0);
 
-              const createdByName = ord.createdBy
-                ? (ord.createdBy.displayName || ord.createdBy.username || (ord.createdBy.role === 'ADMIN_1' ? 'Akash Admin' : 'Hrithik Admin'))
-                : 'Unknown';
-
-              const approvedByName = ord.approvedBy
-                ? (ord.approvedBy.displayName || ord.approvedBy.username || (ord.approvedBy.role === 'ADMIN_1' ? 'Akash Admin' : 'Hrithik Admin'))
-                : (ord.invoiceStatus === 'Paid' ? 'Not Recorded' : 'Pending');
+              const createdByName = ord.createdBy ? formatAdminName(ord.createdBy) : 'Unknown';
+              const approvedByName = ord.approvedBy ? formatAdminName(ord.approvedBy) : (ord.invoiceStatus === 'Paid' ? 'Not Recorded' : 'Pending');
 
               return (
                 <tr key={ord._id} className="text-xs hover:bg-slate-50/50 dark:hover:bg-slate-800/10">
