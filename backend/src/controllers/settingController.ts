@@ -12,10 +12,10 @@ export const getSettings = async (req: AuthRequest, res: Response, next: NextFun
     let settings = await Setting.findOne();
     if (!settings) {
       settings = await Setting.create({
-        companyName: 'Dealer Business Hub',
-        upiId: 'dealer@okaxis',
+        companyName: 'Green Glide Logistics',
+        upiId: 'greenglide@okaxis',
         backupFrequency: 'weekly',
-        backupEmail: 'backup@dealer.com',
+        backupEmail: 'greenglidelogistics@gmail.com',
         supportPhone: '9876543210'
       });
     }

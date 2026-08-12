@@ -21,6 +21,11 @@ export const PrivateBusinessLayout: React.FC = () => {
     return <Navigate to="/admin/login" replace />;
   }
 
+  // Admin 2 (Hrithik Partner Admin) only has 1 default workspace (Green Glide Logistics)
+  if (admin.role !== 'ADMIN_1') {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-slate-50 dark:bg-[#2A2A2A]">
       <PrivateBusinessSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />

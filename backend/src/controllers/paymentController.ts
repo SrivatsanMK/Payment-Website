@@ -31,13 +31,13 @@ export const getUPIPaymentDetails = async (req: AuthRequest, res: Response, next
     let settings = await Setting.findOne();
     if (!settings) {
       settings = await Setting.create({
-        companyName: 'Dealer Business Hub',
-        upiId: 'dealer@okaxis'
+        companyName: 'Green Glide Logistics',
+        upiId: 'greenglide@okaxis'
       });
     }
 
-    const upiId = settings.upiId || 'dealer@okaxis';
-    const businessName = settings.companyName || 'Dealer Business Hub';
+    const upiId = settings.upiId || 'greenglide@okaxis';
+    const businessName = settings.companyName || 'Green Glide Logistics';
     const amount = invoice.remainingAmount;
     const invoiceNumber = invoice.invoiceNumber;
 

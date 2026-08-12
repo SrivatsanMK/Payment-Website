@@ -109,7 +109,7 @@ app.use('/api/private-business', privateBusinessRoutes);
 
 // Root route
 app.get('/', (req, res) => {
-  res.status(200).json({ status: 'success', message: 'Dealer Payment Management API is active' });
+  res.status(200).json({ status: 'success', message: 'Green Glide Logistics API is active' });
 });
 
 // Catch 404 Route

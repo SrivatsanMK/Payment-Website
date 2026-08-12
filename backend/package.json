@@ -1,7 +1,7 @@
 {
-  "name": "dealer-payment-backend",
+  "name": "green-glide-logistics-backend",
   "version": "1.0.0",
-  "description": "Dealer Payment Management System Backend",
+  "description": "Green Glide Logistics Backend",
   "main": "dist/src/server.js",
   "scripts": {
     "build": "tsc",

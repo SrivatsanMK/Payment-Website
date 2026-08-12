@@ -8,7 +8,7 @@ interface EmailOptions {
 }
 
 export const sendEmail = async ({ to, subject, html, attachments }: EmailOptions): Promise<boolean> => {
-  const from = process.env.EMAIL_FROM || '"Dealer Payment System" <noreply@dealer.com>';
+  const from = process.env.EMAIL_FROM || '"Green Glide Logistics" <noreply@greenglidelogistics.com>';
 
   try {
     await transporter.sendMail({
@@ -33,7 +33,7 @@ export const sendOTPEmail = async (email: string, name: string, otp: string): Pr
   const html = `
     <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 12px; background-color: #ffffff; color: #333333;">
       <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #6366f1; padding-bottom: 10px;">
-        <h2 style="color: #4f46e5; margin: 0;">Dealer Payment Hub</h2>
+        <h2 style="color: #4f46e5; margin: 0;">Green Glide Logistics</h2>
       </div>
       <p>Hello <strong>${name}</strong>,</p>
       <p>We received a request to access your account security. Use the verification code below to proceed. This code is valid for <strong>5 minutes</strong>.</p>
@@ -52,7 +52,7 @@ export const sendOTPEmail = async (email: string, name: string, otp: string): Pr
 
   return sendEmail({
     to: email,
-    subject: 'Your Password Reset OTP - Dealer Payments',
+    subject: 'Your Password Reset OTP - Green Glide Logistics',
     html,
   });
 };
@@ -164,7 +164,7 @@ export const sendInvoiceEmail = async (
 
   return sendEmail({
     to: email,
-    subject: `Invoice ${invoiceNumber} Created - Dealer Payments`,
+    subject: `Invoice ${invoiceNumber} Created - Green Glide Logistics`,
     html,
   });
 };
@@ -213,7 +213,7 @@ export const sendPaymentConfirmationEmail = async (
 
   return sendEmail({
     to: email,
-    subject: `Payment Receipt for ${invoiceNumber} - Dealer Payments`,
+    subject: `Payment Receipt for ${invoiceNumber} - Green Glide Logistics`,
     html,
   });
 };
@@ -249,7 +249,7 @@ export const sendInvoiceUpdateEmail = async (
 
   return sendEmail({
     to: email,
-    subject: `Update on Invoice ${invoiceNumber} - Dealer Payments`,
+    subject: `Update on Invoice ${invoiceNumber} - Green Glide Logistics`,
     html,
   });
 };
