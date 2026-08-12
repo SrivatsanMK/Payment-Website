@@ -91,7 +91,11 @@ export const AdminProfile: React.FC = () => {
         setProfileData(a);
         setFormData({ username: a.username || '' });
         setSensitiveData({ email: a.email || '', phone: a.phone || '' });
-        if (a.profilePicture) setImagePreview(getAssetUrl(a.profilePicture));
+        if (a.profilePicture) {
+          setImagePreview(getAssetUrl(a.profilePicture));
+        } else {
+          setImagePreview('/temp_profile_photo.png');
+        }
       }
     } catch {
       showToast('Failed to load profile details', 'error');
@@ -318,13 +322,17 @@ export const AdminProfile: React.FC = () => {
                   {/* Avatar */}
                   <div className="flex flex-col items-center gap-2 flex-shrink-0">
                     <div className="h-24 w-24 rounded-full border-2 border-purple-500/30 flex items-center justify-center overflow-hidden bg-slate-50 dark:bg-slate-900/30 relative group shadow-lg">
-                      {imagePreview ? (
-                        <img src={imagePreview} alt="Avatar" className="h-full w-full object-cover" />
-                      ) : (
-                        <span className="text-3xl font-bold text-purple-500">
-                          {(formData.username || 'A').charAt(0).toUpperCase()}
-                        </span>
-                      )}
+                      <img
+                        src={imagePreview || '/temp_profile_photo.png'}
+                        alt="Avatar"
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          if (!target.src.endsWith('/temp_profile_photo.png')) {
+                            target.src = '/temp_profile_photo.png';
+                          }
+                        }}
+                      />
                       <label className="absolute inset-0 bg-slate-950/50 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity rounded-full">
                         <Camera className="h-5 w-5 text-white" />
                         <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />

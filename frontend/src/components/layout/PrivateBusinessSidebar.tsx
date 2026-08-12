@@ -92,16 +92,17 @@ export const PrivateBusinessSidebar: React.FC<PrivateBusinessSidebarProps> = ({ 
         <div className="p-4 border-t border-slate-200/80 dark:border-white/10 space-y-4">
           <div className="flex items-center gap-3 px-2">
             <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-teal-500/20 text-teal-700 dark:text-teal-300 text-sm font-bold border border-teal-500/30 overflow-hidden shadow-inner">
-              {admin?.profilePicture && !imgFailed ? (
-                <img
-                  src={getAssetUrl(admin.profilePicture)}
-                  alt="Avatar"
-                  className="h-full w-full object-cover"
-                  onError={() => setImgFailed(true)}
-                />
-              ) : (
-                (admin?.name || 'A').charAt(0).toUpperCase()
-              )}
+              <img
+                src={admin?.profilePicture ? getAssetUrl(admin?.profilePicture) : '/temp_profile_photo.png'}
+                alt="Avatar"
+                className="h-full w-full object-cover"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  if (!target.src.endsWith('/temp_profile_photo.png')) {
+                    target.src = '/temp_profile_photo.png';
+                  }
+                }}
+              />
             </div>
             <div className="flex flex-col min-w-0">
               <span className="text-xs font-bold text-slate-900 dark:text-white truncate">

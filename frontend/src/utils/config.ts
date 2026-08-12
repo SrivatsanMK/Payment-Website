@@ -8,10 +8,12 @@ export const API_URL = `${BACKEND_URL}/api`;
 
 export const getAssetUrl = (path: string | null | undefined): string => {
   if (!path) return '';
-  if (path.startsWith('http://') || path.startsWith('https://')) {
+  if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) {
     return path;
   }
-  // Ensure we don't duplicate slashes
-  const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  return `${BACKEND_URL}${cleanPath}`;
+  if (path.startsWith('/uploads/') || path.startsWith('uploads/')) {
+    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+    return `${BACKEND_URL}${cleanPath}`;
+  }
+  return path;
 };

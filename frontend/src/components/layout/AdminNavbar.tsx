@@ -221,15 +221,17 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({ setSidebarOpen }) => {
 
         {/* Avatar */}
         <div className="h-10 w-10 rounded-full bg-teal-500/20 flex items-center justify-center text-teal-700 dark:text-teal-300 text-sm font-bold border border-teal-500/30 overflow-hidden shadow-lg shadow-teal-500/10">
-          {admin?.profilePicture ? (
-            <img
-              src={getAssetUrl(admin.profilePicture)}
-              alt="avatar"
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            (admin?.name || 'A').charAt(0).toUpperCase()
-          )}
+          <img
+            src={admin?.profilePicture ? getAssetUrl(admin.profilePicture) : '/temp_profile_photo.png'}
+            alt="avatar"
+            className="h-full w-full object-cover"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              if (!target.src.endsWith('/temp_profile_photo.png')) {
+                target.src = '/temp_profile_photo.png';
+              }
+            }}
+          />
         </div>
       </div>
     </header>
