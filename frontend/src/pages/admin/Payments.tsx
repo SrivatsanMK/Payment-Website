@@ -129,108 +129,112 @@ export const Payments: React.FC = () => {
       </div>
 
       {/* Orders Table */}
-      <Card className="p-0 overflow-hidden overflow-x-auto">
-        <Table headers={['Invoice Number', 'Customer', 'Product', 'Qty', 'Price', 'CGST', 'SGST', 'Grand Total', 'Billing Date', 'Created By', 'Approved By', 'Status', 'Actions']}>
-          {orders.length === 0 ? (
-            <tr>
-              <td colSpan={13} className="px-6 py-8 text-center text-xs text-slate-400">
-                No payment transactions recorded.
-              </td>
-            </tr>
-          ) : (
-            orders.map((ord) => {
-              const cgst = (ord.gst || 0) / 2;
-              const sgst = (ord.gst || 0) / 2;
-              const dynamicGrandTotal = (ord.price * ord.quantity) - (ord.discount || 0) + (ord.gst || 0);
+      <Card className="p-0 overflow-hidden" scrollable>
+        <div className="overflow-x-auto w-full" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <Table headers={['Invoice Number', 'Customer', 'Product', 'Qty', 'Price', 'CGST', 'SGST', 'Grand Total', 'Billing Date', 'Created By', 'Approved By', 'Status', 'Actions']} minWidth="min-w-[1400px]">
+            {orders.length === 0 ? (
+              <tr>
+                <td colSpan={13} className="px-6 py-8 text-center text-xs text-slate-400">
+                  No payment transactions recorded.
+                </td>
+              </tr>
+            ) : (
+              orders.map((ord) => {
+                const cgst = (ord.gst || 0) / 2;
+                const sgst = (ord.gst || 0) / 2;
+                const dynamicGrandTotal = (ord.price * ord.quantity) - (ord.discount || 0) + (ord.gst || 0);
 
-              const createdByName = ord.createdBy ? formatAdminName(ord.createdBy) : 'Unknown';
-              const approvedByName = ord.approvedBy ? formatAdminName(ord.approvedBy) : (ord.invoiceStatus === 'Paid' ? 'Not Recorded' : 'Pending');
+                const createdByName = ord.createdBy ? formatAdminName(ord.createdBy) : 'Unknown';
+                const approvedByName = ord.approvedBy ? formatAdminName(ord.approvedBy) : (ord.invoiceStatus === 'Paid' ? 'Not Recorded' : 'Pending');
 
-              return (
-                <tr key={ord._id} className="text-xs hover:bg-slate-50/50 dark:hover:bg-slate-800/10">
-                  <td className="px-3.5 py-3 font-bold text-slate-800 dark:text-slate-200">
-                    {ord.invoiceNumber}
-                  </td>
-                  <td className="px-3.5 py-3 font-bold text-primary-600 dark:text-primary-400">
-                    {ord.customer?.name || 'N/A'}
-                  </td>
-                  <td className="px-3.5 py-3 font-bold text-slate-800 dark:text-slate-100">
-                    {ord.productName}
-                  </td>
-                  <td className="px-3.5 py-3 text-slate-500">
-                    {ord.quantity}
-                  </td>
-                  <td className="px-3.5 py-3 text-slate-500">
-                    ₹{ord.price.toLocaleString('en-IN')}
-                  </td>
-                  <td className="px-3.5 py-3 text-slate-500 font-medium">
-                    ₹{cgst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </td>
-                  <td className="px-3.5 py-3 text-slate-500 font-medium">
-                    ₹{sgst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </td>
-                  <td className="px-3.5 py-3 font-bold text-slate-800 dark:text-slate-100">
-                    ₹{dynamicGrandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </td>
-                  <td className="px-3.5 py-3 text-slate-500">
-                    <div className="flex items-center gap-1">
-                      <CalendarDays className="h-3.5 w-3.5 text-slate-400" />
-                      {new Date(ord.purchaseDate).toLocaleDateString()}
-                    </div>
-                  </td>
-                  <td className="px-3.5 py-3 font-bold text-indigo-600 dark:text-indigo-400">
-                    {createdByName}
-                  </td>
-                  <td className="px-3.5 py-3 font-bold text-emerald-600 dark:text-emerald-400">
-                    {approvedByName}
-                  </td>
-                  <td className="px-3.5 py-3">
-                    {ord.invoiceStatus === 'Paid' ? (
-                      <span className="px-2 py-1 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-                        Paid
-                      </span>
-                    ) : (
-                      <span className="px-2 py-1 rounded text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                        Pending
-                      </span>
-                    )}
-                  </td>
-
-                  <td className="px-3.5 py-3 text-center space-x-1.5 whitespace-nowrap">
-                    {ord.invoiceStatus !== 'Paid' && ord.paymentId && (
-                      <button
-                        onClick={() => handleApprovePayment(ord.paymentId)}
-                        disabled={approvingId === ord.paymentId}
-                        className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 text-white rounded text-[10px] font-bold transition-colors inline-flex items-center gap-1 shadow-sm"
-                        title="Confirm Payment Received"
-                      >
-                        {approvingId === ord.paymentId ? (
-                          <span className="h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                          <CheckCircle className="h-3 w-3" />
-                        )}
-                        Confirm Payment Received
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleDownloadInvoice(ord.invoiceNumber)}
-                      disabled={downloadingInvoice !== null}
-                      className="px-2.5 py-1 bg-primary-600 hover:bg-primary-700 disabled:bg-slate-200 text-white rounded text-[10px] font-bold transition-colors inline-flex items-center gap-1 shadow-sm"
-                      title="Download PDF Invoice"
-                    >
-                      {downloadingInvoice === ord.invoiceNumber ? (
-                        <span className="h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                return (
+                  <tr key={ord._id} className="text-xs hover:bg-slate-50/50 dark:hover:bg-slate-800/10">
+                    <td className="px-3.5 py-3 font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">
+                      {ord.invoiceNumber}
+                    </td>
+                    <td className="px-3.5 py-3 font-bold text-primary-600 dark:text-primary-400 whitespace-nowrap">
+                      {ord.customer?.name || 'N/A'}
+                    </td>
+                    <td className="px-3.5 py-3 font-bold text-slate-800 dark:text-slate-100 whitespace-nowrap">
+                      {ord.productName}
+                    </td>
+                    <td className="px-3.5 py-3 text-slate-500 whitespace-nowrap">
+                      {ord.quantity}
+                    </td>
+                    <td className="px-3.5 py-3 text-slate-500 whitespace-nowrap">
+                      ₹{ord.price.toLocaleString('en-IN')}
+                    </td>
+                    <td className="px-3.5 py-3 text-slate-500 font-medium whitespace-nowrap">
+                      ₹{cgst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
+                    <td className="px-3.5 py-3 text-slate-500 font-medium whitespace-nowrap">
+                      ₹{sgst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
+                    <td className="px-3.5 py-3 font-bold text-slate-800 dark:text-slate-100 whitespace-nowrap">
+                      ₹{dynamicGrandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
+                    <td className="px-3.5 py-3 text-slate-500 whitespace-nowrap">
+                      <div className="flex items-center gap-1">
+                        <CalendarDays className="h-3.5 w-3.5 text-slate-400" />
+                        {new Date(ord.purchaseDate).toLocaleDateString()}
+                      </div>
+                    </td>
+                    <td className="px-3.5 py-3 font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
+                      {createdByName}
+                    </td>
+                    <td className="px-3.5 py-3 font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                      {approvedByName}
+                    </td>
+                    <td className="px-3.5 py-3 whitespace-nowrap">
+                      {ord.invoiceStatus === 'Paid' ? (
+                        <span className="px-2 py-1 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                          Paid
+                        </span>
                       ) : (
-                        <Download className="h-3 w-3" />
+                        <span className="px-2 py-1 rounded text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                          Pending
+                        </span>
                       )}
-                      PDF
-                    </button>
-                  </td>
-                </tr>
-              );
-            })
-          )}
-        </Table>
+                    </td>
+
+                    <td className="px-3.5 py-3 text-center whitespace-nowrap">
+                      <div className="flex items-center gap-1.5 justify-center">
+                        {ord.invoiceStatus !== 'Paid' && ord.paymentId && (
+                          <button
+                            onClick={() => handleApprovePayment(ord.paymentId)}
+                            disabled={approvingId === ord.paymentId}
+                            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 text-white rounded text-[10px] font-bold transition-colors inline-flex items-center gap-1 shadow-sm"
+                            title="Confirm Payment Received"
+                          >
+                            {approvingId === ord.paymentId ? (
+                              <span className="h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <CheckCircle className="h-3 w-3" />
+                            )}
+                            Confirm
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDownloadInvoice(ord.invoiceNumber)}
+                          disabled={downloadingInvoice !== null}
+                          className="px-2.5 py-1 bg-primary-600 hover:bg-primary-700 disabled:bg-slate-200 text-white rounded text-[10px] font-bold transition-colors inline-flex items-center gap-1 shadow-sm"
+                          title="Download PDF Invoice"
+                        >
+                          {downloadingInvoice === ord.invoiceNumber ? (
+                            <span className="h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Download className="h-3 w-3" />
+                          )}
+                          PDF
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </Table>
+        </div>
       </Card>
     </div>
   );

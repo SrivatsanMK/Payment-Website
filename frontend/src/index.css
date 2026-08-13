@@ -102,8 +102,9 @@ html:not(.dark) .glass-card:hover {
 
 /* Table Card Variant – allows inner overflow-x-auto to work on mobile */
 .glass-card-table,
-.glass-card-table>div,
-.glass-card-table>div>div {
+.glass-card-table > div,
+.glass-card-table > div > div,
+.glass-card-table > div > div > div {
   overflow: visible !important;
 }
 
@@ -112,6 +113,20 @@ html:not(.dark) .glass-card:hover {
   overflow-x: auto !important;
   overflow-y: visible !important;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99, 102, 241, 0.4) transparent;
+}
+
+/* Custom scrollbar for webkit */
+.glass-card-table .overflow-x-auto::-webkit-scrollbar {
+  height: 5px;
+}
+.glass-card-table .overflow-x-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+.glass-card-table .overflow-x-auto::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.45);
+  border-radius: 9999px;
 }
 
 /* Liquid Glass Panels (Sidebar, Navbar, Modals) */
