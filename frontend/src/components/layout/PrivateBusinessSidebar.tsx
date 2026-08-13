@@ -62,7 +62,7 @@ export const PrivateBusinessSidebar: React.FC<PrivateBusinessSidebarProps> = ({ 
           <div className="flex items-center gap-2">
             <ShieldCheck className="h-4 w-4 text-teal-600 dark:text-teal-400 flex-shrink-0" />
             <span className="text-[10px] font-bold text-teal-700 dark:text-teal-300 uppercase tracking-wider">
-              Private Business
+              Prime Harvest Organics
             </span>
           </div>
         </div>

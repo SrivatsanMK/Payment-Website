@@ -15,7 +15,7 @@ export const PrivateBusinessSettings: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    businessName: 'Private Business',
+    businessName: 'Prime Harvest Organics',
     ownerName: 'Owner',
     currency: 'INR',
     defaultUnit: 'KG',
@@ -32,7 +32,7 @@ export const PrivateBusinessSettings: React.FC = () => {
         const res = await api.get(endpoints.privateBusiness.settings);
         if (res.data.success && res.data.settings) {
           setForm({
-            businessName: res.data.settings.businessName || 'Private Business',
+            businessName: res.data.settings.businessName || 'Prime Harvest Organics',
             ownerName: res.data.settings.ownerName || 'Owner',
             currency: res.data.settings.currency || 'INR',
             defaultUnit: res.data.settings.defaultUnit || 'KG',
@@ -81,7 +81,7 @@ export const PrivateBusinessSettings: React.FC = () => {
       {/* Header */}
       <div>
         <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-          <SettingsIcon className="h-5 w-5 text-teal-500" /> Private Business Settings
+          <SettingsIcon className="h-5 w-5 text-teal-500" /> Prime Harvest Organics Settings
         </h1>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
           Configure workspace profile defaults, currency, measurement units, and owner contact details.

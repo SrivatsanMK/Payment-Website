@@ -23,6 +23,7 @@ import expenseRoutes from './routes/expenseRoutes';
 import privateBusinessRoutes from './routes/privateBusinessRoutes';
 
 import Admin from './models/Admin';
+import PrivateBusinessSetting from './models/PrivateBusinessSetting';
 
 // Load Env variables
 dotenv.config();
@@ -48,8 +49,14 @@ connectDB().then(async () => {
     }
     await Admin.updateMany({ role: 'ADMIN_1' }, { $set: { displayName: 'Akash Admin' } });
     await Admin.updateMany({ role: 'ADMIN_2' }, { $set: { displayName: 'Hrithik Admin' } });
+
+    // Update Private Business settings businessName to Prime Harvest Organics
+    await PrivateBusinessSetting.updateMany(
+      { $or: [{ businessName: 'Private Business' }, { businessName: 'Prime Harvest Organic' }] },
+      { $set: { businessName: 'Prime Harvest Organics' } }
+    );
   } catch (err) {
-    console.error('Admin name cleanup error:', err);
+    console.error('Admin & Business name cleanup error:', err);
   }
 });
 

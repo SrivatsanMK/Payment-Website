@@ -224,7 +224,7 @@ export const ProfileSelection: React.FC = () => {
           zIndex: 20,
         }}
       >
-        {/* ── PROFILE 1: Private Business ─────────────────────────────────── */}
+        {/* ── PROFILE 1: Prime Harvest Organics ─────────────────────────────────── */}
         <motion.div
           variants={{
             hidden: { opacity: 0, y: 24, scale: 0.92 },
@@ -240,7 +240,7 @@ export const ProfileSelection: React.FC = () => {
           onClick={() => handleProfileSelect('private')}
           role="button"
           tabIndex={0}
-          aria-label="Select Private Business workspace"
+          aria-label="Select Prime Harvest Organics workspace"
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') handleProfileSelect('private');
           }}
@@ -348,7 +348,7 @@ export const ProfileSelection: React.FC = () => {
             </div>
           </motion.div>
 
-          {/* Workspace Name: Prime Harvest Organic */}
+          {/* Workspace Name: Prime Harvest Organics */}
           <span style={{
             marginTop: 20,
             fontSize: 'clamp(22px, 2.5vw, 30px)',
@@ -358,7 +358,7 @@ export const ProfileSelection: React.FC = () => {
             textAlign: 'center',
             transition: 'color 300ms ease',
           }}>
-            Prime Harvest Organic
+            Prime Harvest Organics
           </span>
         </motion.div>
 

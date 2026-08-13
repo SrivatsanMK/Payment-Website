@@ -979,13 +979,16 @@ export const getSettings = async (req: AuthRequest, res: Response) => {
     let settings = await PrivateBusinessSetting.findOne({ createdBy: req.user?.id });
     if (!settings) {
       settings = await PrivateBusinessSetting.create({
-        businessName: 'Private Business',
+        businessName: 'Prime Harvest Organics',
         ownerName: req.user?.username || 'Owner',
         currency: 'INR',
         defaultUnit: 'KG',
         defaultPaymentMethod: 'Cash',
         createdBy: req.user?.id
       });
+    } else if (settings.businessName === 'Private Business' || settings.businessName === 'Prime Harvest Organic') {
+      settings.businessName = 'Prime Harvest Organics';
+      await settings.save();
     }
     return res.status(200).json({ success: true, settings });
   } catch (error: any) {

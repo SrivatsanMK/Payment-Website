@@ -19,7 +19,7 @@ const PrivateBusinessSettingSchema: Schema = new Schema(
     businessName: {
       type: String,
       required: true,
-      default: 'Private Business',
+      default: 'Prime Harvest Organics',
       trim: true,
     },
     ownerName: {
