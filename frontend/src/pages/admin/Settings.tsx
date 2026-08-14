@@ -20,10 +20,9 @@ export const Settings: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Form states — Only legitimate global settings
+  // Form states — Only Business Name and Support Contact Phone
   const [formData, setFormData] = useState({
     companyName: '',
-    upiId: '',
     supportPhone: ''
   });
 
@@ -34,7 +33,6 @@ export const Settings: React.FC = () => {
         setSettings(res.data.settings);
         setFormData({
           companyName: res.data.settings.companyName || '',
-          upiId: res.data.settings.upiId || '',
           supportPhone: res.data.settings.supportPhone || ''
         });
       }
@@ -68,7 +66,6 @@ export const Settings: React.FC = () => {
     
     const data = {
       companyName: formData.companyName.trim(),
-      upiId: formData.upiId.trim(),
       supportPhone: formData.supportPhone.trim()
     };
 
@@ -101,7 +98,7 @@ export const Settings: React.FC = () => {
           Global Config Settings
         </h1>
         <p className="text-xs text-slate-400 mt-1">
-          Configure company branding, UPI payment targets, and customer support details.
+          Configure company branding and customer care contact details.
         </p>
       </div>
 
@@ -115,7 +112,7 @@ export const Settings: React.FC = () => {
               Company Profile &amp; Branding
             </h3>
             <p className="text-[11px] text-slate-400 mt-0.5">
-              Core company identification, merchant payment routing, and customer care contact numbers.
+              Core company identification and customer care contact details.
             </p>
           </div>
           
@@ -129,23 +126,13 @@ export const Settings: React.FC = () => {
               required
             />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input
-                label="Target Merchant UPI ID"
-                type="text"
-                value={formData.upiId}
-                onChange={(e) => setFormData({ ...formData, upiId: e.target.value })}
-                placeholder="merchant@okaxis"
-                required
-              />
-              <Input
-                label="Support Contact Phone"
-                type="text"
-                value={formData.supportPhone}
-                onChange={(e) => setFormData({ ...formData, supportPhone: e.target.value })}
-                placeholder="+91 99887 76655"
-              />
-            </div>
+            <Input
+              label="Support Contact Phone"
+              type="text"
+              value={formData.supportPhone}
+              onChange={(e) => setFormData({ ...formData, supportPhone: e.target.value })}
+              placeholder="+91 98765 43210"
+            />
           </div>
 
           <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
