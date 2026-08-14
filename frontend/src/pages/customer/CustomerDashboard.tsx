@@ -174,9 +174,82 @@ export const CustomerDashboard: React.FC = () => {
       </div>
 
       {/* Invoices and Actions */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 flex flex-col">
-          <Card className="glass-card p-0 flex flex-col justify-between" hoverable={false}>
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-2 items-stretch">
+        {/* LEFT: Purchases vs Payments Chart */}
+        <Card className="glass-card flex flex-col justify-between p-7 h-full">
+          <div className="mb-4">
+            <h3 className="text-base font-bold text-white dark:text-white">
+              Purchases vs Payments
+            </h3>
+            <p className="text-xs text-slate-400 mt-1">
+              Monthly purchases vs actual settled payments.
+            </p>
+          </div>
+
+          <div className="h-64 w-full mt-2">
+            {chartData && chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={chartData}
+                  margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.08)" />
+                  <XAxis 
+                    dataKey="month" 
+                    tick={{ fontSize: 10, fill: '#cbd5e1' }} 
+                    stroke="rgba(255,255,255,0.2)" 
+                    axisLine={false} 
+                    tickLine={false}
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 10, fill: '#cbd5e1' }} 
+                    stroke="rgba(255,255,255,0.2)" 
+                    axisLine={false} 
+                    tickLine={false}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      fontSize: '11px', 
+                      borderRadius: '14px', 
+                      background: 'rgba(20,20,28,0.85)',
+                      backdropFilter: 'blur(20px)',
+                      border: '1px solid rgba(255,255,255,0.2)', 
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.8)',
+                      color: '#fff'
+                    }} 
+                  />
+                  <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '8px', color: '#cbd5e1' }} />
+                  <Line 
+                    type="monotone" 
+                    dataKey="purchases" 
+                    name="Purchases" 
+                    stroke="#a855f7" 
+                    strokeWidth={3}
+                    dot={{ r: 3.5, fill: "#a855f7", strokeWidth: 2 }}
+                    activeDot={{ r: 5 }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="payments" 
+                    name="Payments" 
+                    stroke="#34d399" 
+                    strokeWidth={3}
+                    dot={{ r: 3.5, fill: "#34d399", strokeWidth: 2 }}
+                    activeDot={{ r: 5 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-full items-center justify-center text-xs text-slate-400">
+                No billing history found.
+              </div>
+            )}
+          </div>
+        </Card>
+
+        {/* RIGHT: Recent Bills & Statements */}
+        <div className="flex flex-col h-full">
+          <Card className="glass-card p-0 flex flex-col justify-between h-full" hoverable={false}>
             <div className="p-7 border-b border-white/10 flex-shrink-0">
               <h3 className="text-base font-bold text-white dark:text-white">
                 Recent Bills & Statements
@@ -249,78 +322,6 @@ export const CustomerDashboard: React.FC = () => {
             </div>
           </Card>
         </div>
-
-        {/* Purchases vs Payments Chart */}
-        <Card className="glass-card flex flex-col justify-between p-7">
-          <div className="mb-4">
-            <h3 className="text-base font-bold text-white dark:text-white">
-              Purchases vs Payments
-            </h3>
-            <p className="text-xs text-slate-400 mt-1">
-              Monthly purchases vs actual settled payments.
-            </p>
-          </div>
-
-          <div className="h-60 w-full mt-2">
-            {chartData && chartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={chartData}
-                  margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.08)" />
-                  <XAxis 
-                    dataKey="month" 
-                    tick={{ fontSize: 10, fill: '#cbd5e1' }} 
-                    stroke="rgba(255,255,255,0.2)" 
-                    axisLine={false} 
-                    tickLine={false}
-                  />
-                  <YAxis 
-                    tick={{ fontSize: 10, fill: '#cbd5e1' }} 
-                    stroke="rgba(255,255,255,0.2)" 
-                    axisLine={false} 
-                    tickLine={false}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      fontSize: '11px', 
-                      borderRadius: '14px', 
-                      background: 'rgba(20,20,28,0.85)',
-                      backdropFilter: 'blur(20px)',
-                      border: '1px solid rgba(255,255,255,0.2)', 
-                      boxShadow: '0 8px 24px rgba(0,0,0,0.8)',
-                      color: '#fff'
-                    }} 
-                  />
-                  <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '8px', color: '#cbd5e1' }} />
-                  <Line 
-                    type="monotone" 
-                    dataKey="purchases" 
-                    name="Purchases" 
-                    stroke="#a855f7" 
-                    strokeWidth={3}
-                    dot={{ r: 3.5, fill: "#a855f7", strokeWidth: 2 }}
-                    activeDot={{ r: 5 }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="payments" 
-                    name="Payments" 
-                    stroke="#34d399" 
-                    strokeWidth={3}
-                    dot={{ r: 3.5, fill: "#34d399", strokeWidth: 2 }}
-                    activeDot={{ r: 5 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex h-full items-center justify-center text-xs text-slate-400">
-                No billing history found.
-              </div>
-            )}
-          </div>
-        </Card>
       </div>
     </div>
   );

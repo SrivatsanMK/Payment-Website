@@ -36,7 +36,7 @@ export const Card: React.FC<CardProps> = ({
           pointerEvents: 'none',
         }}
       />
-      <div style={{ position: 'relative', zIndex: 2 }}>
+      <div className="h-full flex flex-col" style={{ position: 'relative', zIndex: 2 }}>
         {children}
       </div>
     </motion.div>
