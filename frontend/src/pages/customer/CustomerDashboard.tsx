@@ -3,16 +3,15 @@ import { useAuth } from '../../context/AuthContext';
 import { useAxios } from '../../hooks/useAxios';
 import { endpoints } from '../../services/api';
 import { useToast } from '../../components/ui/Toast';
+import { useSocket } from '../../context/SocketContext';
 import { 
   IndianRupee, 
   Receipt, 
   TrendingUp, 
   AlertCircle,
-  FileCheck,
-  Package,
-  Download
+  CheckCircle2,
+  Package
 } from 'lucide-react';
-import { generateInvoicePdf } from '../../utils/pdfGenerator';
 import { 
   LineChart, 
   Line, 
@@ -24,9 +23,7 @@ import {
   Legend 
 } from 'recharts';
 import Card from '../../components/ui/Card';
-import Table from '../../components/ui/Table';
 import Spinner from '../../components/ui/Spinner';
-import Button from '../../components/ui/Button';
 import { useNavigate } from 'react-router-dom';
 
 export const CustomerDashboard: React.FC = () => {
@@ -34,37 +31,12 @@ export const CustomerDashboard: React.FC = () => {
   const api = useAxios();
   const { showToast } = useToast();
   const navigate = useNavigate();
+  const { socket } = useSocket();
 
   const [metrics, setMetrics] = useState<any>(null);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [downloadingInvoice, setDownloadingInvoice] = useState<string | null>(null);
-
-  const handleDownloadInvoice = async (invoiceNumber: string) => {
-    setDownloadingInvoice(invoiceNumber);
-    try {
-      const invoicesRes = await api.get('/invoices', { params: { search: invoiceNumber } });
-      const invoice = invoicesRes.data.invoices.find((inv: any) => inv.invoiceNumber === invoiceNumber);
-      
-      if (!invoice) {
-        showToast('Invoice details not found', 'error');
-        return;
-      }
-      
-      const settingsRes = await api.get('/settings');
-      const settings = settingsRes.data.settings || {};
-      
-      const doc = await generateInvoicePdf(invoice, settings);
-      doc.save(`invoice_${invoice.invoiceNumber}.pdf`);
-      showToast(`Invoice ${invoice.invoiceNumber} downloaded successfully`, 'success');
-    } catch (err) {
-      console.error(err);
-      showToast('Failed to download invoice PDF', 'error');
-    } finally {
-      setDownloadingInvoice(null);
-    }
-  };
 
   const fetchDashboardData = async () => {
     try {
@@ -75,10 +47,18 @@ export const CustomerDashboard: React.FC = () => {
       }
 
       const invoicesRes = await api.get(endpoints.invoices.base, {
-        params: { limit: 10, status: 'Unpaid' }
+        params: { limit: 50, status: 'Unpaid' }
       });
       if (invoicesRes.data.success) {
-        setInvoices(invoicesRes.data.invoices);
+        // Strictly filter to ONLY invoices requiring payment (remainingAmount > 0 and not fully Paid)
+        const unpaidOnly = (invoicesRes.data.invoices || []).filter((inv: any) => {
+          const isSettled = inv.status === 'Paid' || (inv.remainingAmount !== undefined && inv.remainingAmount <= 0);
+          return !isSettled;
+        });
+
+        // Sort newest first
+        unpaidOnly.sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+        setInvoices(unpaidOnly);
       }
     } catch (err) {
       showToast('Failed to load dashboard summaries', 'error');
@@ -90,6 +70,18 @@ export const CustomerDashboard: React.FC = () => {
   useEffect(() => {
     fetchDashboardData();
   }, [user]);
+
+  // Real-time automatic refresh on payment approval or invoice creation
+  useEffect(() => {
+    if (!socket) return;
+    const handleDataUpdated = () => {
+      fetchDashboardData();
+    };
+    socket.on('DATA_UPDATED', handleDataUpdated);
+    return () => {
+      socket.off('DATA_UPDATED', handleDataUpdated);
+    };
+  }, [socket, user]);
 
   if (loading) {
     return (
@@ -247,10 +239,10 @@ export const CustomerDashboard: React.FC = () => {
           </div>
         </Card>
 
-        {/* RIGHT: Recent Bills & Statements */}
+        {/* RIGHT: Recent Bills & Statements (Outstanding Invoices Only) */}
         <div className="flex flex-col h-full">
           <Card className="glass-card p-0 flex flex-col justify-between h-full" hoverable={false}>
-            <div className="p-7 border-b border-white/10 flex-shrink-0">
+            <div className="p-6 sm:p-7 border-b border-white/10 flex-shrink-0">
               <h3 className="text-base font-bold text-white dark:text-white">
                 Recent Bills & Statements
               </h3>
@@ -259,26 +251,32 @@ export const CustomerDashboard: React.FC = () => {
               </p>
             </div>
 
-            <div className="flex-grow max-h-[300px] overflow-y-auto overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
-              <table className="w-full min-w-[480px] text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-white/10 bg-white/5">
-                    {['Invoice No', 'Issue Date', 'Total', 'Actions'].map((h, i) => (
-                      <th key={i} className="px-5 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 whitespace-nowrap">
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/10 text-xs">
-                  {invoices.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="px-6 py-6 text-center text-xs text-slate-400">
-                        No unpaid billing statements found.
-                      </td>
+            {invoices.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center min-h-[220px]">
+                <div className="h-12 w-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-3 shadow-lg shadow-emerald-950/40">
+                  <CheckCircle2 className="h-6 w-6 text-emerald-400" />
+                </div>
+                <h4 className="text-sm font-bold text-white mb-1">
+                  All invoices are paid
+                </h4>
+                <p className="text-xs text-slate-400 max-w-xs">
+                  You have no pending bills or outstanding payments at this time.
+                </p>
+              </div>
+            ) : (
+              <div className="flex-1 max-h-[300px] overflow-y-auto overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
+                <table className="w-full min-w-[480px] text-left border-collapse">
+                  <thead className="sticky top-0 z-10 bg-slate-900/90 backdrop-blur-md">
+                    <tr className="border-b border-white/10">
+                      {['Invoice No', 'Issue Date', 'Total', 'Actions'].map((h, i) => (
+                        <th key={i} className="px-5 py-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 whitespace-nowrap">
+                          {h}
+                        </th>
+                      ))}
                     </tr>
-                  ) : (
-                    invoices.map((inv) => (
+                  </thead>
+                  <tbody className="divide-y divide-white/10 text-xs">
+                    {invoices.map((inv) => (
                       <tr key={inv._id} className="text-xs glass-table-row hover:bg-white/5 transition-colors">
                         <td className="px-5 py-4 font-bold text-white whitespace-nowrap">
                           {inv.invoiceNumber}
@@ -290,36 +288,19 @@ export const CustomerDashboard: React.FC = () => {
                           ₹{inv.finalAmount.toLocaleString('en-IN')}
                         </td>
                         <td className="px-5 py-4 whitespace-nowrap">
-                          {inv.status !== 'Paid' ? (
-                            <button
-                              onClick={() => navigate(`/pay-invoice/${inv._id}`)}
-                              className="inline-flex items-center justify-center py-1.5 px-4 text-xs font-semibold rounded-lg bg-purple-600 hover:bg-purple-500 text-white transition-colors shadow-lg shadow-purple-900/40 whitespace-nowrap"
-                            >
-                              Pay Now
-                            </button>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1 whitespace-nowrap">
-                                <FileCheck className="h-4 w-4" />
-                                Settled
-                              </span>
-                              <button
-                                onClick={() => handleDownloadInvoice(inv.invoiceNumber)}
-                                disabled={downloadingInvoice !== null}
-                                className="p-1.5 text-slate-300 hover:text-white rounded-xl transition-colors"
-                                title="Download PDF Invoice"
-                              >
-                                <Download className="h-4 w-4" />
-                              </button>
-                            </div>
-                          )}
+                          <button
+                            onClick={() => navigate(`/pay-invoice/${inv._id}`)}
+                            className="inline-flex items-center justify-center py-1.5 px-4 text-xs font-semibold rounded-lg bg-purple-600 hover:bg-purple-500 text-white transition-colors shadow-lg shadow-purple-900/40 whitespace-nowrap"
+                          >
+                            Pay Now
+                          </button>
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </Card>
         </div>
       </div>

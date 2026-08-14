@@ -156,6 +156,7 @@ export const getInvoices = async (req: AuthRequest, res: Response, next: NextFun
     const dateFilter = (req.query.dateFilter as string) || ''; // 'today', 'this_month', 'custom'
     const startDate = (req.query.startDate as string) || '';
     const endDate = (req.query.endDate as string) || '';
+    const status = (req.query.status as string) || '';
 
     const skip = (page - 1) * limit;
     const query: any = {};
@@ -168,6 +169,16 @@ export const getInvoices = async (req: AuthRequest, res: Response, next: NextFun
     } else if (req.query.customer) {
       // Admin filter by specific customer
       query.customer = req.query.customer;
+    }
+
+    // Status filter: unpaid vs paid
+    if (status) {
+      const lowerStatus = status.toLowerCase();
+      if (lowerStatus === 'unpaid' || lowerStatus === 'pending') {
+        query.remainingAmount = { $gt: 0 };
+      } else if (lowerStatus === 'paid') {
+        query.remainingAmount = { $lte: 0 };
+      }
     }
 
     // Date range filter
@@ -233,6 +244,7 @@ export const getInvoices = async (req: AuthRequest, res: Response, next: NextFun
       processedInvoices = rawInvoices.map(inv => {
         const doc: any = inv.toObject();
         const linkedPayment = paymentMap[inv.invoiceNumber];
+        doc.status = (inv.remainingAmount === 0 || (inv.remainingAmount !== undefined && inv.remainingAmount <= 0)) ? 'Paid' : 'Unpaid';
         doc.approvedBy = linkedPayment?.approvedBy || null;
         doc.approvedAt = linkedPayment?.approvedAt || null;
         return doc;
@@ -241,6 +253,7 @@ export const getInvoices = async (req: AuthRequest, res: Response, next: NextFun
       // Customer: strictly sanitize and remove all admin audit fields
       processedInvoices = rawInvoices.map(inv => {
         const doc: any = inv.toObject();
+        doc.status = (inv.remainingAmount === 0 || (inv.remainingAmount !== undefined && inv.remainingAmount <= 0)) ? 'Paid' : 'Unpaid';
         delete doc.createdBy;
         delete doc.approvedBy;
         delete doc.approvedAt;
@@ -283,6 +296,8 @@ export const getInvoiceById = async (req: AuthRequest, res: Response, next: Next
     }
 
     const doc: any = rawInvoice.toObject();
+    doc.status = (rawInvoice.remainingAmount === 0 || (rawInvoice.remainingAmount !== undefined && rawInvoice.remainingAmount <= 0)) ? 'Paid' : 'Unpaid';
+
     if (isAdmin) {
       const payment = await Payment.findOne({ invoiceNumber: rawInvoice.invoiceNumber })
         .populate('approvedBy', 'username displayName role email adminId');
