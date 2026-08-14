@@ -12,12 +12,14 @@ import {
   KeyRound,
   Mail,
   ShieldAlert,
+  ShieldCheck,
   CheckCircle2,
   Send,
   AlertTriangle,
   Eye,
   EyeOff,
-  RefreshCw
+  RefreshCw,
+  Phone
 } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
@@ -33,19 +35,35 @@ export const CustomerProfile: React.FC = () => {
 
   const [profileData, setProfileData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [savingBasic, setSavingBasic] = useState(false);
 
   // Profile image upload
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState('');
 
-  // Form states
-  const [formData, setFormData] = useState({
+  // Basic Form states (Name, Address)
+  const [basicForm, setBasicForm] = useState({
     name: '',
-    email: '',
-    phone: '',
     address: ''
   });
+
+  // Sensitive Form states (Email, Phone) protected by OTP
+  const [sensitiveData, setSensitiveData] = useState({
+    email: '',
+    phone: ''
+  });
+
+  /* ── Sensitive fields OTP state-machine ──
+     step 0 = idle (locked sensitive fields)
+     step 1 = OTP sent, waiting for code
+     step 2 = OTP verified, fields unlocked for editing
+  */
+  const [sensitiveStep, setSensitiveStep] = useState<0 | 1 | 2>(0);
+  const [sendingSensitiveOtp, setSendingSensitiveOtp] = useState(false);
+  const [verifyingSensitiveOtp, setVerifyingSensitiveOtp] = useState(false);
+  const [savingSensitive, setSavingSensitive] = useState(false);
+  const [sensitiveOtpCode, setSensitiveOtpCode] = useState('');
+  const [profileToken, setProfileToken] = useState('');
 
   const [isForcedReset, setIsForcedReset] = useState(false);
 
@@ -68,14 +86,18 @@ export const CustomerProfile: React.FC = () => {
       if (res.data.success) {
         const c = res.data.customer;
         setProfileData(c);
-        setFormData({
+        setBasicForm({
           name: c.name || '',
-          email: c.email || '',
-          phone: c.phone || '',
           address: c.address || ''
+        });
+        setSensitiveData({
+          email: c.email || '',
+          phone: c.phone || ''
         });
         if (c.profilePicture) {
           setImagePreview(getAssetUrl(c.profilePicture));
+        } else {
+          setImagePreview('/temp_profile_photo.png');
         }
       }
     } catch (err) {
@@ -103,15 +125,14 @@ export const CustomerProfile: React.FC = () => {
     }
   };
 
-  const handleProfileSubmit = async (e: React.FormEvent) => {
+  /* ─────────────────────── save basic info ───────────────────── */
+  const handleSaveBasic = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
+    setSavingBasic(true);
 
     const data = new FormData();
-    data.append('name', formData.name);
-    data.append('email', formData.email);
-    data.append('phone', formData.phone);
-    data.append('address', formData.address);
+    data.append('name', basicForm.name);
+    data.append('address', basicForm.address);
     if (imageFile) {
       data.append('profilePicture', imageFile);
     }
@@ -124,14 +145,84 @@ export const CustomerProfile: React.FC = () => {
         showToast('Profile details updated successfully', 'success');
         updateUserProfile({
           name: res.data.customer.name,
-          email: res.data.customer.email,
           profilePicture: res.data.customer.profilePicture
         });
+        setProfileData((prev: any) => ({ ...prev, ...res.data.customer }));
       }
     } catch (err: any) {
       showToast(err.response?.data?.message || 'Failed to update profile info', 'error');
     } finally {
-      setSaving(false);
+      setSavingBasic(false);
+    }
+  };
+
+  /* ──────────── OTP flow for sensitive (email / phone) ────────── */
+  const handleRequestSensitiveOtp = async () => {
+    setSendingSensitiveOtp(true);
+    try {
+      const res = await api.post(endpoints.auth.customerProfileRequestOtp);
+      if (res.data.success) {
+        showToast(`Verification OTP sent to ${sensitiveData.email}`, 'success');
+        setSensitiveStep(1);
+        setSensitiveOtpCode('');
+      }
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Failed to send verification OTP', 'error');
+    } finally {
+      setSendingSensitiveOtp(false);
+    }
+  };
+
+  const handleVerifySensitiveOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (sensitiveOtpCode.trim().length !== 6) {
+      showToast('Please enter the 6-digit OTP code', 'error');
+      return;
+    }
+    setVerifyingSensitiveOtp(true);
+    try {
+      const res = await api.post(endpoints.auth.customerProfileVerifyOtp, { otp: sensitiveOtpCode.trim() });
+      if (res.data.success) {
+        showToast('Identity verified! Update your email / phone below.', 'success');
+        setProfileToken(res.data.profileToken);
+        setSensitiveStep(2);
+      }
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Invalid or expired OTP', 'error');
+    } finally {
+      setVerifyingSensitiveOtp(false);
+    }
+  };
+
+  const handleSaveSensitive = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingSensitive(true);
+    try {
+      const data = new FormData();
+      data.append('email', sensitiveData.email);
+      data.append('phone', sensitiveData.phone);
+      if (profileToken) {
+        data.append('profileToken', profileToken);
+      }
+
+      const res = await api.put(endpoints.customers.single(user?.id || ''), data, {
+        headers: { 
+          'Content-Type': 'multipart/form-data',
+          'x-profile-token': profileToken
+        }
+      });
+
+      if (res.data.success) {
+        showToast('Email & phone updated successfully', 'success');
+        setProfileData((prev: any) => ({ ...prev, ...res.data.customer }));
+        updateUserProfile({ email: res.data.customer.email });
+        setSensitiveStep(0);
+        setProfileToken('');
+      }
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Failed to update contact details', 'error');
+    } finally {
+      setSavingSensitive(false);
     }
   };
 
@@ -237,89 +328,75 @@ export const CustomerProfile: React.FC = () => {
           My Account Profile
         </h1>
         <p className="text-xs text-slate-400 mt-1">
-          Review company registration details, contact info, photo, and manage security credentials.
+          Review client registration details, contact info, photo, and manage security credentials.
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        {loading ? (
-          <div className="md:col-span-3 flex h-[30vh] items-center justify-center">
-            <Spinner size="lg" />
-          </div>
-        ) : (
-          <>
-            {/* Left Column: Info form */}
-            <div className="md:col-span-2">
-              <form onSubmit={handleProfileSubmit} className="space-y-6">
-                <Card className="space-y-6">
-                  <div className="flex flex-col sm:flex-row gap-6 items-center border-b border-slate-100 dark:border-slate-800 pb-4">
-                    {/* Avatar Uploader */}
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="h-24 w-24 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center overflow-hidden bg-slate-50 dark:bg-slate-900/30 relative group shadow-sm">
-                        {imagePreview ? (
-                          <img src={imagePreview} alt="Avatar" className="h-full w-full object-cover" />
-                        ) : (
-                          <User className="h-10 w-10 text-slate-400" />
-                        )}
-                        <label className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity">
-                          <Camera className="h-5 w-5 text-white" />
-                          <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
-                        </label>
+      {loading ? (
+        <div className="flex h-[40vh] items-center justify-center">
+          <Spinner size="lg" />
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {/* ── TOP ROW: Basic Details (Left 2/3) & Reset Password (Right 1/3) ── */}
+          <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 items-stretch">
+            {/* Left: Basic info form */}
+            <div className="lg:col-span-2 flex flex-col h-full">
+              <form onSubmit={handleSaveBasic} className="h-full flex flex-col">
+                <Card className="h-full flex flex-col justify-between space-y-6">
+                  <div className="space-y-6">
+                    <div className="flex flex-col sm:flex-row gap-6 items-center border-b border-slate-100 dark:border-slate-800 pb-4">
+                      {/* Avatar Uploader */}
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="h-24 w-24 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center overflow-hidden bg-slate-50 dark:bg-slate-900/30 relative group shadow-sm">
+                          {imagePreview ? (
+                            <img src={imagePreview} alt="Avatar" className="h-full w-full object-cover" />
+                          ) : (
+                            <User className="h-10 w-10 text-slate-400" />
+                          )}
+                          <label className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity">
+                            <Camera className="h-5 w-5 text-white" />
+                            <input type="file" className="hidden" accept="image/*" onChange={handleImageChange} />
+                          </label>
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Photo</span>
                       </div>
-                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Photo</span>
+
+                      <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Input
+                          label="Full Client Name"
+                          type="text"
+                          value={basicForm.name}
+                          onChange={(e) => setBasicForm({ ...basicForm, name: e.target.value })}
+                          required
+                        />
+                        <div>
+                          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                            Customer ID
+                          </label>
+                          <input
+                            type="text"
+                            value={profileData?.customerId || ''}
+                            className="w-full px-4 py-2 text-sm rounded-lg border bg-slate-50 dark:bg-slate-900/30 border-slate-200 dark:border-slate-800/80 text-slate-400 focus:outline-none cursor-not-allowed font-mono font-semibold"
+                            disabled
+                          />
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                       <Input
-                        label="Full Client Name"
+                        label="Billing Address"
                         type="text"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        value={basicForm.address}
+                        onChange={(e) => setBasicForm({ ...basicForm, address: e.target.value })}
                         required
                       />
-                      <div>
-                        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
-                          Customer ID
-                        </label>
-                        <input
-                          type="text"
-                          value={profileData?.customerId || ''}
-                          className="w-full px-4 py-2 text-sm rounded-lg border bg-slate-50 dark:bg-slate-900/30 border-slate-200 dark:border-slate-800/80 text-slate-400 focus:outline-none cursor-not-allowed font-mono font-semibold"
-                          disabled
-                        />
-                      </div>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Input
-                      label="Email Address"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      required
-                    />
-                    <Input
-                      label="Phone Number"
-                      type="text"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-4">
-                    <Input
-                      label="Billing Address"
-                      type="text"
-                      value={formData.address}
-                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <div className="flex justify-end pt-2">
-                    <Button type="submit" loading={saving} className="flex gap-2 text-xs font-semibold py-2 px-6">
+                  <div className="flex justify-end pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <Button type="submit" loading={savingBasic} className="flex gap-2 text-xs font-semibold py-2 px-6">
                       <Save className="h-4 w-4" />
                       Save Details
                     </Button>
@@ -328,8 +405,8 @@ export const CustomerProfile: React.FC = () => {
               </form>
             </div>
 
-            {/* Right Column: OTP-gated Reset Password Card */}
-            <div className="space-y-6">
+            {/* Right: OTP-gated Reset Password Card */}
+            <div className="lg:col-span-1 flex flex-col h-full">
               <Card className="h-full flex flex-col justify-between space-y-4">
                 <div className="space-y-4">
                   <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
@@ -476,9 +553,203 @@ export const CustomerProfile: React.FC = () => {
                 )}
               </Card>
             </div>
-          </>
-        )}
-      </div>
+          </div>
+
+          {/* ── LOWER ROW: Email & Phone (Left 2/3) & Login Credentials (Right 1/3) ── */}
+          <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 items-stretch">
+            {/* ── CARD 2: Sensitive fields (Email / Phone) with OTP gate (2/3 width) ── */}
+            <div className="lg:col-span-2 flex flex-col h-full">
+              <Card className="h-full flex flex-col justify-between space-y-4">
+                <div className="space-y-4">
+                  <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <h3 className="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-purple-500" />
+                      Email &amp; Phone — OTP Protected
+                    </h3>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      To update your email or phone number, verify your identity with a one-time code sent to your current email.
+                    </p>
+                  </div>
+
+                  {/* Step 0: Locked view */}
+                  {sensitiveStep === 0 && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                            Email Address
+                          </label>
+                          <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg border bg-slate-100/60 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 text-sm text-slate-600 dark:text-slate-300 cursor-not-allowed">
+                            {sensitiveData.email || '—'}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                            Phone Number
+                          </label>
+                          <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg border bg-slate-100/60 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 text-sm text-slate-600 dark:text-slate-300 cursor-not-allowed">
+                            {sensitiveData.phone || '—'}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                        <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                        <p className="text-[11px] text-amber-700 dark:text-amber-400 flex-1">
+                          These fields are locked. Click below to receive a verification OTP on your current email, then unlock and update them.
+                        </p>
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={handleRequestSensitiveOtp}
+                          loading={sendingSensitiveOtp}
+                          className="flex-shrink-0 flex items-center gap-1.5 text-xs font-semibold"
+                        >
+                          <Send className="h-3.5 w-3.5" />
+                          Send OTP to Unlock
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Step 1: Enter OTP */}
+                  {sensitiveStep === 1 && (
+                    <form onSubmit={handleVerifySensitiveOtp} className="space-y-4">
+                      <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-[11px] text-purple-700 dark:text-purple-300">
+                        A 6-digit verification code has been sent to <strong>{sensitiveData.email}</strong>. Enter it below to unlock your contact details.
+                      </div>
+
+                      <Input
+                        label="6-Digit OTP Code"
+                        type="text"
+                        value={sensitiveOtpCode}
+                        onChange={(e) => setSensitiveOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        placeholder="Enter 6-digit code"
+                        maxLength={6}
+                        required
+                      />
+
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => { setSensitiveStep(0); setSensitiveOtpCode(''); }}
+                          className="text-xs py-2.5 flex-1"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="submit"
+                          loading={verifyingSensitiveOtp}
+                          className="text-xs font-semibold py-2.5 flex-1"
+                        >
+                          Verify OTP &amp; Unlock
+                        </Button>
+                      </div>
+
+                      {/* Didn't receive OTP */}
+                      <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 space-y-2">
+                        <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                          <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                          Didn't receive the OTP?
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <button
+                            type="button"
+                            onClick={handleRequestSensitiveOtp}
+                            disabled={sendingSensitiveOtp}
+                            className="flex items-center justify-center gap-1.5 text-[11px] font-semibold text-purple-600 dark:text-purple-400 hover:underline py-1.5 px-3 rounded-lg hover:bg-purple-500/10 transition-colors"
+                          >
+                            <RefreshCw className="h-3.5 w-3.5" />
+                            Resend OTP
+                          </button>
+                        </div>
+                      </div>
+                    </form>
+                  )}
+
+                  {/* Step 2: Unlocked — edit email / phone */}
+                  {sensitiveStep === 2 && (
+                    <form onSubmit={handleSaveSensitive} className="space-y-4">
+                      <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-2 font-semibold">
+                        <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+                        Identity verified! Update your email and phone number, then save.
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Input
+                          label="Email Address"
+                          type="email"
+                          value={sensitiveData.email}
+                          onChange={(e) => setSensitiveData({ ...sensitiveData, email: e.target.value })}
+                          required
+                        />
+                        <Input
+                          label="Phone Number"
+                          type="text"
+                          value={sensitiveData.phone}
+                          onChange={(e) => setSensitiveData({ ...sensitiveData, phone: e.target.value })}
+                          required
+                        />
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => { setSensitiveStep(0); setProfileToken(''); }}
+                          className="text-xs py-2.5 flex-1"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="submit"
+                          loading={savingSensitive}
+                          className="text-xs font-semibold py-2.5 flex-1 flex items-center justify-center gap-2"
+                        >
+                          <Save className="h-4 w-4" />
+                          Save Email &amp; Phone
+                        </Button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              </Card>
+            </div>
+
+            {/* ── CARD 3: Login credentials summary (1/3 width) ── */}
+            <div className="lg:col-span-1 flex flex-col h-full">
+              <Card className="h-full flex flex-col justify-between space-y-3">
+                <div>
+                  <h3 className="text-xs font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 text-teal-500" />
+                    Your Login Credentials
+                  </h3>
+                  <div className="space-y-2 text-[11px] mt-3">
+                    <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-800">
+                      <span className="text-slate-400 font-semibold uppercase tracking-wider">Customer ID</span>
+                      <span className="font-mono font-bold text-purple-500">{profileData?.customerId || '—'}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-800">
+                      <span className="text-slate-400 font-semibold uppercase tracking-wider">Account Role</span>
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">Customer</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-slate-400 font-semibold uppercase tracking-wider">Registered Email</span>
+                      <span className="font-semibold text-slate-700 dark:text-slate-300 text-right truncate max-w-[120px]">
+                        {profileData?.email || '—'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-[10px] text-slate-400 leading-relaxed pt-2">
+                  You can login using your <strong>Customer ID</strong>, <strong>registered email</strong>, or <strong>phone number</strong> with your password.
+                </p>
+              </Card>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

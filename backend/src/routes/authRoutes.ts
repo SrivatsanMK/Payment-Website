@@ -14,7 +14,9 @@ import {
   requestAdminIdOTP,
   verifyAdminIdOTP,
   requestCustomerIdOTP,
-  verifyCustomerIdOTP
+  verifyCustomerIdOTP,
+  requestCustomerProfileUpdateOTP,
+  verifyCustomerProfileUpdateOTP
 } from '../controllers/authController';
 import { protect, adminOnly } from '../middleware/authMiddleware';
 import upload from '../middleware/uploadMiddleware';
@@ -29,6 +31,10 @@ router.post('/reset-password', resetPassword);
 router.post('/refresh-token', refreshToken);
 router.post('/customer/forgot-id/request-otp', requestCustomerIdOTP);
 router.post('/customer/forgot-id/verify-otp', verifyCustomerIdOTP);
+
+// Customer profile update OTP verification (protected — requires valid Customer JWT)
+router.post('/customer/profile/request-update-otp', protect, requestCustomerProfileUpdateOTP);
+router.post('/customer/profile/verify-update-otp',  protect, verifyCustomerProfileUpdateOTP);
 
 // Admin auth routes (public)
 router.post('/admin/login', adminLogin);

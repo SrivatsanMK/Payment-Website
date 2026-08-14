@@ -1,4 +1,5 @@
 import { Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
 import { AuthRequest } from '../types';
 import Customer from '../models/Customer';
 import Invoice from '../models/Invoice';
@@ -25,23 +26,20 @@ const generateCustomerId = async (): Promise<string> => {
  */
 export const createCustomer = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { name, email, phone, address, password } = req.body;
+    const { name, email, phone, address, gstNumber, password } = req.body;
 
-    if (!name || !email || !phone || !address || !password) {
-      return res.status(400).json({ success: false, message: 'Please enter all required fields' });
+    // Validation
+    if (!name || !email || !phone || !address) {
+      return res.status(400).json({ success: false, message: 'Name, email, phone, and address are required' });
     }
 
-    // Check duplicate email or phone
-    const emailExists = await Customer.findOne({ email: email.toLowerCase().trim() });
-    if (emailExists) {
-      return res.status(400).json({ success: false, message: 'Email already registered' });
+    // Check duplicate email
+    const existingCustomer = await Customer.findOne({ email: email.toLowerCase().trim() });
+    if (existingCustomer) {
+      return res.status(400).json({ success: false, message: 'Customer with this email already exists' });
     }
 
-    const phoneExists = await Customer.findOne({ phone: phone.trim() });
-    if (phoneExists) {
-      return res.status(400).json({ success: false, message: 'Phone number already registered' });
-    }
-
+    // Generate custom auto-increment ID: CUSTXXXXX
     const customerId = await generateCustomerId();
 
     const customer = await Customer.create({
@@ -50,15 +48,15 @@ export const createCustomer = async (req: AuthRequest, res: Response, next: Next
       email: email.toLowerCase().trim(),
       phone: phone.trim(),
       address: address.trim(),
-      password, // hashed in pre-save middleware
-      forcedPasswordReset: true // forces password change on first login
+      gstNumber: gstNumber ? gstNumber.trim() : undefined,
+      password: password || 'customer123', // default or custom
+      status: 'Active'
     });
 
-
     req.app.get('io').emit('DATA_UPDATED');
-    res.status(200).json({
+    res.status(201).json({
       success: true,
-      message: 'Customer successfully created',
+      message: 'Customer registered successfully',
       customer: {
         id: customer._id,
         customerId: customer.customerId,
@@ -90,6 +88,41 @@ export const updateCustomer = async (req: AuthRequest, res: Response, next: Next
     const customer = await Customer.findById(id);
     if (!customer) {
       return res.status(404).json({ success: false, message: 'Customer not found' });
+    }
+
+    // If the updater is a Customer and they are modifying email or phone, require valid OTP profileToken
+    if (req.user?.role === 'Customer') {
+      const isEmailChanging = email && email.toLowerCase().trim() !== customer.email;
+      const isPhoneChanging = phone && phone.trim() !== customer.phone;
+
+      if (isEmailChanging || isPhoneChanging) {
+        const profileToken = (req.headers['x-profile-token'] as string) || req.body.profileToken;
+        if (!profileToken) {
+          return res.status(403).json({
+            success: false,
+            message: 'OTP verification is required to update email or phone number.'
+          });
+        }
+
+        try {
+          const decoded = jwt.verify(
+            profileToken,
+            process.env.JWT_SECRET || 'supersecretjwtkeyforaccess123456'
+          ) as any;
+
+          if (decoded.id !== customer._id.toString() || decoded.purpose !== 'customer_profile_update') {
+            return res.status(403).json({
+              success: false,
+              message: 'Invalid or expired verification session. Please verify with OTP again.'
+            });
+          }
+        } catch (tokenErr) {
+          return res.status(403).json({
+            success: false,
+            message: 'Invalid or expired verification session. Please verify with OTP again.'
+          });
+        }
+      }
     }
 
     // Check duplicate email or phone if updated

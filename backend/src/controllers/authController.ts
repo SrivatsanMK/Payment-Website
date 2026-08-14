@@ -797,3 +797,91 @@ export const verifyCustomerIdOTP = async (req: Request, res: Response, next: Nex
     next(error);
   }
 };
+
+/**
+ * Request OTP for Customer Profile Update (Email / Phone)
+ * Authenticated customer endpoint
+ */
+export const requestCustomerProfileUpdateOTP = async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const customer = await Customer.findById(req.user.id).select('email name customerId');
+    if (!customer) {
+      return res.status(404).json({ success: false, message: 'Customer account not found' });
+    }
+
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+    await OTP.deleteMany({ email: customer.email, purpose: 'customer_profile_update' });
+    await OTP.create({
+      email: customer.email,
+      otp: otpCode,
+      purpose: 'customer_profile_update',
+      expiresAt
+    });
+
+    await sendOTPEmail(customer.email, customer.name, otpCode);
+
+    res.status(200).json({
+      success: true,
+      message: `Verification OTP sent to ${customer.email}`
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Verify Customer Profile Update OTP and issue a short-lived profileToken
+ * Authenticated customer endpoint
+ */
+export const verifyCustomerProfileUpdateOTP = async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const customer = await Customer.findById(req.user.id).select('email');
+    if (!customer) {
+      return res.status(404).json({ success: false, message: 'Customer account not found' });
+    }
+
+    const { otp } = req.body;
+    if (!otp) {
+      return res.status(400).json({ success: false, message: 'OTP code is required' });
+    }
+
+    const record = await OTP.findOne({ email: customer.email, purpose: 'customer_profile_update' });
+    if (!record) {
+      return res.status(400).json({ success: false, message: 'OTP not found or already expired' });
+    }
+    if (new Date() > record.expiresAt) {
+      await OTP.findByIdAndDelete(record._id);
+      return res.status(400).json({ success: false, message: 'OTP has expired. Please request a new one.' });
+    }
+    if (record.attempts >= 3) {
+      await OTP.findByIdAndDelete(record._id);
+      return res.status(422).json({ success: false, message: 'Max OTP attempts exceeded. Please request a new code.' });
+    }
+    if (record.otp !== otp.trim()) {
+      record.attempts += 1;
+      await record.save();
+      return res.status(400).json({ success: false, message: 'Invalid OTP code. Please try again.' });
+    }
+
+    // Invalidate OTP (single-use)
+    await OTP.findByIdAndDelete(record._id);
+
+    // Issue a short-lived profile-update token (10 min)
+    const profileToken = jwt.sign(
+      { id: customer._id.toString(), purpose: 'customer_profile_update' },
+      process.env.JWT_SECRET || 'supersecretjwtkeyforaccess123456',
+      { expiresIn: '10m' }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Identity verified successfully',
+      profileToken
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
