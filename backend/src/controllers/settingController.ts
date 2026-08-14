@@ -12,7 +12,9 @@ export const getSettings = async (req: AuthRequest, res: Response, next: NextFun
       settings = await Setting.create({
         companyName: 'Green Glide Logistics',
         upiId: 'greenglide@okaxis',
-        supportPhone: '9876543210'
+        supportPhone: '+91 98765 43210',
+        gmailAddress: 'greenglidelogistics@gmail.com',
+        email: 'greenglidelogistics@gmail.com'
       });
     }
 
@@ -30,7 +32,7 @@ export const getSettings = async (req: AuthRequest, res: Response, next: NextFun
  */
 export const updateSettings = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { companyName, upiId, supportPhone } = req.body;
+    const { companyName, supportPhone, gmailAddress, email } = req.body;
 
     let settings = await Setting.findOne();
     if (!settings) {
@@ -38,8 +40,13 @@ export const updateSettings = async (req: AuthRequest, res: Response, next: Next
     }
 
     if (companyName) settings.companyName = companyName.trim();
-    if (upiId) settings.upiId = upiId.trim();
-    if (supportPhone) settings.supportPhone = supportPhone.trim();
+    if (supportPhone !== undefined) settings.supportPhone = supportPhone.trim();
+
+    const targetEmail = (gmailAddress || email || '').trim();
+    if (targetEmail) {
+      (settings as any).gmailAddress = targetEmail;
+      (settings as any).email = targetEmail;
+    }
 
     if (req.file) {
       settings.companyLogo = `/uploads/${req.file.filename}`;

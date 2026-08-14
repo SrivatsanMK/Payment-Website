@@ -20,10 +20,11 @@ export const Settings: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  // Form states — Only Business Name and Support Contact Phone
+  // Form states — Business Name, Support Contact Phone, Gmail Address
   const [formData, setFormData] = useState({
     companyName: '',
-    supportPhone: ''
+    supportPhone: '',
+    gmailAddress: ''
   });
 
   const fetchSettings = async () => {
@@ -33,7 +34,8 @@ export const Settings: React.FC = () => {
         setSettings(res.data.settings);
         setFormData({
           companyName: res.data.settings.companyName || '',
-          supportPhone: res.data.settings.supportPhone || ''
+          supportPhone: res.data.settings.supportPhone || '',
+          gmailAddress: res.data.settings.gmailAddress || res.data.settings.email || 'greenglidelogistics@gmail.com'
         });
       }
     } catch (err) {
@@ -62,11 +64,20 @@ export const Settings: React.FC = () => {
 
   const handleSettingsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (formData.gmailAddress && !emailRegex.test(formData.gmailAddress.trim())) {
+      showToast('Please enter a valid Gmail / Email address', 'error');
+      return;
+    }
+
     setSaving(true);
     
     const data = {
       companyName: formData.companyName.trim(),
-      supportPhone: formData.supportPhone.trim()
+      supportPhone: formData.supportPhone.trim(),
+      gmailAddress: formData.gmailAddress.trim()
     };
 
     try {
@@ -98,7 +109,7 @@ export const Settings: React.FC = () => {
           Global Config Settings
         </h1>
         <p className="text-xs text-slate-400 mt-1">
-          Configure company branding and customer care contact details.
+          Configure company branding, payment routing, and customer support details.
         </p>
       </div>
 
@@ -132,6 +143,15 @@ export const Settings: React.FC = () => {
               value={formData.supportPhone}
               onChange={(e) => setFormData({ ...formData, supportPhone: e.target.value })}
               placeholder="+91 98765 43210"
+            />
+
+            <Input
+              label="Gmail Address"
+              type="email"
+              value={formData.gmailAddress}
+              onChange={(e) => setFormData({ ...formData, gmailAddress: e.target.value })}
+              placeholder="greenglidelogistics@gmail.com"
+              required
             />
           </div>
 
