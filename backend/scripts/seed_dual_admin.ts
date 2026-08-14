@@ -43,8 +43,6 @@ const seedDualAdmin = async () => {
         companyName: 'Green Glide Logistics',
         companyLogo: '',
         upiId: '',
-        backupFrequency: 'weekly',
-        backupEmail: 'greenglidelogistics@gmail.com',
         supportPhone: '8870200515'
       });
       console.log('✅ Settings created.');

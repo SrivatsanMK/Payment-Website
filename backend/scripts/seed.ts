@@ -36,8 +36,6 @@ const seedData = async () => {
       companyName: 'Apex Machinery & Hardware',
       companyLogo: '',
       upiId: 'apexdealer@okaxis',
-      backupFrequency: 'weekly',
-      backupEmail: 'backups@apexdealer.com',
       supportPhone: '+91 98765 43210'
     });
     console.log('Settings seeded.');

@@ -70,7 +70,6 @@ export const endpoints = {
   },
   settings: {
     base: '/settings',
-    backup: '/settings/backup',
   },
   notifications: {
     base: '/notifications',

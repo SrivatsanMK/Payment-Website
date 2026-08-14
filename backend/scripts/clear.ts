@@ -36,10 +36,8 @@ const clearData = async () => {
     await Setting.create({
       companyName: 'Green Glide Logistics',
       companyLogo: '',
-      upiId: 'apexdealer@okaxis',
-      backupFrequency: 'weekly',
-      backupEmail: 'backups@greenglide.com',
-      supportPhone: '+91 88702 00515'
+      upiId: 'greenglide@okaxis',
+      supportPhone: '+91 98765 43210'
     });
 
     console.log('Seeding clean Admin 1 (Owner)...');
