@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import Admin from '../models/Admin';
 import Customer from '../models/Customer';
 import OTP from '../models/OTP';
-import { sendOTPEmail, sendEmail, sendNewAdminIdEmail } from '../utils/email';
+import { sendOTPEmail, sendEmail, sendNewAdminIdEmail, sendCustomerIdEmail } from '../utils/email';
 
 const generateTokens = (id: string, role: string) => {
   const accessToken = jwt.sign(
@@ -664,6 +664,134 @@ export const verifyAdminIdOTP = async (req: Request, res: Response, next: NextFu
       message: 'Admin ID regenerated successfully',
       oldAdminId,
       newAdminId
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Request OTP for Forgot Customer ID (Public Customer Endpoint)
+ * Looks up ONLY the Customer collection — can never target an Admin account.
+ */
+export const requestCustomerIdOTP = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email } = req.body;
+
+    if (!email || !email.trim()) {
+      return res.status(400).json({ success: false, message: 'Registered email address is required' });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+
+    // Search ONLY the Customer collection
+    const customers = await Customer.find({ email: cleanEmail });
+
+    if (customers.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'No customer account found with this registered email'
+      });
+    }
+
+    const customer = customers[0];
+
+    if ((customer as any).status === 'Suspended') {
+      return res.status(403).json({
+        success: false,
+        message: 'This account is suspended. Please contact the Administrator.'
+      });
+    }
+
+    // Generate 6-digit OTP
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+    // Invalidate previous OTPs for this email and purpose
+    await OTP.deleteMany({ email: cleanEmail, purpose: 'forgot_customer_id' });
+
+    // Create new OTP — purpose 'forgot_customer_id' is completely isolated from admin purposes
+    await OTP.create({
+      email: cleanEmail,
+      otp: otpCode,
+      purpose: 'forgot_customer_id',
+      expiresAt
+    });
+
+    // Send email using existing infrastructure
+    await sendOTPEmail(customer.email, customer.name, otpCode);
+
+    res.status(200).json({
+      success: true,
+      message: 'Verification OTP sent to your registered email'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Verify OTP for Forgot Customer ID and REVEAL the existing Customer ID
+ * (Does NOT generate a new Customer ID — Customer IDs are business-critical invoice references)
+ */
+export const verifyCustomerIdOTP = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({ success: false, message: 'Email and OTP code are required' });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+
+    const otpRecord = await OTP.findOne({
+      email: cleanEmail,
+      purpose: 'forgot_customer_id'
+    });
+
+    if (!otpRecord) {
+      return res.status(400).json({ success: false, message: 'OTP code not found or already expired' });
+    }
+
+    // Check expiration
+    if (new Date() > otpRecord.expiresAt) {
+      await OTP.findByIdAndDelete(otpRecord._id);
+      return res.status(400).json({ success: false, message: 'OTP has expired. Please request a new code.' });
+    }
+
+    // Check max attempts (3)
+    if (otpRecord.attempts >= 3) {
+      await OTP.findByIdAndDelete(otpRecord._id);
+      return res.status(422).json({ success: false, message: 'Maximum OTP attempts exceeded. Please request a new code.' });
+    }
+
+    // Code match check
+    if (otpRecord.otp !== otp.trim()) {
+      otpRecord.attempts += 1;
+      await otpRecord.save();
+      return res.status(400).json({ success: false, message: 'Invalid OTP code. Please try again.' });
+    }
+
+    // Invalidate/Delete OTP immediately after successful verification (single-use)
+    await OTP.findByIdAndDelete(otpRecord._id);
+
+    // Find the customer — ONLY in Customer collection
+    const customer = await Customer.findOne({ email: cleanEmail });
+    if (!customer) {
+      return res.status(404).json({ success: false, message: 'Customer account not found' });
+    }
+
+    const customerId = (customer as any).customerId || '';
+
+    // Send confirmation email with the existing Customer ID
+    await sendCustomerIdEmail(customer.email, customer.name, customerId);
+
+    req.app.get('io')?.emit('DATA_UPDATED');
+
+    return res.status(200).json({
+      success: true,
+      message: 'Customer ID retrieved successfully',
+      customerId
     });
   } catch (error) {
     next(error);

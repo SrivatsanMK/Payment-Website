@@ -24,6 +24,7 @@ export interface CinematicLoginProps {
   passwordLabel: string
   forgotPasswordLink: string
   forgotAdminIdLink?: string
+  forgotCustomerIdLink?: string
   submitLabel: string
   loading: boolean
   identifier: string
@@ -128,7 +129,7 @@ const PillGlassInput: React.FC<PillGlassInputProps> = ({
 
 export const CinematicLogin: React.FC<CinematicLoginProps> = ({
   title, identifierLabel, identifierPlaceholder, passwordLabel,
-  forgotPasswordLink, forgotAdminIdLink, submitLabel, loading, identifier, password,
+  forgotPasswordLink, forgotAdminIdLink, forgotCustomerIdLink, submitLabel, loading, identifier, password,
   showPassword, onIdentifierChange, onPasswordChange, onTogglePassword,
   onSubmit,
 }) => {
@@ -418,6 +419,25 @@ export const CinematicLogin: React.FC<CinematicLoginProps> = ({
                             onMouseLeave={e => (e.currentTarget.style.color = isDark ? 'rgba(255,255,255,0.85)' : 'rgba(15,23,42,0.85)')}
                           >
                             Forgot Admin ID?
+                          </Link>
+                          <span style={{ fontSize: 11, color: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(15,23,42,0.35)' }}>•</span>
+                        </>
+                      )}
+                      {forgotCustomerIdLink && (
+                        <>
+                          <Link
+                            to={forgotCustomerIdLink}
+                            style={{
+                              fontSize: 11.5,
+                              fontWeight: 600,
+                              color: isDark ? 'rgba(255,255,255,0.85)' : 'rgba(15,23,42,0.85)',
+                              textDecoration: 'none',
+                              transition: 'color 200ms ease',
+                            }}
+                            onMouseEnter={e => (e.currentTarget.style.color = isDark ? '#ffffff' : '#0f172a')}
+                            onMouseLeave={e => (e.currentTarget.style.color = isDark ? 'rgba(255,255,255,0.85)' : 'rgba(15,23,42,0.85)')}
+                          >
+                            Forgot Customer ID?
                           </Link>
                           <span style={{ fontSize: 11, color: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(15,23,42,0.35)' }}>•</span>
                         </>

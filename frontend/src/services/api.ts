@@ -40,6 +40,8 @@ export const endpoints = {
     adminProfileNotifyIssue: '/auth/admin/profile/notify-otp-issue',
     adminForgotIdRequestOtp: '/auth/admin/forgot-id/request-otp',
     adminForgotIdVerifyOtp:  '/auth/admin/forgot-id/verify-otp',
+    customerForgotIdRequestOtp: '/auth/customer/forgot-id/request-otp',
+    customerForgotIdVerifyOtp:  '/auth/customer/forgot-id/verify-otp',
   },
   customers: {
     base: '/customers',

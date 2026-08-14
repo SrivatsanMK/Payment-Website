@@ -12,7 +12,9 @@ import {
   verifyProfileUpdateOTP,
   notifyOtpIssue,
   requestAdminIdOTP,
-  verifyAdminIdOTP
+  verifyAdminIdOTP,
+  requestCustomerIdOTP,
+  verifyCustomerIdOTP
 } from '../controllers/authController';
 import { protect, adminOnly } from '../middleware/authMiddleware';
 import upload from '../middleware/uploadMiddleware';
@@ -25,6 +27,8 @@ router.post('/forgot-password', requestOTP);
 router.post('/verify-otp', verifyOTP);
 router.post('/reset-password', resetPassword);
 router.post('/refresh-token', refreshToken);
+router.post('/customer/forgot-id/request-otp', requestCustomerIdOTP);
+router.post('/customer/forgot-id/verify-otp', verifyCustomerIdOTP);
 
 // Admin auth routes (public)
 router.post('/admin/login', adminLogin);

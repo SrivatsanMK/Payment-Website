@@ -19,6 +19,7 @@ import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
 import VerifyOTP from './pages/VerifyOTP';
 import ResetPassword from './pages/ResetPassword';
+import ForgotCustomerId from './pages/customer/ForgotCustomerId';
 
 // ─── ADMIN AUTH PAGES ─────────────────────────────────────────────────────────
 import AdminLogin from './pages/admin/AdminLogin';
@@ -82,6 +83,7 @@ export const App: React.FC = () => {
                   {/* ── CUSTOMER PUBLIC ROUTES ──────────────────────────────── */}
                   <Route path="/login" element={<Login />} />
                   <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/forgot-customer-id" element={<ForgotCustomerId />} />
                   <Route path="/verify-otp" element={<VerifyOTP />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
 

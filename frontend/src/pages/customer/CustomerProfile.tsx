@@ -4,20 +4,26 @@ import { useAxios } from '../../hooks/useAxios';
 import { endpoints } from '../../services/api';
 import { useToast } from '../../components/ui/Toast';
 import { useLocation } from 'react-router-dom';
+import axios from 'axios';
 import { 
   User, 
   Camera, 
-  Lock, 
   Save, 
   KeyRound,
-  ShieldAlert 
+  Mail,
+  ShieldAlert,
+  CheckCircle2,
+  Send,
+  AlertTriangle,
+  Eye,
+  EyeOff,
+  RefreshCw
 } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import Spinner from '../../components/ui/Spinner';
-
-import { getAssetUrl } from '../../utils/config';
+import { API_URL, getAssetUrl } from '../../utils/config';
 
 export const CustomerProfile: React.FC = () => {
   const { user, updateUserProfile } = useAuth();
@@ -28,7 +34,6 @@ export const CustomerProfile: React.FC = () => {
   const [profileData, setProfileData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [passSaving, setPassSaving] = useState(false);
 
   // Profile image upload
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -42,14 +47,20 @@ export const CustomerProfile: React.FC = () => {
     address: ''
   });
 
-  const [passwordForm, setPasswordForm] = useState({
-    oldPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  });
-
-  const [errors, setErrors] = useState<any>({});
   const [isForcedReset, setIsForcedReset] = useState(false);
+
+  /* ── Password reset OTP state-machine ──
+     step 1 = idle, step 2 = OTP sent, step 3 = OTP verified, enter new pwd
+  */
+  const [pwdStep, setPwdStep] = useState<1 | 2 | 3>(1);
+  const [sendingPwdOtp, setSendingPwdOtp] = useState(false);
+  const [verifyingPwdOtp, setVerifyingPwdOtp] = useState(false);
+  const [resettingPwd, setResettingPwd] = useState(false);
+  const [pwdOtpCode, setPwdOtpCode] = useState('');
+  const [resetToken, setResetToken] = useState('');
+  const [showNewPwd, setShowNewPwd] = useState(false);
+  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassword: '' });
 
   const fetchProfileDetails = async () => {
     try {
@@ -124,53 +135,98 @@ export const CustomerProfile: React.FC = () => {
     }
   };
 
-  const handlePasswordSubmit = async (e: React.FormEvent) => {
+  /* ─────────────────── OTP password reset flow ──────────────── */
+  const handleSendPwdOtp = async () => {
+    if (!profileData?.email) {
+      showToast('No registered email found for this account', 'error');
+      return;
+    }
+    setSendingPwdOtp(true);
+    try {
+      const res = await axios.post(`${API_URL}${endpoints.auth.forgotPassword}`, {
+        email: profileData.email,
+        role: 'Customer'
+      });
+      if (res.data.success) {
+        showToast(`Verification OTP sent to ${profileData.email}`, 'success');
+        setPwdStep(2);
+        setPwdOtpCode('');
+      }
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Failed to send OTP code', 'error');
+    } finally {
+      setSendingPwdOtp(false);
+    }
+  };
+
+  const handleVerifyPwdOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pwdOtpCode || pwdOtpCode.trim().length !== 6) {
+      showToast('Please enter the complete 6-digit OTP code', 'error');
+      return;
+    }
+    setVerifyingPwdOtp(true);
+    try {
+      const res = await axios.post(`${API_URL}${endpoints.auth.verifyOtp}`, {
+        email: profileData?.email,
+        otp: pwdOtpCode.trim()
+      });
+      if (res.data.success) {
+        showToast('OTP verified! Set your new password.', 'success');
+        setResetToken(res.data.resetToken);
+        setPwdStep(3);
+      }
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Invalid or expired OTP verification code.', 'error');
+    } finally {
+      setVerifyingPwdOtp(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!passwordForm.newPassword || !passwordForm.confirmPassword) {
       showToast('Please fill in password fields', 'error');
       return;
     }
-
     if (passwordForm.newPassword.length < 8) {
       showToast('Password must be at least 8 characters long', 'error');
       return;
     }
-
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       showToast('Passwords do not match', 'error');
       return;
     }
-
-    setPassSaving(true);
+    setResettingPwd(true);
     try {
-      // In CustomerProfile, they change password by updating it securely on `/customers/:id` by supplying a password field or reset action.
-      // Let's call the resetPassword endpoint, or update Customer directly.
-      // Since the admin's resetCustomerPassword endpoint is admin-only, the customer changes password by passing a password field on the Customer PUT update request!
-      // Yes! Our backend `customerController.ts` updates customer details. Let's make sure our PUT /customers/:id handles updating the password if password field is provided, or let's double check.
-      // Wait, in `customerController.ts`, we did not map a direct password field inside updateCustomer because password resets are usually a separate security action.
-      // Let's verify: `updateCustomer` has `name`, `email`, `phone`, `address`, `gstNumber`.
-      // Can we add password update support inside the PUT customer route? Yes, that's very simple. Let's check `customerController.ts` for PUT update. It updates basic fields. If we pass `password`, does it update?
-      // No, we didn't add password there. But wait! We can add a secure `/customers/:id/change-password` endpoint or just update `customerController` PUT `/customers/:id` to support password changes!
-      // Let's check `customerController.ts` lines 100-140 to see if we can edit it to support password changes if customer provides `password`.
-      // Wait, let's look at `customerController.ts`. Let's view the `updateCustomer` method.
+      const res = await axios.post(`${API_URL}${endpoints.auth.resetPassword}`, {
+        resetToken,
+        password: passwordForm.newPassword,
+        role: 'Customer'
+      });
+      if (res.data.success) {
+        showToast('Password updated successfully!', 'success');
+        setIsForcedReset(false);
+        setPwdStep(1);
+        setPwdOtpCode('');
+        setResetToken('');
+        setPasswordForm({ newPassword: '', confirmPassword: '' });
+      }
     } catch (err: any) {
-      showToast('Password change failed', 'error');
+      showToast(err.response?.data?.message || 'Failed to update password', 'error');
+    } finally {
+      setResettingPwd(false);
     }
   };
 
-  // Wait! Let's edit backend `customerController.ts` to support password updates for Customers!
-  // In Customer PUT `/customers/:id`, let's add:
-  // `if (password) customer.password = password;`
-  // That will automatically run the pre-save hook and hash the password!
-  // Let's check `customerController.ts` to see where we update properties.
   return (
     <div className="space-y-6">
       {/* Forced warning */}
       {isForcedReset && (
-        <div className="flex gap-3 p-4 rounded-xl border border-amber-250 bg-amber-50/50 dark:bg-amber-950/10 text-amber-900 dark:text-amber-350">
+        <div className="flex gap-3 p-4 rounded-xl border border-amber-200 dark:border-amber-900 bg-amber-50/50 dark:bg-amber-950/20 text-amber-900 dark:text-amber-300">
           <ShieldAlert className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
           <div className="text-xs leading-relaxed">
-            <strong>Security Action Required:</strong> You are using a temporary password set by the Admin. Please set a new personal password below to unlock full account access.
+            <strong>Security Action Required:</strong> You are using a temporary password set by the Admin. Please verify via OTP and set a new personal password below.
           </div>
         </div>
       )}
@@ -181,7 +237,7 @@ export const CustomerProfile: React.FC = () => {
           My Account Profile
         </h1>
         <p className="text-xs text-slate-400 mt-1">
-          Review company registration numbers, address, photo details, and update security credentials.
+          Review company registration details, contact info, photo, and manage security credentials.
         </p>
       </div>
 
@@ -192,11 +248,11 @@ export const CustomerProfile: React.FC = () => {
           </div>
         ) : (
           <>
-            {/* Info form */}
+            {/* Left Column: Info form */}
             <div className="md:col-span-2">
               <form onSubmit={handleProfileSubmit} className="space-y-6">
                 <Card className="space-y-6">
-                  <div className="flex flex-col sm:flex-row gap-6 items-center border-b border-slate-100 dark:border-slate-850 pb-4">
+                  <div className="flex flex-col sm:flex-row gap-6 items-center border-b border-slate-100 dark:border-slate-800 pb-4">
                     {/* Avatar Uploader */}
                     <div className="flex flex-col items-center gap-2">
                       <div className="h-24 w-24 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center overflow-hidden bg-slate-50 dark:bg-slate-900/30 relative group shadow-sm">
@@ -228,7 +284,7 @@ export const CustomerProfile: React.FC = () => {
                         <input
                           type="text"
                           value={profileData?.customerId || ''}
-                          className="w-full px-4 py-2 text-sm rounded-lg border bg-slate-50 dark:bg-slate-900/30 border-slate-200 dark:border-slate-800/80 text-slate-400 focus:outline-none cursor-not-allowed"
+                          className="w-full px-4 py-2 text-sm rounded-lg border bg-slate-50 dark:bg-slate-900/30 border-slate-200 dark:border-slate-800/80 text-slate-400 focus:outline-none cursor-not-allowed font-mono font-semibold"
                           disabled
                         />
                       </div>
@@ -272,60 +328,153 @@ export const CustomerProfile: React.FC = () => {
               </form>
             </div>
 
-            {/* Password card */}
+            {/* Right Column: OTP-gated Reset Password Card */}
             <div className="space-y-6">
-              <form onSubmit={async (e) => {
-                e.preventDefault();
-                if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-                  showToast('New passwords do not match', 'error');
-                  return;
-                }
-                setPassSaving(true);
-                try {
-                  const res = await api.put(endpoints.customers.single(user?.id || ''), {
-                    password: passwordForm.newPassword
-                  });
-                  if (res.data.success) {
-                    showToast('Password changed successfully', 'success');
-                    setIsForcedReset(false);
-                    setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
-                  }
-                } catch (err: any) {
-                  showToast('Failed to change password', 'error');
-                } finally {
-                  setPassSaving(false);
-                }
-              }}>
-                <Card className="space-y-4">
-                  <h3 className="text-sm font-bold text-slate-855 dark:text-slate-150 flex items-center gap-2">
-                    <KeyRound className="h-4 w-4 text-primary-500" />
-                    Reset Password
-                  </h3>
+              <Card className="h-full flex flex-col justify-between space-y-4">
+                <div className="space-y-4">
+                  <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <h3 className="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                      <KeyRound className="h-4 w-4 text-purple-500" />
+                      Reset Password
+                    </h3>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      Update your login password securely using one-time OTP verification sent to your email.
+                    </p>
+                  </div>
 
-                  <Input
-                    label="New Password"
-                    type="password"
-                    value={passwordForm.newPassword}
-                    onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                    placeholder="Min 8 characters"
-                    required
-                  />
-                  <Input
-                    label="Confirm New Password"
-                    type="password"
-                    value={passwordForm.confirmPassword}
-                    onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-                    placeholder="Min 8 characters"
-                    required
-                  />
+                  {/* Step 1: Idle View */}
+                  {pwdStep === 1 && (
+                    <div className="space-y-3 pt-1">
+                      <div className="flex items-center gap-2 p-3 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300">
+                        <Mail className="h-4 w-4 text-purple-500 flex-shrink-0" />
+                        <div className="truncate">
+                          <span className="text-[10px] uppercase font-bold text-slate-400 block">OTP will be sent to</span>
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">{profileData?.email || 'Registered Email'}</span>
+                        </div>
+                      </div>
 
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Click below to receive a 6-digit OTP code to verify your identity before creating a new password.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Step 2: OTP Entry */}
+                  {pwdStep === 2 && (
+                    <form onSubmit={handleVerifyPwdOtp} className="space-y-3 pt-1">
+                      <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-[11px] text-purple-600 dark:text-purple-400 flex items-center gap-2 font-medium">
+                        <Mail className="h-4 w-4 flex-shrink-0" />
+                        OTP sent to <strong className="truncate">{profileData?.email}</strong>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
+                          6-Digit OTP Code
+                        </label>
+                        <input
+                          type="text"
+                          maxLength={6}
+                          value={pwdOtpCode}
+                          onChange={(e) => setPwdOtpCode(e.target.value.replace(/\D/g, ''))}
+                          placeholder="123456"
+                          className="w-full px-3 py-2 text-center text-lg font-mono font-bold tracking-[6px] rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all"
+                          autoFocus
+                          required
+                        />
+                      </div>
+
+                      <div className="flex gap-2 pt-1">
+                        <Button type="button" variant="outline" onClick={() => setPwdStep(1)} className="w-1/3 text-xs py-2">
+                          Back
+                        </Button>
+                        <Button type="submit" loading={verifyingPwdOtp} className="w-2/3 text-xs font-semibold py-2">
+                          Verify OTP
+                        </Button>
+                      </div>
+
+                      {/* Didn't receive OTP */}
+                      <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-3 space-y-1.5 mt-2">
+                        <p className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
+                          <AlertTriangle className="h-3 w-3 text-amber-500" /> Didn't receive code?
+                        </p>
+                        <button
+                          type="button"
+                          onClick={handleSendPwdOtp}
+                          disabled={sendingPwdOtp}
+                          className="text-[11px] font-semibold text-purple-600 dark:text-purple-400 hover:underline text-left flex items-center gap-1.5 disabled:opacity-50"
+                        >
+                          <RefreshCw className={`h-3 w-3 ${sendingPwdOtp ? 'animate-spin' : ''}`} />
+                          {sendingPwdOtp ? 'Sending...' : 'Resend OTP Code'}
+                        </button>
+                      </div>
+                    </form>
+                  )}
+
+                  {/* Step 3: New Password */}
+                  {pwdStep === 3 && (
+                    <form onSubmit={handleResetPassword} className="space-y-4 pt-1">
+                      <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-2 font-semibold">
+                        <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+                        OTP Verified! Set your new password.
+                      </div>
+
+                      <div className="relative">
+                        <Input
+                          label="New Password"
+                          type={showNewPwd ? 'text' : 'password'}
+                          value={passwordForm.newPassword}
+                          onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                          placeholder="Min 8 characters"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowNewPwd(!showNewPwd)}
+                          className="absolute right-3 top-8 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                        >
+                          {showNewPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+
+                      <div className="relative">
+                        <Input
+                          label="Confirm New Password"
+                          type={showConfirmPwd ? 'text' : 'password'}
+                          value={passwordForm.confirmPassword}
+                          onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                          placeholder="Re-enter password"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPwd(!showConfirmPwd)}
+                          className="absolute right-3 top-8 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                        >
+                          {showConfirmPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+
+                      <Button type="submit" loading={resettingPwd} variant="danger" className="w-full text-xs font-semibold py-2.5">
+                        Update Password
+                      </Button>
+                    </form>
+                  )}
+                </div>
+
+                {pwdStep === 1 && (
                   <div className="pt-2">
-                    <Button type="submit" loading={passSaving} variant="danger" className="w-full text-xs font-semibold py-2.5">
-                      Change Security Password
+                    <Button
+                      type="button"
+                      onClick={handleSendPwdOtp}
+                      loading={sendingPwdOtp}
+                      className="w-full flex items-center justify-center gap-2 text-xs font-semibold py-2.5"
+                    >
+                      <Send className="h-4 w-4" />
+                      Send OTP to Email
                     </Button>
                   </div>
-                </Card>
-              </form>
+                )}
+              </Card>
             </div>
           </>
         )}

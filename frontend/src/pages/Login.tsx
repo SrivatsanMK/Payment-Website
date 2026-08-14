@@ -48,6 +48,7 @@ export const Login: React.FC = () => {
       identifierPlaceholder="Enter Your Customer ID"
       passwordLabel="Password"
       forgotPasswordLink="/forgot-password"
+      forgotCustomerIdLink="/forgot-customer-id"
       submitLabel="Sign In"
       loading={loading}
       identifier={identifier}
