@@ -537,202 +537,206 @@ export const AdminProfile: React.FC = () => {
             </div>
           </div>
 
-          {/* ── LOWER ROW: Email & Phone (Left) & Login Credentials (Right) ── */}
-          <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 items-start">
+          {/* ── LOWER ROW: Email & Phone (Left) & Login Credentials (Right) with Equal Height ── */}
+          <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 items-stretch">
             {/* ── CARD 2: Sensitive fields (Email / Phone) with OTP gate (2/3 width) ── */}
-            <div className="lg:col-span-2">
-              <Card className="space-y-4">
-                <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
-                  <h3 className="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-purple-500" />
-                    Email &amp; Phone — OTP Protected
-                  </h3>
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    To update your email or phone number, verify your identity with a one-time code sent to your current email.
-                  </p>
-                </div>
-
-                {/* Step 0: Locked view */}
-                {sensitiveStep === 0 && (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-                          Email Address
-                        </label>
-                        <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg border bg-slate-100/60 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 text-sm text-slate-600 dark:text-slate-300 cursor-not-allowed">
-                          {sensitiveData.email || '—'}
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-                          Phone Number
-                        </label>
-                        <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg border bg-slate-100/60 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 text-sm text-slate-600 dark:text-slate-300 cursor-not-allowed">
-                          {sensitiveData.phone || '—'}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                      <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                      <p className="text-[11px] text-amber-700 dark:text-amber-400 flex-1">
-                        These fields are locked. Click below to receive a verification OTP on your current email, then unlock and update them.
-                      </p>
-                      <Button
-                        type="button"
-                        size="sm"
-                        onClick={handleRequestSensitiveOtp}
-                        loading={sendingOtp}
-                        className="flex-shrink-0 flex items-center gap-1.5 text-xs font-semibold"
-                      >
-                        <Send className="h-3.5 w-3.5" />
-                        Send OTP to Unlock
-                      </Button>
-                    </div>
+            <div className="lg:col-span-2 flex flex-col h-full">
+              <Card className="h-full flex flex-col justify-between space-y-4">
+                <div className="space-y-4">
+                  <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
+                    <h3 className="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-purple-500" />
+                      Email &amp; Phone — OTP Protected
+                    </h3>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      To update your email or phone number, verify your identity with a one-time code sent to your current email.
+                    </p>
                   </div>
-                )}
 
-                {/* Step 1: Enter OTP */}
-                {sensitiveStep === 1 && (
-                  <form onSubmit={handleVerifySensitiveOtp} className="space-y-4">
-                    <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-[11px] text-purple-700 dark:text-purple-300">
-                      A 6-digit verification code has been sent to <strong>{sensitiveData.email}</strong>. Enter it below to unlock your contact details.
-                    </div>
-
-                    <Input
-                      label="6-Digit OTP Code"
-                      type="text"
-                      value={otpCode}
-                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                      placeholder="Enter 6-digit code"
-                      maxLength={6}
-                      required
-                    />
-
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => { setSensitiveStep(0); setOtpCode(''); }}
-                        className="text-xs py-2.5 flex-1"
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        type="submit"
-                        loading={verifyingOtp}
-                        className="text-xs font-semibold py-2.5 flex-1"
-                      >
-                        Verify OTP &amp; Unlock
-                      </Button>
-                    </div>
-
-                    {/* Didn't receive OTP */}
-                    <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 space-y-2">
-                      <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                        <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-                        Didn't receive the OTP?
-                      </p>
-                      <div className="flex flex-col sm:flex-row gap-2">
-                        <button
-                          type="button"
-                          onClick={handleRequestSensitiveOtp}
-                          disabled={sendingOtp}
-                          className="flex items-center justify-center gap-1.5 text-[11px] font-semibold text-purple-600 dark:text-purple-400 hover:underline py-1.5 px-3 rounded-lg hover:bg-purple-500/10 transition-colors"
-                        >
-                          <RefreshCw className="h-3.5 w-3.5" />
-                          Resend OTP
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleNotifyOtpIssue}
-                          disabled={notifying}
-                          className="flex items-center justify-center gap-1.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:underline py-1.5 px-3 rounded-lg hover:bg-amber-500/10 transition-colors"
-                        >
-                          <Mail className="h-3.5 w-3.5" />
-                          {notifying ? 'Sending...' : 'Notify Admins via Email'}
-                        </button>
+                  {/* Step 0: Locked view */}
+                  {sensitiveStep === 0 && (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                            Email Address
+                          </label>
+                          <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg border bg-slate-100/60 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 text-sm text-slate-600 dark:text-slate-300 cursor-not-allowed">
+                            {sensitiveData.email || '—'}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                            Phone Number
+                          </label>
+                          <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg border bg-slate-100/60 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 text-sm text-slate-600 dark:text-slate-300 cursor-not-allowed">
+                            {sensitiveData.phone || '—'}
+                          </div>
+                        </div>
                       </div>
-                      <p className="text-[10px] text-slate-400">
-                        "Notify Admins" sends a tech-issue alert email to all admin accounts so someone can assist you.
-                      </p>
-                    </div>
-                  </form>
-                )}
 
-                {/* Step 2: Unlocked — edit email / phone */}
-                {sensitiveStep === 2 && (
-                  <form onSubmit={handleSaveSensitive} className="space-y-4">
-                    <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-2 font-semibold">
-                      <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
-                      Identity verified! Update your email and phone number, then save.
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                        <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                        <p className="text-[11px] text-amber-700 dark:text-amber-400 flex-1">
+                          These fields are locked. Click below to receive a verification OTP on your current email, then unlock and update them.
+                        </p>
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={handleRequestSensitiveOtp}
+                          loading={sendingOtp}
+                          className="flex-shrink-0 flex items-center gap-1.5 text-xs font-semibold"
+                        >
+                          <Send className="h-3.5 w-3.5" />
+                          Send OTP to Unlock
+                        </Button>
+                      </div>
                     </div>
+                  )}
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Step 1: Enter OTP */}
+                  {sensitiveStep === 1 && (
+                    <form onSubmit={handleVerifySensitiveOtp} className="space-y-4">
+                      <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 text-[11px] text-purple-700 dark:text-purple-300">
+                        A 6-digit verification code has been sent to <strong>{sensitiveData.email}</strong>. Enter it below to unlock your contact details.
+                      </div>
+
                       <Input
-                        label="Email Address"
-                        type="email"
-                        value={sensitiveData.email}
-                        onChange={(e) => setSensitiveData({ ...sensitiveData, email: e.target.value })}
-                        required
-                      />
-                      <Input
-                        label="Phone Number"
+                        label="6-Digit OTP Code"
                         type="text"
-                        value={sensitiveData.phone}
-                        onChange={(e) => setSensitiveData({ ...sensitiveData, phone: e.target.value })}
+                        value={otpCode}
+                        onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        placeholder="Enter 6-digit code"
+                        maxLength={6}
                         required
                       />
-                    </div>
 
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => { setSensitiveStep(0); setProfileToken(''); }}
-                        className="text-xs py-2.5 flex-1"
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        type="submit"
-                        loading={savingSensitive}
-                        className="text-xs font-semibold py-2.5 flex-1 flex items-center justify-center gap-2"
-                      >
-                        <Save className="h-4 w-4" />
-                        Save Email &amp; Phone
-                      </Button>
-                    </div>
-                  </form>
-                )}
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => { setSensitiveStep(0); setOtpCode(''); }}
+                          className="text-xs py-2.5 flex-1"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="submit"
+                          loading={verifyingOtp}
+                          className="text-xs font-semibold py-2.5 flex-1"
+                        >
+                          Verify OTP &amp; Unlock
+                        </Button>
+                      </div>
+
+                      {/* Didn't receive OTP */}
+                      <div className="border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 space-y-2">
+                        <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                          <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                          Didn't receive the OTP?
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <button
+                            type="button"
+                            onClick={handleRequestSensitiveOtp}
+                            disabled={sendingOtp}
+                            className="flex items-center justify-center gap-1.5 text-[11px] font-semibold text-purple-600 dark:text-purple-400 hover:underline py-1.5 px-3 rounded-lg hover:bg-purple-500/10 transition-colors"
+                          >
+                            <RefreshCw className="h-3.5 w-3.5" />
+                            Resend OTP
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleNotifyOtpIssue}
+                            disabled={notifying}
+                            className="flex items-center justify-center gap-1.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:underline py-1.5 px-3 rounded-lg hover:bg-amber-500/10 transition-colors"
+                          >
+                            <Mail className="h-3.5 w-3.5" />
+                            {notifying ? 'Sending...' : 'Notify Admins via Email'}
+                          </button>
+                        </div>
+                        <p className="text-[10px] text-slate-400">
+                          "Notify Admins" sends a tech-issue alert email to all admin accounts so someone can assist you.
+                        </p>
+                      </div>
+                    </form>
+                  )}
+
+                  {/* Step 2: Unlocked — edit email / phone */}
+                  {sensitiveStep === 2 && (
+                    <form onSubmit={handleSaveSensitive} className="space-y-4">
+                      <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-600 dark:text-emerald-400 flex items-center gap-2 font-semibold">
+                        <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+                        Identity verified! Update your email and phone number, then save.
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <Input
+                          label="Email Address"
+                          type="email"
+                          value={sensitiveData.email}
+                          onChange={(e) => setSensitiveData({ ...sensitiveData, email: e.target.value })}
+                          required
+                        />
+                        <Input
+                          label="Phone Number"
+                          type="text"
+                          value={sensitiveData.phone}
+                          onChange={(e) => setSensitiveData({ ...sensitiveData, phone: e.target.value })}
+                          required
+                        />
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => { setSensitiveStep(0); setProfileToken(''); }}
+                          className="text-xs py-2.5 flex-1"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="submit"
+                          loading={savingSensitive}
+                          className="text-xs font-semibold py-2.5 flex-1 flex items-center justify-center gap-2"
+                        >
+                          <Save className="h-4 w-4" />
+                          Save Email &amp; Phone
+                        </Button>
+                      </div>
+                    </form>
+                  )}
+                </div>
               </Card>
             </div>
 
             {/* ── CARD 3: Login credentials summary (1/3 width) ── */}
-            <div className="lg:col-span-1">
-              <Card className="space-y-3">
-                <h3 className="text-xs font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4 text-teal-500" />
-                  Your Login Credentials
-                </h3>
-                <div className="space-y-2 text-[11px]">
-                  <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-800">
-                    <span className="text-slate-400 font-semibold uppercase tracking-wider">Admin ID</span>
-                    <span className="font-mono font-bold text-purple-500">{profileData?.adminId || '—'}</span>
-                  </div>
-                  <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-800">
-                    <span className="text-slate-400 font-semibold uppercase tracking-wider">Username</span>
-                    <span className="font-semibold text-slate-700 dark:text-slate-300">{profileData?.username || '—'}</span>
-                  </div>
-                  <div className="flex justify-between items-center py-2">
-                    <span className="text-slate-400 font-semibold uppercase tracking-wider">Email</span>
-                    <span className="font-semibold text-slate-700 dark:text-slate-300 text-right truncate max-w-[120px]">
-                      {profileData?.email || '—'}
-                    </span>
+            <div className="lg:col-span-1 flex flex-col h-full">
+              <Card className="h-full flex flex-col justify-between space-y-3">
+                <div>
+                  <h3 className="text-xs font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 text-teal-500" />
+                    Your Login Credentials
+                  </h3>
+                  <div className="space-y-2 text-[11px] mt-3">
+                    <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-800">
+                      <span className="text-slate-400 font-semibold uppercase tracking-wider">Admin ID</span>
+                      <span className="font-mono font-bold text-purple-500">{profileData?.adminId || '—'}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-800">
+                      <span className="text-slate-400 font-semibold uppercase tracking-wider">Username</span>
+                      <span className="font-semibold text-slate-700 dark:text-slate-300">{profileData?.username || '—'}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-slate-400 font-semibold uppercase tracking-wider">Email</span>
+                      <span className="font-semibold text-slate-700 dark:text-slate-300 text-right truncate max-w-[120px]">
+                        {profileData?.email || '—'}
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <p className="text-[10px] text-slate-400 leading-relaxed pt-1">
+                <p className="text-[10px] text-slate-400 leading-relaxed pt-2">
                   You can login using your <strong>Admin ID</strong>, <strong>username</strong>, <strong>email</strong>, or <strong>phone number</strong> with your password.
                 </p>
               </Card>
