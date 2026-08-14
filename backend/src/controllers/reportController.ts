@@ -64,9 +64,9 @@ export const getAdminDashboardStats = async (req: AuthRequest, res: Response, ne
       monthlyData[key].collections += inv.paidAmount;
     });
 
-    // Handle payments received in last 6 months (for collection accuracy)
-    const recentPayments = await Payment.find({ date: { $gte: sixMonthsAgo } });
-    recentPayments.forEach(pay => {
+    // Handle payments received in last 6 months (for collection accuracy in chart)
+    const sixMonthPayments = await Payment.find({ date: { $gte: sixMonthsAgo } });
+    sixMonthPayments.forEach(pay => {
       const date = new Date(pay.date);
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       const name = `${monthNames[date.getMonth()]} ${date.getFullYear().toString().substring(2)}`;
@@ -82,12 +82,6 @@ export const getAdminDashboardStats = async (req: AuthRequest, res: Response, ne
       .sort()
       .map(k => monthlyData[k]);
 
-    // 5. Recent payments
-    const recentPaymentsList = await Payment.find({})
-      .populate('customer', 'name customerId')
-      .sort({ createdAt: -1 })
-      .limit(5);
-
     res.status(200).json({
       success: true,
       stats: {
@@ -102,9 +96,7 @@ export const getAdminDashboardStats = async (req: AuthRequest, res: Response, ne
           total: invoices.length
         }
       },
-      chartData,
-      recentLogs: [], // Activity logs have been removed
-      recentPayments: recentPaymentsList
+      chartData
     });
 
   } catch (error) {

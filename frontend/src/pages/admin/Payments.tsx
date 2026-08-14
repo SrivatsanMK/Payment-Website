@@ -124,7 +124,7 @@ export const Payments: React.FC = () => {
           Payment Ledger
         </h1>
         <p className="text-xs text-slate-400 mt-1">
-          Historical record of all invoice payment transactions & audit logs.
+          Historical record of all invoice payment transactions.
         </p>
       </div>
 

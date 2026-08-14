@@ -78,15 +78,20 @@ connectDB().then(async () => {
       console.log(`[Migration] Removed login history from ${customerLoginCleanup.modifiedCount} customer document(s).`);
     }
 
-    // ── 4. One-time data migration: delete all ActivityLog documents ─────────
+    // ── 4. One-time data migration: drop ActivityLog collection from MongoDB ─
     try {
       const mongoose = await import('mongoose');
       const db = mongoose.default.connection.db;
       if (db) {
         const collections = await db.listCollections({ name: 'activitylogs' }).toArray();
         if (collections.length > 0) {
-          const result = await db.collection('activitylogs').deleteMany({});
-          console.log(`[Migration] Deleted ${result.deletedCount} ActivityLog document(s) from MongoDB.`);
+          try {
+            await db.collection('activitylogs').drop();
+            console.log('[Migration] Dropped ActivityLog collection from MongoDB.');
+          } catch {
+            const result = await db.collection('activitylogs').deleteMany({});
+            console.log(`[Migration] Deleted ${result.deletedCount} ActivityLog document(s) from MongoDB.`);
+          }
         }
       }
     } catch (alErr) {

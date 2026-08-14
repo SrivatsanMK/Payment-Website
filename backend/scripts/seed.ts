@@ -27,7 +27,7 @@ const seedData = async () => {
     await Setting.deleteMany({});
     await Notification.deleteMany({});
     // ActivityLog collection removed from application; drop if exists
-    try { await mongoose.connection.db?.collection('activitylogs').deleteMany({}); } catch (_) {}
+    try { await mongoose.connection.db?.collection('activitylogs').drop().catch(() => mongoose.connection.db?.collection('activitylogs').deleteMany({})); } catch (_) {}
     await OTP.deleteMany({});
     console.log('Old collections cleared.');
 

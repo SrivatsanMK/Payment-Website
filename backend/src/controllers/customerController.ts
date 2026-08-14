@@ -260,9 +260,9 @@ export const getCustomerById = async (req: AuthRequest, res: Response, next: Nex
       monthlyData[key].purchases += inv.finalAmount;
     });
 
-    // Filter payments by this customer in the last 6 months
-    const recentPayments = await Payment.find({ customer: id, date: { $gte: sixMonthsAgo } });
-    recentPayments.forEach(pay => {
+    // Filter payments by this customer in the last 6 months (for chart accuracy)
+    const sixMonthPayments = await Payment.find({ customer: id, date: { $gte: sixMonthsAgo } });
+    sixMonthPayments.forEach(pay => {
       const date = new Date(pay.date);
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       const name = `${monthNames[date.getMonth()]} ${date.getFullYear().toString().substring(2)}`;

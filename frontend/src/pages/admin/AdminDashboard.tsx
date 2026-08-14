@@ -70,7 +70,7 @@ export const AdminDashboard: React.FC = () => {
     );
   }
 
-  const { stats, chartData, recentLogs, recentPayments } = data || {};
+  const { stats, chartData } = data || {};
 
   const lowerCards = [
     {
@@ -163,7 +163,7 @@ export const AdminDashboard: React.FC = () => {
               Packing Revenue vs Collections History
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">
-              Monthly invoicing totals compared against actual customer settlements.
+              Monthly invoicing totals compared against actual collections received.
             </p>
           </div>
           
@@ -284,86 +284,6 @@ export const AdminDashboard: React.FC = () => {
             Manage Invoices
             <ArrowUpRight className="h-4 w-4" />
           </Link>
-        </Card>
-      </div>
-
-      {/* Details Lists (Recent payments & Logs) */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Recent Payments list */}
-        <Card className="glass-card flex flex-col justify-between p-7">
-          <div className="mb-4">
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">
-              Recent Settlements
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">
-              Newly logged collection payments.
-            </p>
-          </div>
-
-          <div className="divide-y divide-slate-200 dark:divide-white/10 overflow-hidden flex-1">
-            {recentPayments && recentPayments.length > 0 ? (
-              recentPayments.map((p: any) => (
-                <div key={p._id} className="py-3.5 flex items-center justify-between">
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold text-slate-900 dark:text-white">
-                      {p.customer?.name || 'N/A'}
-                    </span>
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
-                      Inv: {p.invoiceNumber} | Method: {p.paymentMethod}
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-end">
-                    <span className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400">
-                      +₹{p.amount.toLocaleString('en-IN')}
-                    </span>
-                    <span className="text-[10px] text-slate-400 mt-0.5 font-medium">
-                      {new Date(p.date).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="py-8 text-center text-xs text-slate-400">
-                No recent payment transactions.
-              </div>
-            )}
-          </div>
-        </Card>
-
-        {/* Audit Activity Logs */}
-        <Card className="glass-card flex flex-col justify-between p-7">
-          <div className="mb-4">
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">
-              Activity Logs
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">
-              System event log feed for security audibility.
-            </p>
-          </div>
-
-          <div className="divide-y divide-slate-200 dark:divide-white/10 max-h-72 overflow-y-auto overflow-hidden flex-1">
-            {recentLogs && recentLogs.length > 0 ? (
-              recentLogs.map((log: any) => (
-                <div key={log._id} className="py-3 flex flex-col gap-1 text-[11px]">
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold text-slate-800 dark:text-slate-200">
-                      {log.action}
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-medium">
-                      {new Date(log.createdAt).toLocaleDateString()} at {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                  <p className="text-slate-600 dark:text-slate-300 leading-snug font-medium">
-                    {log.details}
-                  </p>
-                </div>
-              ))
-            ) : (
-              <div className="py-8 text-center text-xs text-slate-400">
-                No system activity logs found.
-              </div>
-            )}
-          </div>
         </Card>
       </div>
     </div>
