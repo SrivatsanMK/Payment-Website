@@ -82,17 +82,28 @@ export const Reports: React.FC = () => {
       const res = await api.get(url, { responseType: 'blob' });
       
       // Create local file download link
-      const blobUrl = window.URL.createObjectURL(new Blob([res.data]));
+      const blobUrl = window.URL.createObjectURL(new Blob([res.data], { type: 'text/csv;charset=utf-8;' }));
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.setAttribute('download', `${type}-report-${Date.now()}.csv`);
+      const filePrefix = type === 'invoices' 
+        ? 'invoices-statement-report' 
+        : type === 'customers' 
+        ? 'client-database-registry' 
+        : 'payment-settlement-logs';
+      link.setAttribute('download', `${filePrefix}-${Date.now()}.csv`);
       document.body.appendChild(link);
       link.click();
       
       // Cleanup
       link.parentNode?.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
-      showToast(`${type.charAt(0).toUpperCase() + type.slice(1)} report downloaded successfully`, 'success');
+      
+      const reportName = type === 'invoices'
+        ? 'Invoices Statement Report'
+        : type === 'customers'
+        ? 'Client Database Registry'
+        : 'Payment Settlement Logs';
+      showToast(`${reportName} downloaded successfully`, 'success');
 
     } catch (error) {
       showToast(`Failed to export ${type} report`, 'error');
