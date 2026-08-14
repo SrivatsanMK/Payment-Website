@@ -83,6 +83,9 @@ export const Invoices: React.FC = () => {
 
   // Form states (Create)
   const [selectedCustId, setSelectedCustId] = useState('');
+  const [shippedAddress, setShippedAddress] = useState('');
+  const [vehicleNumber, setVehicleNumber] = useState('');
+  const [transportMode, setTransportMode] = useState('Road');
   const [qrCodeFile, setQrCodeFile] = useState<File | null>(null);
   const [discount, setDiscount] = useState<number | string>(0);
   const [cgst, setCgst] = useState<number | string>(9); // Support empty
@@ -211,7 +214,11 @@ export const Invoices: React.FC = () => {
   };
 
   const openCreateModal = () => {
-    setSelectedCustId(customers[0]?._id || '');
+    const firstCust = customers[0];
+    setSelectedCustId(firstCust?._id || '');
+    setShippedAddress(firstCust?.address || '');
+    setVehicleNumber('');
+    setTransportMode('Road');
     setDiscount(0);
     setCgst(9);
     setSgst(9);
@@ -253,6 +260,9 @@ export const Invoices: React.FC = () => {
 
       const formData = new FormData();
       formData.append('customerId', selectedCustId);
+      formData.append('shippedAddress', shippedAddress.trim());
+      formData.append('vehicleNumber', vehicleNumber.trim());
+      formData.append('transportMode', transportMode.trim() || 'Road');
       formData.append('products', JSON.stringify(mappedProducts));
       formData.append('discount', discountVal.toString());
       formData.append('gst', (cgstVal + sgstVal).toString());
@@ -595,7 +605,14 @@ export const Invoices: React.FC = () => {
             </label>
             <select
               value={selectedCustId}
-              onChange={(e) => setSelectedCustId(e.target.value)}
+              onChange={(e) => {
+                const newId = e.target.value;
+                setSelectedCustId(newId);
+                const cust = customers.find(c => c._id === newId);
+                if (cust) {
+                  setShippedAddress(cust.address || '');
+                }
+              }}
               className="w-full px-4 py-2 text-sm rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none"
               required
             >
@@ -605,6 +622,24 @@ export const Invoices: React.FC = () => {
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* Shipped Address & Vehicle Number */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Shipped Address"
+              type="text"
+              value={shippedAddress}
+              onChange={(e) => setShippedAddress(e.target.value)}
+              placeholder="Enter shipping delivery destination"
+            />
+            <Input
+              label="Vehicle Number"
+              type="text"
+              value={vehicleNumber}
+              onChange={(e) => setVehicleNumber(e.target.value)}
+              placeholder="e.g. TN 38 AB 1234"
+            />
           </div>
 
           {/* Products Builder Section */}
@@ -924,13 +959,13 @@ export const Invoices: React.FC = () => {
 
               {/* Address / Contact Strip */}
               <div className="text-center text-[11px] text-slate-600 border-b border-slate-300 pb-2">
-                📍 123 Greenway Avenue, Coimbatore, Tamil Nadu 641001, India &nbsp;|&nbsp; 📞 +91 98765 43210 &nbsp;|&nbsp; ✉️ info@greenglide.com &nbsp;|&nbsp; 🌐 www.greenglide.com
+                📍 45 Sundaram Street, R. S. Puram, Coimbatore 641001 &nbsp;|&nbsp; 📞 +91 98765 43210 &nbsp;|&nbsp; ✉️ greenglidelogistics@gmail.com
               </div>
 
-              {/* BILL TO / SHIP TO / TRANSPORT CARDS */}
-              <div className="grid grid-cols-3 gap-3 text-xs">
+              {/* BILL TO / TRANSPORT CARDS (SHIP TO REMOVED) */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-3 text-xs">
                 {/* BILL TO */}
-                <div className="border border-slate-300 rounded overflow-hidden bg-white">
+                <div className="md:col-span-8 border border-slate-300 rounded overflow-hidden bg-white">
                   <div className="bg-[#002D62] text-white font-bold px-3 py-1.5 flex items-center gap-1.5 uppercase text-[11px]">
                     👤 BILL TO
                   </div>
@@ -942,27 +977,15 @@ export const Invoices: React.FC = () => {
                   </div>
                 </div>
 
-                {/* SHIP TO */}
-                <div className="border border-slate-300 rounded overflow-hidden bg-white">
-                  <div className="bg-[#002D62] text-white font-bold px-3 py-1.5 flex items-center gap-1.5 uppercase text-[11px]">
-                    🚛 SHIP TO
-                  </div>
-                  <div className="p-2.5 space-y-1">
-                    <div className="font-bold text-sm text-slate-900">{selectedInvoice.customer?.name || 'Customer'}</div>
-                    <div className="text-slate-600">{selectedInvoice.customer?.address || 'Coimbatore, Tamil Nadu 641001, India'}</div>
-                    <div className="text-slate-600">Phone: {selectedInvoice.customer?.phone || '+91 90000 00000'}</div>
-                  </div>
-                </div>
-
                 {/* TRANSPORT INFO */}
-                <div className="border border-slate-300 rounded overflow-hidden bg-white p-3 space-y-2">
-                  <div className="flex justify-between items-center pb-1 border-b border-slate-200">
+                <div className="md:col-span-4 border border-slate-300 rounded overflow-hidden bg-white p-3 space-y-2 flex flex-col justify-center">
+                  <div className="flex justify-between items-center pb-1.5 border-b border-slate-200">
                     <span className="text-slate-600 font-medium">📄 Transport Mode :</span>
-                    <span className="font-bold text-slate-900">Road</span>
+                    <span className="font-bold text-slate-900">{selectedInvoice.transportMode || 'Road'}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-slate-600 font-medium">📅 Vehicle No. :</span>
-                    <span className="font-bold text-slate-900">{selectedInvoice.vehicleNo || 'TN 38 AB 1234'}</span>
+                    <span className="font-bold text-slate-900">{selectedInvoice.vehicleNumber || selectedInvoice.vehicleNo || 'TN 38 AB 1234'}</span>
                   </div>
                 </div>
               </div>
@@ -1089,18 +1112,15 @@ export const Invoices: React.FC = () => {
                 </div>
               </div>
 
-              {/* FOOTER & SIGNATORY */}
+              {/* FOOTER & SYSTEM-GENERATED NOTICE (SIGNATURE REMOVED) */}
               <div className="pt-4 border-t-2 border-emerald-600 mt-4 flex justify-between items-end">
                 <div className="text-left">
-                  <div className="text-center">
-                    <div className="text-sm font-bold text-[#002D62]">Thank You For Your Business!</div>
-                    <div className="text-[10px] text-slate-500">We appreciate your trust and look forward to serving you again.</div>
-                  </div>
+                  <div className="text-sm font-bold text-[#002D62]">Thank You For Your Business!</div>
+                  <div className="text-[10px] text-slate-500">We appreciate your trust and look forward to serving you again.</div>
                 </div>
                 <div className="text-right flex flex-col items-end space-y-1">
                   <div className="font-bold text-[#002D62] text-xs">For Green Glide Logistics</div>
-                  <img src="/signature.png" alt="Authorized Signature" className="h-10 object-contain my-1" />
-                  <div className="text-xs text-slate-600 border-t border-slate-300 pt-1 w-36 text-center">Authorized Signatory</div>
+                  <div className="text-[11px] text-slate-600 mt-1">This is a system-generated document. No signature is required</div>
                 </div>
               </div>
 

@@ -15,6 +15,9 @@ export interface InvoiceInput {
   discount: number;
   gst: number;
   dueDate: string;
+  shippedAddress?: string;
+  vehicleNumber?: string;
+  transportMode?: string;
 }
 
 export interface PaymentInput {

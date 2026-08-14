@@ -16,6 +16,9 @@ const InvoiceSchema = new Schema({
   paidAmount: { type: Number, default: 0 },
   remainingAmount: { type: Number, required: true },
   qrCodeImage: { type: String }, // Optional path to uploaded QR Code image
+  shippedAddress: { type: String, default: '' },
+  vehicleNumber: { type: String, default: '' },
+  transportMode: { type: String, default: 'Road' },
   dueDate: { type: Date, default: Date.now },
   createdBy: { type: Schema.Types.ObjectId, ref: 'Admin' },
   paymentApprovedAt: { type: Date } // Set when payment is approved; used for 7-day QR code expiry

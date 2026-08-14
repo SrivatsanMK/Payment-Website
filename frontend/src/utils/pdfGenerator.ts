@@ -56,7 +56,6 @@ export const generateInvoicePdf = async (invoice: any, settings: any = {}): Prom
 
   // Load logo fresh from public folder with cache-busting (always gets latest file)
   const logoBase64 = await getImageBase64('/invoice-logo.png');
-  const signatureBase64 = await getImageBase64('/signature.png');
 
   // Colors matching official reference image
   const navyColor: [number, number, number] = [0, 45, 98];       // #002D62
@@ -148,14 +147,17 @@ export const generateInvoicePdf = async (invoice: any, settings: any = {}): Prom
   doc.setFontSize(7.5);
   doc.setTextColor(...slateColor);
 
-  const contactText = `123 Greenway Avenue, Coimbatore, Tamil Nadu 641001, India   |   +91 98765 43210   |   info@greenglide.com   |   www.greenglide.com`;
+  const companyAddress = "45 Sundaram Street, R. S. Puram, Coimbatore 641001";
+  const companyPhone = "+91 98765 43210";
+  const companyEmail = "greenglidelogistics@gmail.com";
+  const contactText = `${companyAddress}   |   ${companyPhone}   |   ${companyEmail}`;
   doc.text(contactText, pageWidth / 2, contactY, { align: "center" });
 
   doc.setDrawColor(...borderColor);
   doc.line(10, contactY + 3, 200, contactY + 3);
 
   // ═══════════════════════════════════════════════════════════
-  // 3. BILL TO / SHIP TO / TRANSPORT CARDS
+  // 3. BILL TO & TRANSPORT CARDS (SHIP TO REMOVED)
   // ═══════════════════════════════════════════════════════════
   const cardY = 64;
   const cardH = 30;
@@ -163,7 +165,7 @@ export const generateInvoicePdf = async (invoice: any, settings: any = {}): Prom
 
   // --- BILL TO CARD ---
   const billX = 10;
-  const billW = 62;
+  const billW = 115;
   doc.setDrawColor(...borderColor);
   doc.rect(billX, cardY, billW, cardH);
 
@@ -188,39 +190,13 @@ export const generateInvoicePdf = async (invoice: any, settings: any = {}): Prom
   doc.text(`Phone: ${customer.phone || "+91 90000 00000"}`, billX + 4, cardY + 24);
   doc.text(`GSTIN: ${customer.gstNumber || "33AAAAA0000A1Z5"}`, billX + 4, cardY + 29);
 
-  // --- SHIP TO CARD ---
-  const shipX = 75;
-  const shipW = 62;
-  doc.setDrawColor(...borderColor);
-  doc.rect(shipX, cardY, shipW, cardH);
-
-  // Header strip
-  doc.setFillColor(...navyColor);
-  doc.rect(shipX, cardY, shipW, 7, "F");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.5);
-  doc.setTextColor(255, 255, 255);
-  doc.text("SHIP TO", shipX + 4, cardY + 5);
-
-  // Content
-  doc.setTextColor(...darkSlateColor);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.text(customer.name || "Customer Name", shipX + 4, cardY + 13);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(...slateColor);
-  doc.text(customer.address || "Coimbatore, Tamil Nadu 641001, India", shipX + 4, cardY + 18, { maxWidth: shipW - 8 });
-  doc.text(`Phone: ${customer.phone || "+91 90000 00000"}`, shipX + 4, cardY + 24);
-
   // --- TRANSPORT DETAILS BOX ---
-  const transX = 140;
-  const transW = 60;
+  const transX = 129;
+  const transW = 71;
   doc.setDrawColor(...borderColor);
   doc.rect(transX, cardY, transW, cardH);
 
-  let transY = cardY + 10;
+  let transY = cardY + 11;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
   doc.setTextColor(...slateColor);
@@ -228,7 +204,7 @@ export const generateInvoicePdf = async (invoice: any, settings: any = {}): Prom
   doc.text("Transport Mode   :", transX + 4, transY);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...darkSlateColor);
-  doc.text(invoice.transportMode || "Road", transX + 56, transY, { align: "right" });
+  doc.text(invoice.transportMode || "Road", transX + transW - 4, transY, { align: "right" });
 
   transY += 10;
   doc.setFont("helvetica", "normal");
@@ -236,7 +212,7 @@ export const generateInvoicePdf = async (invoice: any, settings: any = {}): Prom
   doc.text("Vehicle No.           :", transX + 4, transY);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...darkSlateColor);
-  doc.text(invoice.vehicleNo || "TN 38 AB 1234", transX + 56, transY, { align: "right" });
+  doc.text(invoice.vehicleNumber || invoice.vehicleNo || "TN 38 AB 1234", transX + transW - 4, transY, { align: "right" });
 
 
   // ═══════════════════════════════════════════════════════════
@@ -298,54 +274,60 @@ export const generateInvoicePdf = async (invoice: any, settings: any = {}): Prom
 
   let subtotal = 0;
 
-  products.forEach((p: any, idx: number) => {
-    const lineTotal = p.price * p.quantity;
+  products.forEach((prod: any, idx: number) => {
+    if (idx >= 9) return; // Prevent overflowing table box
+
+    const lineTotal = prod.price * prod.quantity;
     subtotal += lineTotal;
 
-    // Horizontal Row Line
-    doc.setDrawColor(...borderColor);
-    doc.line(10, rowY + rowHeight, 200, rowY + rowHeight);
+    const rowMidY = rowY + 5.2;
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.setTextColor(...darkSlateColor);
 
-    const rowYText = rowY + 5;
+    // 1. Line Index (#)
+    doc.text(String(idx + 1), columns[0].x + (columns[0].width / 2), rowMidY, { align: "center" });
 
-    // #
-    doc.text(String(idx + 1), 10 + 4, rowYText, { align: "center" });
+    // 2. Product Name / Description
+    doc.setFont("helvetica", "bold");
+    doc.text(prod.name || "Standard Goods Item", columns[1].x + 2, rowMidY, { maxWidth: columns[1].width - 4 });
 
-    // Description of Goods
-    doc.text(p.name || "Item", 18 + 2, rowYText, { maxWidth: 52 });
+    // 3. HSN / SAC
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...slateColor);
+    doc.text(prod.hsn || "0603", columns[2].x + (columns[2].width / 2), rowMidY, { align: "center" });
 
-    // HSN / SAC
-    doc.text(p.hsn || "0603", 74 + 9, rowYText, { align: "center" });
+    // 4. Quantity
+    doc.text(Number(prod.quantity).toLocaleString('en-IN'), columns[3].x + columns[3].width - 2, rowMidY, { align: "right" });
 
-    // Quantity
-    doc.text(Number(p.quantity).toLocaleString('en-IN'), 92 + 16, rowYText, { align: "right" });
+    // 5. Unit Price
+    doc.text(Number(prod.price).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), columns[4].x + columns[4].width - 2, rowMidY, { align: "right" });
 
-    // Unit Price (Rs.)
-    doc.text(Number(p.price).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), 110 + 22, rowYText, { align: "right" });
+    // 6. Discount
+    const discText = discountPerItem > 0 ? Number(discountPerItem).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "-";
+    doc.text(discText, columns[5].x + columns[5].width - 2, rowMidY, { align: "right" });
 
-    // Discount (Rs.)
-    const discStr = discountPerItem > 0 ? discountPerItem.toLocaleString('en-IN', { minimumFractionDigits: 2 }) : "-";
-    doc.text(discStr, 134 + 22, rowYText, { align: "right" });
+    // 7. GST Rate
+    doc.text(`${gstRate}%`, columns[6].x + (columns[6].width / 2), rowMidY, { align: "center" });
 
-    // GST (%)
-    doc.text(`${gstRate}%`, 158 + 8, rowYText, { align: "center" });
+    // 8. Line Total Amount
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...darkSlateColor);
+    doc.text(Number(lineTotal).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), columns[7].x + columns[7].width - 2, rowMidY, { align: "right" });
 
-    // Amount (Rs.)
-    doc.text(lineTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), 174 + 24, rowYText, { align: "right" });
+    // Horizontal Row Separator Line
+    doc.setDrawColor(...borderColor);
+    doc.line(10, rowY + rowHeight, 200, rowY + rowHeight);
 
     rowY += rowHeight;
   });
 
-  // ═══════════════════════════════════════════════════════════
-  // 5. BOTTOM SUMMARY SECTION
-  // ═══════════════════════════════════════════════════════════
-  const summaryY = 184;
 
-  // Math Calculations
+  // ═══════════════════════════════════════════════════════════
+  // 5. BOTTOM SUMMARY & TOTALS SECTION
+  // ═══════════════════════════════════════════════════════════
+  const summaryY = 186;
   const discount = invoice.discount || 0;
   const taxableAmount = Math.max(0, subtotal - discount);
   const cgstRate = gstRate / 2;
@@ -437,7 +419,7 @@ export const generateInvoicePdf = async (invoice: any, settings: any = {}): Prom
 
 
   // ═══════════════════════════════════════════════════════════
-  // 6. FOOTER & AUTHORIZED SIGNATORY & DIGITAL SIGNATURE
+  // 6. FOOTER & SYSTEM-GENERATED NOTICE (SIGNATURE REMOVED)
   // ═══════════════════════════════════════════════════════════
   const footerY = 242;
 
@@ -452,20 +434,11 @@ export const generateInvoicePdf = async (invoice: any, settings: any = {}): Prom
   doc.setTextColor(...navyColor);
   doc.text("For Green Glide Logistics", 196, footerY + 10, { align: "right" });
 
-  // Digital Signature Image (placed right above Authorized Signatory)
-  if (signatureBase64) {
-    try {
-      doc.addImage(signatureBase64, 'PNG', 162, footerY + 11, 35, 16);
-    } catch (e) {
-      console.warn("Signature image embed error:", e);
-    }
-  }
-
-  // Authorized Signatory Label
+  // System-generated notice text
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(...slateColor);
-  doc.text("Authorized Signatory", 196, footerY + 29, { align: "right" });
+  doc.text("This is a system-generated document. No signature is required", 196, footerY + 18, { align: "right" });
 
   // Thank You Banner (Bottom Center)
   const thankY = 278;
