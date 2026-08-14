@@ -43,8 +43,8 @@ export const AdminLogin: React.FC = () => {
   return (
     <CinematicLogin
       title="Admin Portal"
-      identifierLabel="Admin ID / Username"
-      identifierPlaceholder="Enter Admin ID or Email"
+      identifierLabel="Admin ID"
+      identifierPlaceholder="Enter Your Admin ID"
       passwordLabel="Password"
       forgotPasswordLink="/admin/forgot-password"
       forgotAdminIdLink="/admin/forgot-admin-id"

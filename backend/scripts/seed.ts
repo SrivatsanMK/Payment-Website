@@ -7,7 +7,6 @@ import Order from '../src/models/Order';
 import Payment from '../src/models/Payment';
 import Setting from '../src/models/Setting';
 import Notification from '../src/models/Notification';
-import ActivityLog from '../src/models/ActivityLog';
 import OTP from '../src/models/OTP';
 
 dotenv.config();
@@ -27,7 +26,8 @@ const seedData = async () => {
     await Payment.deleteMany({});
     await Setting.deleteMany({});
     await Notification.deleteMany({});
-    await ActivityLog.deleteMany({});
+    // ActivityLog collection removed from application; drop if exists
+    try { await mongoose.connection.db?.collection('activitylogs').deleteMany({}); } catch (_) {}
     await OTP.deleteMany({});
     console.log('Old collections cleared.');
 
@@ -330,17 +330,7 @@ const seedData = async () => {
     ]);
     console.log('Notifications seeded.');
 
-    console.log('Seeding Activity Logs...');
-    await ActivityLog.create([
-      { userId: admin1._id, userRole: 'ADMIN_1', action: 'System Initialized', details: 'Initial database seed completed successfully.', ipAddress: '127.0.0.1', userAgent: 'Seeding Script' },
-      { userId: admin1._id, userRole: 'ADMIN_1', action: 'Customer Created', details: 'Created Customer: Rohan Sharma (CUST88102)', ipAddress: '127.0.0.1', userAgent: 'Seeding Script' },
-      { userId: admin1._id, userRole: 'ADMIN_1', action: 'Customer Created', details: 'Created Customer: Mona Industries Ltd (CUST45218)', ipAddress: '127.0.0.1', userAgent: 'Seeding Script' },
-      { userId: admin1._id, userRole: 'ADMIN_1', action: 'Invoice Created', details: 'Invoice INV-100241 for Rohan Sharma Rs.32,450.00 (PAID)', ipAddress: '127.0.0.1', userAgent: 'Seeding Script' },
-      { userId: admin1._id, userRole: 'ADMIN_1', action: 'Invoice Created', details: 'Invoice INV-100288 for Rohan Sharma Rs.8,850.00 (PENDING)', ipAddress: '127.0.0.1', userAgent: 'Seeding Script' },
-      { userId: admin1._id, userRole: 'ADMIN_1', action: 'Invoice Created', details: 'Invoice INV-100259 for Mona Industries Rs.1,06,200.00 (PENDING)', ipAddress: '127.0.0.1', userAgent: 'Seeding Script' },
-      { userId: admin1._id, userRole: 'ADMIN_1', action: 'Invoice Created', details: 'Invoice INV-100188 for Mona Industries Rs.20,650.00 (OVERDUE)', ipAddress: '127.0.0.1', userAgent: 'Seeding Script' }
-    ]);
-    console.log('Activity Logs seeded.');
+    // ActivityLog collection has been removed from the application
 
     console.log('=========================================');
     console.log('DATABASE SEEDING COMPLETED SUCCESSFULLY!');

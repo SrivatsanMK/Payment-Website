@@ -23,14 +23,17 @@ import expenseRoutes from './routes/expenseRoutes';
 import privateBusinessRoutes from './routes/privateBusinessRoutes';
 
 import Admin from './models/Admin';
+import Customer from './models/Customer';
 import PrivateBusinessSetting from './models/PrivateBusinessSetting';
+import { initCleanupService } from './services/cleanupService';
 
 // Load Env variables
 dotenv.config();
 
-// Connect to Database
+// Connect to Database then run startup tasks
 connectDB().then(async () => {
   try {
+    // ── 1. Admin display-name normalization ──────────────────────────────────
     const srivatsanAdmins = await Admin.find({
       $or: [
         { displayName: /srivatsan/i },
@@ -50,14 +53,53 @@ connectDB().then(async () => {
     await Admin.updateMany({ role: 'ADMIN_1' }, { $set: { displayName: 'Akash Admin' } });
     await Admin.updateMany({ role: 'ADMIN_2' }, { $set: { displayName: 'Hrithik Admin' } });
 
-    // Update Private Business settings businessName to Prime Harvest Organics
+    // ── 2. Business name normalization ───────────────────────────────────────
     await PrivateBusinessSetting.updateMany(
       { $or: [{ businessName: 'Private Business' }, { businessName: 'Prime Harvest Organic' }] },
       { $set: { businessName: 'Prime Harvest Organics' } }
     );
+
+    // ── 3. One-time data migration: remove legacy login-history fields ───────
+    //    Remove lastLogin and recentLogins from ALL Admin documents
+    const adminLoginCleanup = await Admin.updateMany(
+      { $or: [{ lastLogin: { $exists: true } }, { recentLogins: { $exists: true } }] },
+      { $unset: { lastLogin: '', recentLogins: '' } }
+    );
+    if (adminLoginCleanup.modifiedCount > 0) {
+      console.log(`[Migration] Removed login history from ${adminLoginCleanup.modifiedCount} admin document(s).`);
+    }
+
+    //    Remove lastLogin and recentLogins from ALL Customer documents
+    const customerLoginCleanup = await Customer.updateMany(
+      { $or: [{ lastLogin: { $exists: true } }, { recentLogins: { $exists: true } }] },
+      { $unset: { lastLogin: '', recentLogins: '' } }
+    );
+    if (customerLoginCleanup.modifiedCount > 0) {
+      console.log(`[Migration] Removed login history from ${customerLoginCleanup.modifiedCount} customer document(s).`);
+    }
+
+    // ── 4. One-time data migration: delete all ActivityLog documents ─────────
+    try {
+      const mongoose = await import('mongoose');
+      const db = mongoose.default.connection.db;
+      if (db) {
+        const collections = await db.listCollections({ name: 'activitylogs' }).toArray();
+        if (collections.length > 0) {
+          const result = await db.collection('activitylogs').deleteMany({});
+          console.log(`[Migration] Deleted ${result.deletedCount} ActivityLog document(s) from MongoDB.`);
+        }
+      }
+    } catch (alErr) {
+      console.error('[Migration] ActivityLog cleanup error (non-fatal):', alErr);
+    }
+
+    console.log('[Startup] Database migrations complete.');
   } catch (err) {
-    console.error('Admin & Business name cleanup error:', err);
+    console.error('[Startup] Migration error:', err);
   }
+
+  // ── 5. Initialise persistent daily cleanup service ───────────────────────
+  initCleanupService();
 });
 
 const app = express();

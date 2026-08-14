@@ -12,13 +12,7 @@ const CustomerSchema = new Schema({
   joiningDate: { type: Date, default: Date.now },
   profilePicture: { type: String, default: '' }, // base64 or path
   lastPasswordChangeDate: { type: Date, default: Date.now },
-  forcedPasswordReset: { type: Boolean, default: false },
-  lastLogin: { type: Date },
-  recentLogins: [{
-    timestamp: { type: Date, default: Date.now },
-    ipAddress: String,
-    device: String
-  }]
+  forcedPasswordReset: { type: Boolean, default: false }
 }, {
   timestamps: true
 });

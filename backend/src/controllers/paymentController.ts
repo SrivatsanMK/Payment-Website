@@ -6,7 +6,6 @@ import Order from '../models/Order';
 import Setting from '../models/Setting';
 import Customer from '../models/Customer';
 import Notification from '../models/Notification';
-import ActivityLog from '../models/ActivityLog';
 import { generateUPIQRCode, generateUPILink } from '../utils/upi';
 import { sendPaymentConfirmationEmail, sendPaymentAttemptAlertEmail } from '../utils/email';
 
@@ -173,16 +172,6 @@ export const recordPayment = async (req: AuthRequest, res: Response, next: NextF
       paymentMethod
     );
 
-    // Log Activity
-    await ActivityLog.create({
-      userId: req.user?.id || customer._id,
-      userRole: req.user?.role || 'Customer',
-      action: 'Payment Recorded',
-      details: `Recorded payment of ₹${amount} for invoice ${invoiceNumber}. Method: ${paymentMethod}, Status: Completed`,
-      ipAddress: req.ip || '',
-      userAgent: req.headers['user-agent'] || ''
-    });
-
     req.app.get('io').emit('DATA_UPDATED');
     res.status(200).json({
       success: true,
@@ -320,7 +309,7 @@ export const notifyPaymentAttempt = async (req: AuthRequest, res: Response, next
 /**
  * Approve / Confirm Customer Payment (ADMIN_1 or ADMIN_2)
  * Uses atomic database update to prevent race conditions and double approval.
- * Approving admin identity is kept server-side in ActivityLog only and NEVER returned in API or rendered in UI.
+ * Sets paymentApprovedAt on the Invoice to start the 7-day QR code retention countdown.
  */
 export const approvePayment = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -332,10 +321,12 @@ export const approvePayment = async (req: AuthRequest, res: Response, next: Next
       return res.status(403).json({ success: false, message: 'Access denied. Admin authorization required.' });
     }
 
+    const approvalTime = new Date();
+
     // Atomic update: transition status from 'Pending' to 'Received'
     const payment = await Payment.findOneAndUpdate(
       { _id: id, status: 'Pending' },
-      { $set: { status: 'Received', approvedAt: new Date() } },
+      { $set: { status: 'Received', approvedAt: approvalTime, approvedBy: adminObjId } },
       { new: true }
     ).populate('customer', 'customerId name email phone');
 
@@ -347,11 +338,16 @@ export const approvePayment = async (req: AuthRequest, res: Response, next: Next
       return res.status(400).json({ success: false, message: 'Payment has already been approved or processed.' });
     }
 
-    // Update invoice balance
+    // Update invoice balance and record paymentApprovedAt for 7-day QR cleanup
     const invoice = await Invoice.findOne({ invoiceNumber: payment.invoiceNumber });
     if (invoice) {
       invoice.paidAmount += payment.amount;
       invoice.remainingAmount = Math.max(0, invoice.finalAmount - invoice.paidAmount);
+
+      // Set paymentApprovedAt to start the 7-day QR code retention countdown
+      if (!(invoice as any).paymentApprovedAt) {
+        (invoice as any).paymentApprovedAt = approvalTime;
+      }
 
       if (invoice.remainingAmount === 0) {
         await Order.updateMany(
@@ -384,16 +380,6 @@ export const approvePayment = async (req: AuthRequest, res: Response, next: Next
         console.error('Non-fatal customer confirmation email error:', eErr);
       }
     }
-
-    // Internal Server-Side Audit Log ONLY (never returned to frontend or shown in UI)
-    await ActivityLog.create({
-      userId: adminObjId,
-      userRole: role,
-      action: 'Payment Approved',
-      details: `Payment ID ${id} of ₹${payment.amount} for invoice ${payment.invoiceNumber} approved. Status: Received`,
-      ipAddress: req.ip || '',
-      userAgent: req.headers['user-agent'] || ''
-    });
 
     req.app.get('io')?.emit('DATA_UPDATED');
 

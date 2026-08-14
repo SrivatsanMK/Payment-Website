@@ -3,7 +3,6 @@ import jwt from 'jsonwebtoken';
 import Admin from '../models/Admin';
 import Customer from '../models/Customer';
 import OTP from '../models/OTP';
-import ActivityLog from '../models/ActivityLog';
 import { sendOTPEmail, sendEmail, sendNewAdminIdEmail } from '../utils/email';
 
 const generateTokens = (id: string, role: string) => {
@@ -54,23 +53,6 @@ export const customerLogin = async (req: Request, res: Response, next: NextFunct
     }
 
     const { accessToken, refreshToken } = generateTokens(user._id.toString(), 'Customer');
-
-    const ipAddress = req.ip || req.socket.remoteAddress || '';
-    const userAgent = req.headers['user-agent'] || '';
-
-    user.lastLogin = new Date();
-    user.recentLogins.push({ timestamp: new Date(), ipAddress, device: userAgent });
-    if (user.recentLogins.length > 10) user.recentLogins.shift();
-    await user.save();
-
-    await ActivityLog.create({
-      userId: user._id,
-      userRole: 'Customer',
-      action: 'Login',
-      details: `Customer login from IP: ${ipAddress}`,
-      ipAddress,
-      userAgent
-    });
 
     req.app.get('io').emit('DATA_UPDATED');
     return res.status(200).json({
@@ -126,23 +108,6 @@ export const adminLogin = async (req: Request, res: Response, next: NextFunction
 
     const actualRole = user.role; // ADMIN_1 or ADMIN_2
     const { accessToken, refreshToken } = generateTokens(user._id.toString(), actualRole);
-
-    const ipAddress = req.ip || req.socket.remoteAddress || '';
-    const userAgent = req.headers['user-agent'] || '';
-
-    user.lastLogin = new Date();
-    user.recentLogins.push({ timestamp: new Date(), ipAddress, device: userAgent });
-    if (user.recentLogins.length > 10) user.recentLogins.shift();
-    await user.save();
-
-    await ActivityLog.create({
-      userId: user._id,
-      userRole: actualRole,
-      action: 'Login',
-      details: `Admin login from IP: ${ipAddress}`,
-      ipAddress,
-      userAgent
-    });
 
     req.app.get('io').emit('DATA_UPDATED');
     return res.status(200).json({
@@ -263,9 +228,6 @@ export const verifyOTP = async (req: Request, res: Response, next: NextFunction)
       return res.status(400).json({ success: false, message: 'Invalid OTP code. Please try again.' });
     }
 
-    // Success - keep record but mark or delete later on password reset. Let's delete after successful verify or keep reference. We can keep it or write verification status. Let's send a single-use token or just allow reset.
-    // In our case we can delete the OTP record and send a success response to frontend, which will then send the reset request.
-    // To make it secure, we can create a temporary JWT or just proceed with password update. Let's proceed with password update. We can delete it.
     await OTP.findByIdAndDelete(otpRecord._id);
 
     // Generate a temporary action token to secure reset request
@@ -324,16 +286,6 @@ export const resetPassword = async (req: Request, res: Response, next: NextFunct
       user.forcedPasswordReset = false; // cleared on reset
     }
     await user.save();
-
-    // Log Activity
-    await ActivityLog.create({
-      userId: user._id,
-      userRole: role,
-      action: 'Password Reset',
-      details: 'Password was successfully reset using OTP verification code',
-      ipAddress: req.ip || '',
-      userAgent: req.headers['user-agent'] || ''
-    });
 
     req.app.get('io').emit('DATA_UPDATED');
     res.status(200).json({
@@ -402,8 +354,7 @@ export const getAdminProfile = async (req: any, res: Response, next: NextFunctio
         email: admin.email,
         phone: admin.phone,
         role: admin.role,
-        profilePicture: admin.profilePicture || '',
-        lastLogin: admin.lastLogin
+        profilePicture: admin.profilePicture || ''
       }
     });
   } catch (error) {
@@ -706,19 +657,6 @@ export const verifyAdminIdOTP = async (req: Request, res: Response, next: NextFu
     // Send confirmation email with new Admin ID
     await sendNewAdminIdEmail(admin.email, admin.username, oldAdminId, newAdminId);
 
-    // Log Activity
-    const ipAddress = (req.headers['x-forwarded-for'] as string) || req.ip || req.socket.remoteAddress || '';
-    const userAgent = req.headers['user-agent'] || '';
-
-    await ActivityLog.create({
-      userId: admin._id,
-      userRole: admin.role,
-      action: 'Admin ID Regenerated',
-      details: `Admin ID was regenerated after successful email OTP verification (Previous: ${oldAdminId}, New: ${newAdminId})`,
-      ipAddress,
-      userAgent
-    });
-
     req.app.get('io')?.emit('DATA_UPDATED');
 
     return res.status(200).json({
@@ -731,4 +669,3 @@ export const verifyAdminIdOTP = async (req: Request, res: Response, next: NextFu
     next(error);
   }
 };
-

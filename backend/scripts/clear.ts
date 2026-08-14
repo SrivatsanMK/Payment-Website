@@ -5,7 +5,6 @@ import Invoice from '../src/models/Invoice';
 import Order from '../src/models/Order';
 import Payment from '../src/models/Payment';
 import Notification from '../src/models/Notification';
-import ActivityLog from '../src/models/ActivityLog';
 import OTP from '../src/models/OTP';
 import Expense from '../src/models/Expense';
 import Admin from '../src/models/Admin';
@@ -26,7 +25,8 @@ const clearData = async () => {
     await Order.deleteMany({});
     await Payment.deleteMany({});
     await Notification.deleteMany({});
-    await ActivityLog.deleteMany({});
+    // ActivityLog collection removed from application; drop if exists
+    try { await mongoose.connection.db?.collection('activitylogs').deleteMany({}); } catch (_) {}
     await OTP.deleteMany({});
     await Expense.deleteMany({});
     await Admin.deleteMany({});

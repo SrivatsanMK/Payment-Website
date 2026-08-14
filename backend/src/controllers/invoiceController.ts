@@ -4,7 +4,6 @@ import Invoice from '../models/Invoice';
 import Customer from '../models/Customer';
 import Order from '../models/Order';
 import Notification from '../models/Notification';
-import ActivityLog from '../models/ActivityLog';
 import { sendInvoiceEmail, sendInvoiceUpdateEmail, sendPaymentConfirmationWithPdfEmail } from '../utils/email';
 import Payment from '../models/Payment';
 
@@ -133,15 +132,6 @@ export const createInvoice = async (req: AuthRequest, res: Response, next: NextF
       console.error('Invoice email error (non-fatal):', emailErr);
     }
 
-    // Log Activity
-    await ActivityLog.create({
-      userId: req.user?.id,
-      userRole: req.user?.role || 'ADMIN_1',
-      action: 'Invoice Created',
-      details: `Created invoice ${invoiceNumber} for customer ${customer.name}. Amount: ₹${finalAmount}`,
-      ipAddress: req.ip || '',
-      userAgent: req.headers['user-agent'] || ''
-    });
 
     req.app.get('io').emit('DATA_UPDATED');
     res.status(200).json({
@@ -403,15 +393,6 @@ export const updateInvoice = async (req: AuthRequest, res: Response, next: NextF
       console.error('Invoice update email error (non-fatal):', emailErr);
     }
 
-    // Log Activity
-    await ActivityLog.create({
-      userId: req.user?.id,
-      userRole: req.user?.role || 'ADMIN_1',
-      action: 'Invoice Updated',
-      details: `Updated invoice ${invoice.invoiceNumber}. Final: ₹${invoice.finalAmount}, Remaining: ₹${invoice.remainingAmount}`,
-      ipAddress: req.ip || '',
-      userAgent: req.headers['user-agent'] || ''
-    });
 
     req.app.get('io').emit('DATA_UPDATED');
     res.status(200).json({
@@ -443,15 +424,6 @@ export const deleteInvoice = async (req: AuthRequest, res: Response, next: NextF
     // Delete invoice
     await Invoice.findByIdAndDelete(id);
 
-    // Log Activity
-    await ActivityLog.create({
-      userId: req.user?.id,
-      userRole: req.user?.role || 'ADMIN_1',
-      action: 'Invoice Deleted',
-      details: `Deleted invoice number: ${invoice.invoiceNumber}`,
-      ipAddress: req.ip || '',
-      userAgent: req.headers['user-agent'] || ''
-    });
 
     req.app.get('io').emit('DATA_UPDATED');
     res.status(200).json({
@@ -561,6 +533,12 @@ export const markAsPaid = async (req: AuthRequest, res: Response, next: NextFunc
       { invoiceStatus: 'Paid' }
     );
 
+    // Set paymentApprovedAt to start the 7-day QR code retention countdown
+    if (!(invoice as any).paymentApprovedAt) {
+      (invoice as any).paymentApprovedAt = new Date();
+      await invoice.save();
+    }
+
     // 3. Create Payment record
     if (customerId) {
       await Payment.create({
@@ -595,15 +573,6 @@ export const markAsPaid = async (req: AuthRequest, res: Response, next: NextFunc
       }
     }
 
-    // 5. Activity Logging
-    await ActivityLog.create({
-      userId: req.user?.id,
-      userRole: req.user?.role || 'ADMIN_1',
-      action: 'Invoice Marked Paid',
-      details: `Marked invoice ${invoice.invoiceNumber} as fully paid. Amount: ₹${invoice.finalAmount}`,
-      ipAddress: req.ip || '',
-      userAgent: req.headers['user-agent'] || ''
-    });
 
     req.app.get('io').emit('DATA_UPDATED');
     res.status(200).json({

@@ -15,13 +15,7 @@ const AdminSchema = new Schema({
   phone:    { type: String, required: true, trim: true },
   password: { type: String, required: true },
   role:     { type: String, enum: ['ADMIN_1', 'ADMIN_2'], default: 'ADMIN_1' },
-  profilePicture: { type: String, default: '' },
-  lastLogin: { type: Date },
-  recentLogins: [{
-    timestamp: { type: Date, default: Date.now },
-    ipAddress: String,
-    device: String
-  }]
+  profilePicture: { type: String, default: '' }
 }, {
   timestamps: true
 });

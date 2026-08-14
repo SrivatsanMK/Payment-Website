@@ -2,7 +2,6 @@ import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../types';
 import Setting from '../models/Setting';
 import { runBackup } from '../utils/backup';
-import ActivityLog from '../models/ActivityLog';
 
 /**
  * Get Company Settings (Admin and Customer)
@@ -53,15 +52,6 @@ export const updateSettings = async (req: AuthRequest, res: Response, next: Next
 
     await settings.save();
 
-    // Log Activity
-    await ActivityLog.create({
-      userId: req.user?.id,
-      userRole: req.user?.role || 'ADMIN_1',
-      action: 'Settings Updated',
-      details: 'Updated global company configuration settings',
-      ipAddress: req.ip || '',
-      userAgent: req.headers['user-agent'] || ''
-    });
 
     req.app.get('io').emit('DATA_UPDATED');
     res.status(200).json({
@@ -81,16 +71,6 @@ export const triggerBackup = async (req: AuthRequest, res: Response, next: NextF
   try {
     const result = await runBackup();
     if (result.success) {
-      // Log Activity
-      await ActivityLog.create({
-        userId: req.user?.id,
-        userRole: req.user?.role || 'ADMIN_1',
-        action: 'Database Backup',
-        details: `Manually triggered database backup. File: ${result.filePath}`,
-        ipAddress: req.ip || '',
-        userAgent: req.headers['user-agent'] || ''
-      });
-
       req.app.get('io').emit('DATA_UPDATED');
     res.status(200).json({
       success: true,

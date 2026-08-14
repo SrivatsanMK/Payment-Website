@@ -2,7 +2,6 @@ import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../types';
 import Customer from '../models/Customer';
 import Invoice from '../models/Invoice';
-import ActivityLog from '../models/ActivityLog';
 import Payment from '../models/Payment';
 import Order from '../models/Order';
 
@@ -55,15 +54,6 @@ export const createCustomer = async (req: AuthRequest, res: Response, next: Next
       forcedPasswordReset: true // forces password change on first login
     });
 
-    // Log activity
-    await ActivityLog.create({
-      userId: req.user?.id,
-      userRole: req.user?.role || 'ADMIN_1',
-      action: 'Customer Created',
-      details: `Created customer ${name} with ID: ${customerId}`,
-      ipAddress: req.ip || '',
-      userAgent: req.headers['user-agent'] || ''
-    });
 
     req.app.get('io').emit('DATA_UPDATED');
     res.status(200).json({
@@ -130,15 +120,6 @@ export const updateCustomer = async (req: AuthRequest, res: Response, next: Next
 
     await customer.save();
 
-    // Log Activity
-    await ActivityLog.create({
-      userId: req.user?.id,
-      userRole: req.user?.role || 'ADMIN_1',
-      action: 'Customer Updated',
-      details: `Updated details of customer ID: ${customer.customerId}`,
-      ipAddress: req.ip || '',
-      userAgent: req.headers['user-agent'] || ''
-    });
 
     req.app.get('io').emit('DATA_UPDATED');
     res.status(200).json({
@@ -372,15 +353,6 @@ export const resetCustomerPassword = async (req: AuthRequest, res: Response, nex
     }
     await customer.save();
 
-    // Log Activity
-    await ActivityLog.create({
-      userId: req.user?.id,
-      userRole: req.user?.role || 'ADMIN_1',
-      action: 'Customer Password Reset Force',
-      details: `Password reset forced for customer: ${customer.name} (ID: ${customer.customerId})`,
-      ipAddress: req.ip || '',
-      userAgent: req.headers['user-agent'] || ''
-    });
 
     req.app.get('io').emit('DATA_UPDATED');
     res.status(200).json({
@@ -417,15 +389,6 @@ export const deleteCustomer = async (req: AuthRequest, res: Response, next: Next
     // Clean up all completed invoices for this customer
     await Invoice.deleteMany({ customer: id });
 
-    // Log Activity
-    await ActivityLog.create({
-      userId: req.user?.id,
-      userRole: req.user?.role || 'ADMIN_1',
-      action: 'Customer Deleted',
-      details: `Deleted Customer: ${customer.name} (ID: ${customer.customerId})`,
-      ipAddress: req.ip || '',
-      userAgent: req.headers['user-agent'] || ''
-    });
 
     req.app.get('io').emit('DATA_UPDATED');
     res.status(200).json({

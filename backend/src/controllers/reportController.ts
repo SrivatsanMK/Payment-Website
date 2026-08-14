@@ -3,7 +3,6 @@ import { AuthRequest } from '../types';
 import Invoice from '../models/Invoice';
 import Customer from '../models/Customer';
 import Payment from '../models/Payment';
-import ActivityLog from '../models/ActivityLog';
 import Order from '../models/Order';
 
 /**
@@ -83,11 +82,6 @@ export const getAdminDashboardStats = async (req: AuthRequest, res: Response, ne
       .sort()
       .map(k => monthlyData[k]);
 
-    // 4. Recent activities & login logs
-    const recentLogs = await ActivityLog.find({})
-      .sort({ createdAt: -1 })
-      .limit(10);
-
     // 5. Recent payments
     const recentPaymentsList = await Payment.find({})
       .populate('customer', 'name customerId')
@@ -109,7 +103,7 @@ export const getAdminDashboardStats = async (req: AuthRequest, res: Response, ne
         }
       },
       chartData,
-      recentLogs,
+      recentLogs: [], // Activity logs have been removed
       recentPayments: recentPaymentsList
     });
 
