@@ -75,7 +75,16 @@ export const createInvoice = async (req: AuthRequest, res: Response, next: NextF
         ? String(shippedAddress).trim()
         : (customer.address || ''));
 
-    const finalVehicleNumber = (vehicleNumber || vehicleNo || '').trim();
+    const finalVehicleNumber = (vehicleNumber || vehicleNo || '').trim().toUpperCase();
+    if (finalVehicleNumber) {
+      const vehicleRegex = /^[A-Z]{2}\s?\d{2}\s?[A-Z]{1,2}\s?\d{4}$/;
+      if (!vehicleRegex.test(finalVehicleNumber)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Enter a valid vehicle number in the format LL 00 L 0000 or LL 00 LL 0000.'
+        });
+      }
+    }
     const finalTransportMode = (transportMode || 'Road').trim();
 
     const invoice = await Invoice.create({
@@ -389,7 +398,19 @@ export const updateInvoice = async (req: AuthRequest, res: Response, next: NextF
       (invoice as any).deliveryAddress = addr;
       invoice.shippedAddress = addr;
     }
-    if (vehicleNumber !== undefined || vehicleNo !== undefined) invoice.vehicleNumber = String(vehicleNumber || vehicleNo || '').trim();
+    if (vehicleNumber !== undefined || vehicleNo !== undefined) {
+      const vNum = String(vehicleNumber || vehicleNo || '').trim().toUpperCase();
+      if (vNum) {
+        const vehicleRegex = /^[A-Z]{2}\s?\d{2}\s?[A-Z]{1,2}\s?\d{4}$/;
+        if (!vehicleRegex.test(vNum)) {
+          return res.status(400).json({
+            success: false,
+            message: 'Enter a valid vehicle number in the format LL 00 L 0000 or LL 00 LL 0000.'
+          });
+        }
+      }
+      invoice.vehicleNumber = vNum;
+    }
     if (transportMode !== undefined) invoice.transportMode = String(transportMode).trim();
 
     if (paidAmount !== undefined) {

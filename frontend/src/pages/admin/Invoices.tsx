@@ -246,6 +246,15 @@ export const Invoices: React.FC = () => {
       return;
     }
 
+    // Check if vehicle number format is valid (optional field, but if entered must match format)
+    if (vehicleNumber.trim()) {
+      const vehicleRegex = /^[A-Z]{2}\s?\d{2}\s?[A-Z]{1,2}\s?\d{4}$/;
+      if (!vehicleRegex.test(vehicleNumber.trim().toUpperCase())) {
+        showToast('Enter a valid vehicle number in the format LL 00 L 0000 or LL 00 LL 0000.', 'error');
+        return;
+      }
+    }
+
     setActionLoading(true);
     try {
       const mappedProducts = productsList.map(p => ({
@@ -262,7 +271,7 @@ export const Invoices: React.FC = () => {
       formData.append('customerId', selectedCustId);
       formData.append('deliveryAddress', deliveryAddress.trim());
       formData.append('shippedAddress', deliveryAddress.trim());
-      formData.append('vehicleNumber', vehicleNumber.trim());
+      formData.append('vehicleNumber', vehicleNumber.trim().toUpperCase());
       formData.append('transportMode', transportMode.trim() || 'Road');
       formData.append('products', JSON.stringify(mappedProducts));
       formData.append('discount', discountVal.toString());
@@ -638,7 +647,7 @@ export const Invoices: React.FC = () => {
               label="Vehicle Number"
               type="text"
               value={vehicleNumber}
-              onChange={(e) => setVehicleNumber(e.target.value)}
+              onChange={(e) => setVehicleNumber(e.target.value.toUpperCase())}
             />
           </div>
 
