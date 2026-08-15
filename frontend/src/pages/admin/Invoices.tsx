@@ -83,7 +83,7 @@ export const Invoices: React.FC = () => {
 
   // Form states (Create)
   const [selectedCustId, setSelectedCustId] = useState('');
-  const [shippedAddress, setShippedAddress] = useState('');
+  const [deliveryAddress, setDeliveryAddress] = useState('');
   const [vehicleNumber, setVehicleNumber] = useState('');
   const [transportMode, setTransportMode] = useState('Road');
   const [qrCodeFile, setQrCodeFile] = useState<File | null>(null);
@@ -122,8 +122,8 @@ export const Invoices: React.FC = () => {
       });
       if (res.data.success) {
         setInvoices(res.data.invoices);
-        setTotalPages(res.data.pages);
-        setTotalItems(res.data.total);
+        setTotalPages(res.data.pages || 1);
+        setTotalItems(res.data.total || 0);
       }
     } catch (err) {
       showToast('Failed to load invoices', 'error');
@@ -135,18 +135,18 @@ export const Invoices: React.FC = () => {
   // Load Customers list for selector
   const fetchAllCustomers = async () => {
     try {
-      const res = await api.get(endpoints.customers.base, { params: { limit: 100 } });
+      const res = await api.get(endpoints.customers.base, { params: { limit: 1000 } });
       if (res.data.success) {
         setCustomers(res.data.customers);
       }
     } catch (err) {
-      console.error('Error fetching customers:', err);
+      console.error(err);
     }
   };
 
   useEffect(() => {
     fetchInvoices();
-  }, [page, dateFilter]);
+  }, [page, dateFilter, search, startDate, endDate]);
 
   const { socket } = useSocket();
 
@@ -216,7 +216,7 @@ export const Invoices: React.FC = () => {
   const openCreateModal = () => {
     const firstCust = customers[0];
     setSelectedCustId(firstCust?._id || '');
-    setShippedAddress(firstCust?.address || '');
+    setDeliveryAddress(firstCust?.address || '');
     setVehicleNumber('');
     setTransportMode('Road');
     setDiscount(0);
@@ -260,7 +260,8 @@ export const Invoices: React.FC = () => {
 
       const formData = new FormData();
       formData.append('customerId', selectedCustId);
-      formData.append('shippedAddress', shippedAddress.trim());
+      formData.append('deliveryAddress', deliveryAddress.trim());
+      formData.append('shippedAddress', deliveryAddress.trim());
       formData.append('vehicleNumber', vehicleNumber.trim());
       formData.append('transportMode', transportMode.trim() || 'Road');
       formData.append('products', JSON.stringify(mappedProducts));
@@ -610,7 +611,7 @@ export const Invoices: React.FC = () => {
                 setSelectedCustId(newId);
                 const cust = customers.find(c => c._id === newId);
                 if (cust) {
-                  setShippedAddress(cust.address || '');
+                  setDeliveryAddress(cust.address || '');
                 }
               }}
               className="w-full px-4 py-2 text-sm rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none"
@@ -624,21 +625,20 @@ export const Invoices: React.FC = () => {
             </select>
           </div>
 
-          {/* Shipped Address & Vehicle Number */}
+          {/* Delivery Address & Vehicle Number */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
-              label="Shipped Address"
+              label="Delivery Address"
               type="text"
-              value={shippedAddress}
-              onChange={(e) => setShippedAddress(e.target.value)}
-              placeholder="Enter shipping delivery destination"
+              value={deliveryAddress}
+              onChange={(e) => setDeliveryAddress(e.target.value)}
+              placeholder="Enter delivery address"
             />
             <Input
               label="Vehicle Number"
               type="text"
               value={vehicleNumber}
               onChange={(e) => setVehicleNumber(e.target.value)}
-              placeholder="e.g. TN 38 AB 1234"
             />
           </div>
 
@@ -950,8 +950,8 @@ export const Invoices: React.FC = () => {
                       </span>
                     </div>
                     <div className="flex justify-between px-3 py-1">
-                      <span className="text-slate-600 font-medium">Place of Supply :</span>
-                      <span className="font-bold text-slate-900">Tamil Nadu (33)</span>
+                      <span className="text-slate-600 font-medium">Delivery Address :</span>
+                      <span className="font-bold text-slate-900 truncate max-w-[150px]">{selectedInvoice.deliveryAddress || selectedInvoice.shippedAddress || selectedInvoice.customer?.address || '-'}</span>
                     </div>
                   </div>
                 </div>
@@ -973,7 +973,6 @@ export const Invoices: React.FC = () => {
                     <div className="font-bold text-sm text-slate-900">{selectedInvoice.customer?.name || 'Customer'}</div>
                     <div className="text-slate-600">{selectedInvoice.customer?.address || 'Coimbatore, Tamil Nadu 641001, India'}</div>
                     <div className="text-slate-600">Phone: {selectedInvoice.customer?.phone || '+91 90000 00000'}</div>
-                    <div className="text-slate-600">GSTIN: {selectedInvoice.customer?.gstNumber || '33AAAAA0000A1Z5'}</div>
                   </div>
                 </div>
 
@@ -985,7 +984,7 @@ export const Invoices: React.FC = () => {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-slate-600 font-medium">📅 Vehicle No. :</span>
-                    <span className="font-bold text-slate-900">{selectedInvoice.vehicleNumber || selectedInvoice.vehicleNo || 'TN 38 AB 1234'}</span>
+                    <span className="font-bold text-slate-900">{selectedInvoice.vehicleNumber || selectedInvoice.vehicleNo || '-'}</span>
                   </div>
                 </div>
               </div>

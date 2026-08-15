@@ -53,6 +53,7 @@ export const generateInvoicePdf = async (invoice: any, settings: any = {}): Prom
   });
 
   const pageWidth = 210;
+  const customer = invoice.customer || {};
 
   // Load logo fresh from public folder with cache-busting (always gets latest file)
   const logoBase64 = await getImageBase64('/invoice-logo.png');
@@ -113,11 +114,12 @@ export const generateInvoicePdf = async (invoice: any, settings: any = {}): Prom
   doc.rect(metaBoxX, metaBoxY, metaBoxW, metaBoxH);
 
   // Meta rows
+  const deliveryAddressVal = invoice.deliveryAddress || invoice.shippedAddress || customer.address || "Coimbatore, Tamil Nadu 641001";
   const metaRows = [
     { key: "Invoice No.", val: invoice.invoiceNumber || "INV-2025-0001" },
     { key: "Invoice Date", val: formatDate(invoice.createdAt) },
     { key: "Due Date", val: getDueDate(invoice.createdAt) },
-    { key: "Place of Supply", val: settings.placeOfSupply || "Tamil Nadu (33)" }
+    { key: "Delivery Address", val: deliveryAddressVal }
   ];
 
   let metaY = metaBoxY + 5.5;
@@ -161,7 +163,6 @@ export const generateInvoicePdf = async (invoice: any, settings: any = {}): Prom
   // ═══════════════════════════════════════════════════════════
   const cardY = 64;
   const cardH = 30;
-  const customer = invoice.customer || {};
 
   // --- BILL TO CARD ---
   const billX = 10;
@@ -186,9 +187,8 @@ export const generateInvoicePdf = async (invoice: any, settings: any = {}): Prom
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(...slateColor);
-  doc.text(customer.address || "Coimbatore, Tamil Nadu 641001, India", billX + 4, cardY + 18, { maxWidth: billW - 8 });
-  doc.text(`Phone: ${customer.phone || "+91 90000 00000"}`, billX + 4, cardY + 24);
-  doc.text(`GSTIN: ${customer.gstNumber || "33AAAAA0000A1Z5"}`, billX + 4, cardY + 29);
+  doc.text(customer.address || "Coimbatore, Tamil Nadu 641001, India", billX + 4, cardY + 19, { maxWidth: billW - 8 });
+  doc.text(`Phone: ${customer.phone || "+91 90000 00000"}`, billX + 4, cardY + 25);
 
   // --- TRANSPORT DETAILS BOX ---
   const transX = 129;
@@ -212,7 +212,7 @@ export const generateInvoicePdf = async (invoice: any, settings: any = {}): Prom
   doc.text("Vehicle No.           :", transX + 4, transY);
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...darkSlateColor);
-  doc.text(invoice.vehicleNumber || invoice.vehicleNo || "TN 38 AB 1234", transX + transW - 4, transY, { align: "right" });
+  doc.text(invoice.vehicleNumber || invoice.vehicleNo || "-", transX + transW - 4, transY, { align: "right" });
 
 
   // ═══════════════════════════════════════════════════════════

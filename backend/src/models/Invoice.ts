@@ -16,6 +16,7 @@ const InvoiceSchema = new Schema({
   paidAmount: { type: Number, default: 0 },
   remainingAmount: { type: Number, required: true },
   qrCodeImage: { type: String }, // Optional path to uploaded QR Code image
+  deliveryAddress: { type: String, default: '' },
   shippedAddress: { type: String, default: '' },
   vehicleNumber: { type: String, default: '' },
   transportMode: { type: String, default: 'Road' },

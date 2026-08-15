@@ -27,7 +27,7 @@ const generateInvoiceNumber = async (): Promise<string> => {
  */
 export const createInvoice = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    let { customerId, products, discount, gst, dueDate, shippedAddress, vehicleNumber, vehicleNo, transportMode } = req.body;
+    let { customerId, products, discount, gst, dueDate, deliveryAddress, shippedAddress, vehicleNumber, vehicleNo, transportMode } = req.body;
 
     if (typeof products === 'string') {
       try {
@@ -69,9 +69,11 @@ export const createInvoice = async (req: AuthRequest, res: Response, next: NextF
     const invoiceNumber = await generateInvoiceNumber();
     const invoiceDate = new Date();
 
-    const finalShippedAddress = (shippedAddress !== undefined && shippedAddress !== null)
-      ? String(shippedAddress).trim()
-      : (customer.address || '');
+    const finalDeliveryAddress = (deliveryAddress !== undefined && deliveryAddress !== null && String(deliveryAddress).trim() !== '')
+      ? String(deliveryAddress).trim()
+      : ((shippedAddress !== undefined && shippedAddress !== null && String(shippedAddress).trim() !== '')
+        ? String(shippedAddress).trim()
+        : (customer.address || ''));
 
     const finalVehicleNumber = (vehicleNumber || vehicleNo || '').trim();
     const finalTransportMode = (transportMode || 'Road').trim();
@@ -86,7 +88,8 @@ export const createInvoice = async (req: AuthRequest, res: Response, next: NextF
       paidAmount: 0,
       remainingAmount: finalAmount,
       qrCodeImage,
-      shippedAddress: finalShippedAddress,
+      deliveryAddress: finalDeliveryAddress,
+      shippedAddress: finalDeliveryAddress,
       vehicleNumber: finalVehicleNumber,
       transportMode: finalTransportMode,
       dueDate: dueDate ? new Date(dueDate) : invoiceDate,
@@ -335,7 +338,7 @@ export const getInvoiceById = async (req: AuthRequest, res: Response, next: Next
 export const updateInvoice = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const { products, discount, gst, dueDate, paidAmount, shippedAddress, vehicleNumber, vehicleNo, transportMode } = req.body;
+    const { products, discount, gst, dueDate, paidAmount, deliveryAddress, shippedAddress, vehicleNumber, vehicleNo, transportMode } = req.body;
 
     const invoice = await Invoice.findById(id).populate('customer');
     if (!invoice) {
@@ -381,7 +384,11 @@ export const updateInvoice = async (req: AuthRequest, res: Response, next: NextF
     if (discount !== undefined) invoice.discount = discount;
     if (gst !== undefined) invoice.gst = gst;
     if (dueDate) invoice.dueDate = new Date(dueDate);
-    if (shippedAddress !== undefined) invoice.shippedAddress = String(shippedAddress).trim();
+    if (deliveryAddress !== undefined || shippedAddress !== undefined) {
+      const addr = String(deliveryAddress !== undefined ? deliveryAddress : shippedAddress).trim();
+      (invoice as any).deliveryAddress = addr;
+      invoice.shippedAddress = addr;
+    }
     if (vehicleNumber !== undefined || vehicleNo !== undefined) invoice.vehicleNumber = String(vehicleNumber || vehicleNo || '').trim();
     if (transportMode !== undefined) invoice.transportMode = String(transportMode).trim();
 
