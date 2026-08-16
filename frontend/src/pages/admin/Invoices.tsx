@@ -286,6 +286,7 @@ export const Invoices: React.FC = () => {
         name: p.productColor
           ? `${p.productName} (${p.productColor}) - ${p.weightValue} ${p.weightUnit}`
           : `${p.productName} - ${p.weightValue} ${p.weightUnit}`,
+        category: p.category,
         quantity: parseInt(p.quantity) || 0,
         price: parseFloat(p.price) || 0
       }));

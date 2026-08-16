@@ -4,6 +4,7 @@ import Invoice from '../models/Invoice';
 import Customer from '../models/Customer';
 import Payment from '../models/Payment';
 import Order from '../models/Order';
+import ProductCategory from '../models/ProductCategory';
 
 /**
  * Helper to escape CSV field values (RFC 4180 compliant)
@@ -93,11 +94,87 @@ export const getAdminDashboardStats = async (req: AuthRequest, res: Response, ne
     // 2. Customer metrics
     const totalCustomers = await Customer.countDocuments({});
 
-    // 2.5. Total Packages (sum of order quantities)
-    const totalPackagesResult = await Order.aggregate([
-      { $group: { _id: null, total: { $sum: '$quantity' } } }
-    ]);
-    const totalPackages = totalPackagesResult[0]?.total || 0;
+    // 2.5. Category-wise and Total Packages Dispatched calculation
+    const categories = await ProductCategory.find({ isActive: true }).lean();
+
+    // Map of normalized category key -> tracking object
+    const categoryMap = new Map<string, { categoryId: string; categoryName: string; packagesDispatched: number }>();
+    for (const cat of categories) {
+      categoryMap.set(cat.name.toLowerCase().trim(), {
+        categoryId: cat._id.toString(),
+        categoryName: cat.name,
+        packagesDispatched: 0
+      });
+    }
+
+    // Helper: determine which active category an invoice product belongs to
+    const matchCategoryForItem = (p: any): string | null => {
+      // 1. Direct match if product has category specified
+      if (p.category && String(p.category).trim()) {
+        const catKey = String(p.category).toLowerCase().trim();
+        if (categoryMap.has(catKey)) return catKey;
+        for (const [key] of categoryMap) {
+          if (key === catKey || key.startsWith(catKey) || catKey.startsWith(key)) {
+            return key;
+          }
+        }
+      }
+
+      // 2. Name-based matching against category items
+      const productName = String(p.name || '').toLowerCase().trim();
+      for (const cat of categories) {
+        const catKey = cat.name.toLowerCase().trim();
+        for (const item of (cat.items || [])) {
+          if (item.isActive === false) continue;
+          const itemName = item.name.toLowerCase().trim();
+          if (productName.startsWith(itemName) || productName.includes(itemName)) {
+            return catKey;
+          }
+        }
+        if (productName.includes(catKey)) {
+          return catKey;
+        }
+      }
+
+      return null;
+    };
+
+    let totalPackages = 0;
+    let otherPackages = 0;
+
+    invoices.forEach(inv => {
+      if (Array.isArray(inv.products)) {
+        inv.products.forEach((p: any) => {
+          const qty = Number(p.quantity) || 0;
+          totalPackages += qty;
+
+          const matchedKey = matchCategoryForItem(p);
+          if (matchedKey && categoryMap.has(matchedKey)) {
+            const entry = categoryMap.get(matchedKey)!;
+            entry.packagesDispatched += qty;
+          } else {
+            otherPackages += qty;
+          }
+        });
+      }
+    });
+
+    const categoryPackages = Array.from(categoryMap.values()).map(c => ({
+      ...c,
+      percentage: totalPackages > 0 ? Number(((c.packagesDispatched / totalPackages) * 100).toFixed(1)) : 0
+    }));
+
+    if (otherPackages > 0) {
+      categoryPackages.push({
+        categoryId: 'other',
+        categoryName: 'Other Items',
+        packagesDispatched: otherPackages,
+        percentage: totalPackages > 0 ? Number(((otherPackages / totalPackages) * 100).toFixed(1)) : 0
+      });
+    }
+
+    // Sort categories by packages dispatched descending
+    categoryPackages.sort((a, b) => b.packagesDispatched - a.packagesDispatched);
 
     // 3. Monthly Sales and Collection Chart Data (Last 6 Months)
     const monthlyData: Record<string, { month: string; sales: number; collections: number }> = {};
@@ -156,6 +233,7 @@ export const getAdminDashboardStats = async (req: AuthRequest, res: Response, ne
         totalCollected,
         totalOutstanding,
         totalPackages,
+        categoryPackages,
         customers: {
           total: totalCustomers
         },

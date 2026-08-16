@@ -19,7 +19,11 @@ import {
   TrendingUp,
   AlertCircle,
   ArrowUpRight,
-  Package
+  Package,
+  Layers,
+  ChevronDown,
+  ChevronUp,
+  Sparkles
 } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Spinner from '../../components/ui/Spinner';
@@ -31,6 +35,7 @@ export const AdminDashboard: React.FC = () => {
   const isDark = theme === 'dark';
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isCategoryBreakdownOpen, setIsCategoryBreakdownOpen] = useState(false);
 
   const fetchDashboardStats = async () => {
     try {
@@ -75,31 +80,36 @@ export const AdminDashboard: React.FC = () => {
   const lowerCards = [
     {
       title: 'Total Packages Dispatched',
-      value: stats?.totalPackages || 0,
+      value: (stats?.totalPackages || 0).toLocaleString('en-IN'),
       icon: <Package className="h-5 w-5 text-amber-500 dark:text-amber-400" />,
       subtext: 'Including paid and unpaid',
-      borderColor: 'border-amber-500/50'
+      borderColor: 'border-amber-500/50',
+      isClickable: true,
+      onClick: () => setIsCategoryBreakdownOpen(prev => !prev)
     },
     {
       title: 'Total Collected',
       value: `₹${(stats?.totalCollected || 0).toLocaleString('en-IN')}`,
       icon: <IndianRupee className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />,
       subtext: 'Settled transactions',
-      borderColor: 'border-emerald-500/50'
+      borderColor: 'border-emerald-500/50',
+      isClickable: false
     },
     {
       title: 'Outstanding Dues',
       value: `₹${(stats?.totalOutstanding || 0).toLocaleString('en-IN')}`,
       icon: <AlertCircle className="h-5 w-5 text-rose-600 dark:text-rose-400" />,
       subtext: 'Uncollected balances',
-      borderColor: 'border-rose-500/50'
+      borderColor: 'border-rose-500/50',
+      isClickable: false
     },
     {
       title: 'Total Customers',
       value: stats?.customers?.total || 0,
       icon: <Users className="h-5 w-5 text-sky-600 dark:text-sky-400" />,
       subtext: 'customer accounts',
-      borderColor: 'border-sky-500/50'
+      borderColor: 'border-sky-500/50',
+      isClickable: false
     }
   ];
 
@@ -132,26 +142,180 @@ export const AdminDashboard: React.FC = () => {
         {/* 4 Bottom Metric Cards Grid */}
         <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           {lowerCards.map((card, idx) => (
-            <Card key={idx} hoverable className={`glass-card border-l-4 ${card.borderColor} flex flex-col justify-between h-36 py-5 px-6`}>
+            <Card
+              key={idx}
+              hoverable
+              onClick={card.onClick}
+              className={`glass-card border-l-4 ${card.borderColor} flex flex-col justify-between h-36 py-5 px-6 ${
+                card.isClickable
+                  ? 'cursor-pointer transition-all duration-300 hover:scale-[1.02] active:scale-[0.99] select-none group'
+                  : ''
+              }`}
+            >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                   {card.title}
                 </span>
-                <div className="p-2 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 backdrop-blur-md">
-                  {card.icon}
+                <div className="flex items-center gap-1.5">
+                  {card.isClickable && (
+                    <span
+                      className="text-[10px] font-bold px-2 py-0.5 rounded-full border transition-colors flex items-center gap-1"
+                      style={{
+                        backgroundColor: isCategoryBreakdownOpen ? 'rgba(188,226,232,0.2)' : 'rgba(188,226,232,0.1)',
+                        color: isDark ? '#BCE2E8' : '#0284c7',
+                        borderColor: isCategoryBreakdownOpen ? '#BCE2E8' : 'rgba(188,226,232,0.3)'
+                      }}
+                    >
+                      {isCategoryBreakdownOpen ? (
+                        <>Hide <ChevronUp className="h-3 w-3 inline" /></>
+                      ) : (
+                        <>Breakdown <ChevronDown className="h-3 w-3 inline" /></>
+                      )}
+                    </span>
+                  )}
+                  <div className="p-2 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 backdrop-blur-md">
+                    {card.icon}
+                  </div>
                 </div>
               </div>
               <div className="mt-3">
                 <span className="text-2xl font-black text-slate-900 dark:text-white">
                   {card.value}
                 </span>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-medium">
-                  {card.subtext}
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-medium flex items-center justify-between">
+                  <span>{card.subtext}</span>
+                  {card.isClickable && (
+                    <span className="text-[10px] font-semibold text-[#BCE2E8] group-hover:underline">
+                      Click to view
+                    </span>
+                  )}
                 </p>
               </div>
             </Card>
           ))}
         </div>
+
+        {/* Dynamic Category-Wise Packages Breakdown Section */}
+        {isCategoryBreakdownOpen && (
+          <div
+            className="rounded-3xl glass-card p-6 sm:p-7 shadow-2xl relative overflow-hidden transition-all duration-500 border border-[#BCE2E8]/40"
+            style={{
+              boxShadow: '0 20px 50px rgba(0,0,0,0.4), 0 0 25px rgba(188,226,232,0.12)'
+            }}
+          >
+            {/* Ambient #BCE2E8 Glow Effects */}
+            <div
+              className="absolute top-0 right-0 w-80 h-80 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20 opacity-60"
+              style={{ backgroundColor: '#BCE2E8' }}
+            />
+            <div className="absolute bottom-0 left-0 w-60 h-60 bg-purple-500/10 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20" />
+
+            {/* Breakdown Header */}
+            <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/40 dark:border-white/10 pb-4">
+              <div className="flex items-center gap-3">
+                <div
+                  className="p-2.5 rounded-2xl backdrop-blur-md flex items-center justify-center"
+                  style={{
+                    backgroundColor: 'rgba(188,226,232,0.15)',
+                    border: '1px solid rgba(188,226,232,0.35)'
+                  }}
+                >
+                  <Layers className="h-5 w-5" style={{ color: '#BCE2E8' }} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2 flex-wrap">
+                    <span>Category-wise Packages Dispatched</span>
+                    <span
+                      className="text-xs font-bold px-2.5 py-0.5 rounded-full"
+                      style={{
+                        backgroundColor: 'rgba(188,226,232,0.18)',
+                        color: isDark ? '#BCE2E8' : '#0284c7',
+                        border: '1px solid rgba(188,226,232,0.4)'
+                      }}
+                    >
+                      {stats?.categoryPackages?.length || 0} Categories
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Live breakdown of <span className="font-semibold text-slate-800 dark:text-slate-200">{(stats?.totalPackages || 0).toLocaleString('en-IN')} total packages</span> across all database categories.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsCategoryBreakdownOpen(false)}
+                className="self-end sm:self-auto text-xs px-3.5 py-1.5 rounded-xl font-semibold text-slate-400 hover:text-white hover:bg-white/10 border border-slate-300 dark:border-white/10 transition-all flex items-center gap-1.5"
+              >
+                <ChevronUp className="h-3.5 w-3.5" />
+                Collapse
+              </button>
+            </div>
+
+            {/* Category Cards Grid */}
+            <div className="relative z-10 grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 mt-5">
+              {(stats?.categoryPackages || []).map((cat: any) => (
+                <div
+                  key={cat.categoryId || cat.categoryName}
+                  className="relative glass-card border-l-4 p-5 rounded-2xl flex flex-col justify-between h-36 transition-all duration-300 hover:translate-y-[-3px] hover:shadow-xl group"
+                  style={{
+                    borderLeftColor: '#BCE2E8',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.25), 0 0 16px rgba(188,226,232,0.06)'
+                  }}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 truncate">
+                      {cat.categoryName}
+                    </span>
+                    <div
+                      className="p-1.5 rounded-xl backdrop-blur-md shrink-0 transition-transform duration-300 group-hover:scale-110"
+                      style={{
+                        backgroundColor: 'rgba(188,226,232,0.12)',
+                        border: '1px solid rgba(188,226,232,0.25)'
+                      }}
+                    >
+                      <Package className="h-4 w-4" style={{ color: '#BCE2E8' }} />
+                    </div>
+                  </div>
+
+                  <div className="mt-2">
+                    <div className="flex items-baseline gap-1.5">
+                      <span
+                        className="text-2xl font-black tracking-tight"
+                        style={{ color: isDark ? '#BCE2E8' : '#0f766e' }}
+                      >
+                        {(cat.packagesDispatched || 0).toLocaleString('en-IN')}
+                      </span>
+                      <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                        Packages
+                      </span>
+                    </div>
+
+                    <div className="mt-2 space-y-1">
+                      <div className="w-full bg-slate-200 dark:bg-white/10 h-1.5 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${Math.min(100, Math.max(0, cat.percentage || 0))}%`,
+                            backgroundColor: '#BCE2E8'
+                          }}
+                        />
+                      </div>
+                      <div className="flex justify-between items-center text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                        <span>{cat.percentage || 0}% of total</span>
+                        <span>{cat.packagesDispatched > 0 ? 'Active' : '0 Dispatched'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {(!stats?.categoryPackages || stats.categoryPackages.length === 0) && (
+                <div className="col-span-full text-center py-8 text-xs text-slate-400 italic">
+                  No categories found. Categories created in Settings → Category & Product Management will appear here automatically.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Analytics Chart */}

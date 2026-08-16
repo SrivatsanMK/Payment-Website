@@ -120,6 +120,7 @@ export const createInvoice = async (req: AuthRequest, res: Response, next: NextF
         invoiceNumber: invoice.invoiceNumber,
         customer: customer._id,
         productName: p.name,
+        category: p.category || '',
         quantity: p.quantity,
         price: p.price,
         discount: orderDiscountShare,

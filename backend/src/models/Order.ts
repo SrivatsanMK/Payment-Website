@@ -5,6 +5,7 @@ const OrderSchema = new Schema({
   invoiceNumber: { type: String, required: true, trim: true },
   customer: { type: Schema.Types.ObjectId, ref: 'Customer', required: true },
   productName: { type: String, required: true },
+  category: { type: String },
   quantity: { type: Number, required: true },
   price: { type: Number, required: true },
   discount: { type: Number, default: 0 },
