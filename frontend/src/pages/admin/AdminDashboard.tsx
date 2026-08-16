@@ -21,9 +21,7 @@ import {
   ArrowUpRight,
   Package,
   Layers,
-  ChevronDown,
-  ChevronUp,
-  Sparkles
+  ChevronUp
 } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Spinner from '../../components/ui/Spinner';
@@ -147,48 +145,23 @@ export const AdminDashboard: React.FC = () => {
               hoverable
               onClick={card.onClick}
               className={`glass-card border-l-4 ${card.borderColor} flex flex-col justify-between h-36 py-5 px-6 ${
-                card.isClickable
-                  ? 'cursor-pointer transition-all duration-300 hover:scale-[1.02] active:scale-[0.99] select-none group'
-                  : ''
+                card.isClickable ? 'cursor-pointer' : ''
               }`}
             >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                   {card.title}
                 </span>
-                <div className="flex items-center gap-1.5">
-                  {card.isClickable && (
-                    <span
-                      className="text-[10px] font-bold px-2 py-0.5 rounded-full border transition-colors flex items-center gap-1"
-                      style={{
-                        backgroundColor: isCategoryBreakdownOpen ? 'rgba(188,226,232,0.2)' : 'rgba(188,226,232,0.1)',
-                        color: isDark ? '#BCE2E8' : '#0284c7',
-                        borderColor: isCategoryBreakdownOpen ? '#BCE2E8' : 'rgba(188,226,232,0.3)'
-                      }}
-                    >
-                      {isCategoryBreakdownOpen ? (
-                        <>Hide <ChevronUp className="h-3 w-3 inline" /></>
-                      ) : (
-                        <>Breakdown <ChevronDown className="h-3 w-3 inline" /></>
-                      )}
-                    </span>
-                  )}
-                  <div className="p-2 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 backdrop-blur-md">
-                    {card.icon}
-                  </div>
+                <div className="p-2 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 backdrop-blur-md">
+                  {card.icon}
                 </div>
               </div>
               <div className="mt-3">
                 <span className="text-2xl font-black text-slate-900 dark:text-white">
                   {card.value}
                 </span>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-medium flex items-center justify-between">
-                  <span>{card.subtext}</span>
-                  {card.isClickable && (
-                    <span className="text-[10px] font-semibold text-[#BCE2E8] group-hover:underline">
-                      Click to view
-                    </span>
-                  )}
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-medium">
+                  {card.subtext}
                 </p>
               </div>
             </Card>
