@@ -144,7 +144,7 @@ export const createItem = async (req: AuthRequest, res: Response, next: NextFunc
     if (!name || !String(name).trim()) {
       return res.status(400).json({ success: false, message: 'Item name is required.' });
     }
-    if (!unit || !ALLOWED_UNITS.includes(unit)) {
+    if (unit && !ALLOWED_UNITS.includes(unit)) {
       return res.status(400).json({ success: false, message: `Unit must be one of: ${ALLOWED_UNITS.join(', ')}.` });
     }
 
@@ -170,7 +170,7 @@ export const createItem = async (req: AuthRequest, res: Response, next: NextFunc
     category.items.push({
       name: trimmedName,
       colors: cleanColors,
-      unit,
+      unit: unit || 'grams',
       isActive: true,
     } as any);
 

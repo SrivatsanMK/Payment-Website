@@ -194,13 +194,13 @@ export const Invoices: React.FC = () => {
     if (field === 'category') {
       updated[idx].productName = '';   // Reset item when category changes
       updated[idx].productColor = '';  // Reset color when category changes
-      // Auto-set unit from first item of new category (if available)
       const cat = categories.find((c: any) => c.name === value);
-      updated[idx].weightUnit = (cat?.items?.[0]?.unit) || 'grams';
+      if (cat?.items?.[0]?.unit) {
+        updated[idx].weightUnit = cat.items[0].unit;
+      }
     }
     if (field === 'productName') {
       updated[idx].productColor = ''; // Reset color when product changes
-      // Auto-set unit from selected item
       const cat = categories.find((c: any) => c.name === updated[idx].category);
       const item = cat?.items?.find((i: any) => i.name === value);
       if (item?.unit) updated[idx].weightUnit = item.unit;
@@ -784,10 +784,14 @@ export const Invoices: React.FC = () => {
                             onChange={(e) => handleProductChange(idx, 'weightUnit', e.target.value)}
                             className="px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer"
                           >
-                            <option value="grams">grams</option>
-                            <option value="kg">kg</option>
-                            <option value="ml">ml</option>
-                            <option value="liter">liter</option>
+                            <optgroup label="Weight">
+                              <option value="grams">grams</option>
+                              <option value="kg">kg</option>
+                            </optgroup>
+                            <optgroup label="Volume">
+                              <option value="ml">ml</option>
+                              <option value="liter">liter</option>
+                            </optgroup>
                           </select>
                         </div>
                       </div>

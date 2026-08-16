@@ -21,13 +21,11 @@ import Input from '../../components/ui/Input';
 import Spinner from '../../components/ui/Spinner';
 import Modal from '../../components/ui/Modal';
 
-const ALLOWED_UNITS = ['grams', 'kg', 'ml', 'liter'];
-
 interface ProductItem {
   _id: string;
   name: string;
   colors: string[];
-  unit: string;
+  unit?: string;
   isActive: boolean;
 }
 
@@ -127,7 +125,6 @@ export const CategoryManagement: React.FC = () => {
   const [editingItem, setEditingItem] = useState<ProductItem | null>(null);
   const [itemName, setItemName] = useState('');
   const [itemColors, setItemColors] = useState<string[]>([]);
-  const [itemUnit, setItemUnit] = useState('grams');
   const [itemSaving, setItemSaving] = useState(false);
 
   // ─ Delete item confirm
@@ -213,7 +210,6 @@ export const CategoryManagement: React.FC = () => {
     setEditingItem(null);
     setItemName('');
     setItemColors([]);
-    setItemUnit('grams');
     setItemModalOpen(true);
   };
 
@@ -222,7 +218,6 @@ export const CategoryManagement: React.FC = () => {
     setEditingItem(item);
     setItemName(item.name);
     setItemColors([...item.colors]);
-    setItemUnit(item.unit);
     setItemModalOpen(true);
   };
 
@@ -231,24 +226,18 @@ export const CategoryManagement: React.FC = () => {
       showToast('Item name is required', 'error');
       return;
     }
-    if (!itemUnit) {
-      showToast('Unit is required', 'error');
-      return;
-    }
     setItemSaving(true);
     try {
       if (editingItem) {
         await api.put(endpoints.categories.item(itemParentCatId, editingItem._id), {
           name: itemName.trim(),
           colors: itemColors,
-          unit: itemUnit,
         });
         showToast('Item updated successfully', 'success');
       } else {
         await api.post(endpoints.categories.items(itemParentCatId), {
           name: itemName.trim(),
           colors: itemColors,
-          unit: itemUnit,
         });
         showToast('Item added successfully', 'success');
       }
@@ -375,9 +364,6 @@ export const CategoryManagement: React.FC = () => {
                                   <Tag className="h-3 w-3 text-slate-400" />
                                   <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">
                                     {item.name}
-                                  </span>
-                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
-                                    {item.unit}
                                   </span>
                                 </div>
                                 {item.colors && item.colors.length > 0 && (
@@ -509,21 +495,6 @@ export const CategoryManagement: React.FC = () => {
             autoFocus
           />
 
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
-              Unit <span className="text-red-400">*</span>
-            </label>
-            <select
-              value={itemUnit}
-              onChange={(e) => setItemUnit(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:border-purple-500"
-              required
-            >
-              {ALLOWED_UNITS.map((u) => (
-                <option key={u} value={u}>{u}</option>
-              ))}
-            </select>
-          </div>
 
           <ColorChipEditor colors={itemColors} onChange={setItemColors} />
 

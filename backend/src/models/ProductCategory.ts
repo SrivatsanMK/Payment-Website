@@ -4,7 +4,7 @@ export interface IProductItem {
   _id?: mongoose.Types.ObjectId;
   name: string;
   colors: string[];
-  unit: string;
+  unit?: string;
   isActive: boolean;
 }
 
@@ -30,7 +30,7 @@ const ProductItemSchema = new Schema<IProductItem>(
     },
     unit: {
       type: String,
-      required: true,
+      required: false,
       enum: ['grams', 'kg', 'ml', 'liter'],
       default: 'grams',
     },
