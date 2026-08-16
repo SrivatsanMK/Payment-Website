@@ -20,8 +20,7 @@ import {
   AlertCircle,
   ArrowUpRight,
   Package,
-  Layers,
-  ChevronUp
+  Layers
 } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Spinner from '../../components/ui/Spinner';
@@ -214,13 +213,6 @@ export const AdminDashboard: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => setIsCategoryBreakdownOpen(false)}
-                className="self-end sm:self-auto text-xs px-3.5 py-1.5 rounded-xl font-semibold text-slate-400 hover:text-white hover:bg-white/10 border border-slate-300 dark:border-white/10 transition-all flex items-center gap-1.5"
-              >
-                <ChevronUp className="h-3.5 w-3.5" />
-                Collapse
-              </button>
             </div>
 
             {/* Category Cards Grid */}
@@ -272,9 +264,8 @@ export const AdminDashboard: React.FC = () => {
                           }}
                         />
                       </div>
-                      <div className="flex justify-between items-center text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
                         <span>{cat.percentage || 0}% of total</span>
-                        <span>{cat.packagesDispatched > 0 ? 'Active' : '0 Dispatched'}</span>
                       </div>
                     </div>
                   </div>
