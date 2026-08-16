@@ -304,7 +304,7 @@ export const ProfileSelection: React.FC = () => {
               pointerEvents: 'none',
             }} />
 
-            {/* Modern Teal Building Icon (2x Scaled) */}
+            {/* Prime Harvest Organics Logo (2x Scaled) */}
             <div style={{
               display: 'flex',
               alignItems: 'center',
@@ -314,37 +314,16 @@ export const ProfileSelection: React.FC = () => {
               position: 'relative',
               zIndex: 2,
             }}>
-              <svg
-                width="96"
-                height="96"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
+              <img
+                src={`/Prime_Harvest_Organics_Logo.png?v=${Date.now()}`}
+                alt="Prime Harvest Organics"
                 style={{
-                  filter: isDark ? 'drop-shadow(0 4px 12px rgba(13, 148, 136, 0.5))' : 'none',
+                  width: '90%',
+                  height: '90%',
+                  objectFit: 'contain',
+                  filter: isDark ? 'drop-shadow(0 8px 24px rgba(0, 0, 0, 0.6))' : 'none',
                 }}
-              >
-                <path
-                  d="M19 21V5C19 3.89543 18.1046 3 17 3H7C5.89543 3 5 3.89543 5 5V21"
-                  stroke="#0d9488"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M9 7H10M14 7H15M9 11H10M14 11H15M9 15H10M14 15H15"
-                  stroke="#0d9488"
-                  strokeWidth="2.4"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M10 21V18C10 17.4477 10.4477 17 11 17H13C13.5523 17 14 17.4477 14 18V21"
-                  stroke="#0d9488"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+              />
             </div>
           </motion.div>
 
