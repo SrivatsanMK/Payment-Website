@@ -53,19 +53,19 @@ export const PrivateBusinessSidebar: React.FC<PrivateBusinessSidebarProps> = ({ 
         }`}
       >
         {/* Brand */}
-        <div className="flex items-center justify-center w-full border-b border-slate-200/80 dark:border-white/10" style={{ padding: '8px 12px' }}>
-          <img
-            src={`/Prime_Harvest_Organics_Logo.png?v=${Date.now()}`}
-            alt="Prime Harvest Organics Logo"
-            style={{
-              width: '100%',
-              maxWidth: '220px',
-              height: 'auto',
-              maxHeight: '76px',
-              objectFit: 'contain',
-              display: 'block',
-            }}
-          />
+        <div className="flex items-center justify-center w-full border-b border-slate-200/80 dark:border-white/10" style={{ padding: '8px 0' }}>
+          <div className="flex items-center justify-center w-full" style={{ width: '100%', padding: '0' }}>
+            <img
+              src={`/Prime_Harvest_Organics_Logo.png?v=${Date.now()}`}
+              alt="Prime Harvest Organics Logo"
+              style={{
+                width: '100%',
+                height: 'auto',
+                objectFit: 'contain',
+                display: 'block',
+              }}
+            />
+          </div>
         </div>
 
         {/* Workspace Badge */}

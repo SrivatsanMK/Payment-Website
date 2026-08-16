@@ -304,24 +304,27 @@ export const ProfileSelection: React.FC = () => {
               pointerEvents: 'none',
             }} />
 
-            {/* Prime Harvest Organics Logo (2x Scaled) */}
+            {/* Prime Harvest Organics Centered Logo (2x Scaled — 90% container with scale 1.35) */}
             <div style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '85%',
-              height: '85%',
+              width: '90%',
+              height: '90%',
               position: 'relative',
               zIndex: 2,
             }}>
               <img
                 src={`/Prime_Harvest_Organics_Logo.png?v=${Date.now()}`}
-                alt="Prime Harvest Organics"
+                alt="Prime Harvest Organics Logo"
                 style={{
-                  width: '90%',
-                  height: '90%',
+                  width: '100%',
+                  height: '100%',
                   objectFit: 'contain',
-                  filter: isDark ? 'drop-shadow(0 8px 24px rgba(0, 0, 0, 0.6))' : 'none',
+                  transform: 'scale(1.35)',
+                  filter: isDark
+                    ? 'brightness(1.18) contrast(1.05) drop-shadow(0 6px 16px rgba(0,0,0,0.85))'
+                    : 'drop-shadow(0 4px 12px rgba(0,0,0,0.15))',
                 }}
               />
             </div>
