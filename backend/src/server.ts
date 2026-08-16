@@ -21,10 +21,12 @@ import settingRoutes from './routes/settingRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import expenseRoutes from './routes/expenseRoutes';
 import privateBusinessRoutes from './routes/privateBusinessRoutes';
+import categoryRoutes from './routes/categoryRoutes';
 
 import Admin from './models/Admin';
 import Customer from './models/Customer';
 import PrivateBusinessSetting from './models/PrivateBusinessSetting';
+import ProductCategory from './models/ProductCategory';
 import { initCleanupService } from './services/cleanupService';
 
 // Load Env variables
@@ -96,6 +98,39 @@ connectDB().then(async () => {
       }
     } catch (alErr) {
       console.error('[Migration] ActivityLog cleanup error (non-fatal):', alErr);
+    }
+
+    // ── 5. Seed default Categories (Flowers + Vegetables) if none exist ────
+    try {
+      const categoryCount = await ProductCategory.countDocuments();
+      if (categoryCount === 0) {
+        await ProductCategory.insertMany([
+          {
+            name: 'Flowers',
+            isActive: true,
+            items: [
+              { name: 'Chrysanthemum', colors: ['Yellow', 'White', 'Purple'], unit: 'grams', isActive: true },
+              { name: 'Button Rose', colors: ['vibrant red', 'soft pink', 'pure white', 'sunny yellow', 'cheerful orange'], unit: 'grams', isActive: true },
+              { name: 'Lily', colors: ['white', 'yellow', 'orange', 'pink', 'red', 'purple'], unit: 'grams', isActive: true },
+              { name: 'Marigold', colors: ['yellow', 'orange'], unit: 'grams', isActive: true },
+            ],
+          },
+          {
+            name: 'Vegetables',
+            isActive: true,
+            items: [
+              { name: 'Cabbage', colors: [], unit: 'kg', isActive: true },
+              { name: 'Carrot', colors: [], unit: 'kg', isActive: true },
+              { name: 'Potato', colors: [], unit: 'kg', isActive: true },
+              { name: 'Onion', colors: [], unit: 'kg', isActive: true },
+              { name: 'Tomato', colors: [], unit: 'kg', isActive: true },
+            ],
+          },
+        ]);
+        console.log('[Startup] Seeded default Flowers and Vegetables categories.');
+      }
+    } catch (seedErr) {
+      console.error('[Startup] Category seed error (non-fatal):', seedErr);
     }
 
     console.log('[Startup] Database migrations complete.');
@@ -185,6 +220,7 @@ app.use('/api/settings', settingRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/private-business', privateBusinessRoutes);
+app.use('/api/categories', categoryRoutes);
 
 // Root route
 app.get('/', (req, res) => {

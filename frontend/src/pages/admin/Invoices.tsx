@@ -34,15 +34,7 @@ import { numberToWords } from '../../utils/numberToWords';
 const LOGO_URL = `/invoice-logo.png?v=${Date.now()}`;
 
 
-const flowerOptions: Record<string, string[]> = {
-  "Chrysanthemum": ["Yellow", "White", "Purple"],
-  "Button Rose": ["vibrant red", "soft pink", "pure white", "sunny yellow", "cheerful orange"],
-  "Lily": ["white", "yellow", "orange", "pink", "red", "purple"],
-  "Marigold": ["yellow", "orange"]
-};
-
-const vegetableOptions = ["Cabbage", "Carrot", "Potato", "Onion", "Tomato"];
-
+// Admin name display helper
 const formatAdminName = (adminObj: any): string => {
   if (!adminObj) return 'Unknown';
   if (typeof adminObj === 'string') {
@@ -64,6 +56,7 @@ export const Invoices: React.FC = () => {
 
   const [invoices, setInvoices] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filter states
@@ -144,6 +137,18 @@ export const Invoices: React.FC = () => {
     }
   };
 
+  // Load categories for dropdown
+  const fetchCategories = async () => {
+    try {
+      const res = await api.get(endpoints.categories.base);
+      if (res.data.success) {
+        setCategories(res.data.categories);
+      }
+    } catch (err) {
+      console.error('Failed to load categories', err);
+    }
+  };
+
   useEffect(() => {
     fetchInvoices();
   }, [page, dateFilter, search, startDate, endDate]);
@@ -154,6 +159,7 @@ export const Invoices: React.FC = () => {
     if (!socket) return;
     const handleDataUpdated = () => {
       fetchInvoices();
+      fetchCategories(); // Refresh categories if admin changes them
     };
     socket.on('DATA_UPDATED', handleDataUpdated);
     return () => {
@@ -163,6 +169,7 @@ export const Invoices: React.FC = () => {
 
   useEffect(() => {
     fetchAllCustomers();
+    fetchCategories();
   }, []);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -187,14 +194,33 @@ export const Invoices: React.FC = () => {
     if (field === 'category') {
       updated[idx].productName = '';   // Reset item when category changes
       updated[idx].productColor = '';  // Reset color when category changes
+      // Auto-set unit from first item of new category (if available)
+      const cat = categories.find((c: any) => c.name === value);
+      updated[idx].weightUnit = (cat?.items?.[0]?.unit) || 'grams';
     }
     if (field === 'productName') {
       updated[idx].productColor = ''; // Reset color when product changes
+      // Auto-set unit from selected item
+      const cat = categories.find((c: any) => c.name === updated[idx].category);
+      const item = cat?.items?.find((i: any) => i.name === value);
+      if (item?.unit) updated[idx].weightUnit = item.unit;
     }
     setProductsList(updated);
   };
 
-  const isVegetable = (category: string) => category === 'Vegetables';
+  // Helper: get colors for the selected item
+  const getItemColors = (categoryName: string, itemName: string): string[] => {
+    const cat = categories.find((c: any) => c.name === categoryName);
+    if (!cat) return [];
+    const item = cat.items?.find((i: any) => i.name === itemName);
+    return item?.colors || [];
+  };
+
+  // Helper: get items for a category
+  const getCategoryItems = (categoryName: string): any[] => {
+    const cat = categories.find((c: any) => c.name === categoryName);
+    return cat?.items || [];
+  };
 
   // Running calculations
   const calculateTotal = () => {
@@ -235,10 +261,9 @@ export const Invoices: React.FC = () => {
       return;
     }
 
-    // Check if empty rows exist
+    // Check if empty rows exist (color is optional)
     const emptyRow = productsList.some(p => {
       if (!p.category || !p.productName || !p.quantity || !p.weightValue || !p.price) return true;
-      if (!isVegetable(p.category) && !p.productColor) return true; // color required for flowers only
       return false;
     });
     if (emptyRow) {
@@ -258,9 +283,9 @@ export const Invoices: React.FC = () => {
     setActionLoading(true);
     try {
       const mappedProducts = productsList.map(p => ({
-        name: isVegetable(p.category)
-          ? `${p.productName} - ${p.weightValue} ${p.weightUnit}`
-          : `${p.productName} (${p.productColor}) - ${p.weightValue} ${p.weightUnit}`,
+        name: p.productColor
+          ? `${p.productName} (${p.productColor}) - ${p.weightValue} ${p.weightUnit}`
+          : `${p.productName} - ${p.weightValue} ${p.weightUnit}`,
         quantity: parseInt(p.quantity) || 0,
         price: parseFloat(p.price) || 0
       }));
@@ -679,8 +704,9 @@ export const Invoices: React.FC = () => {
                         required
                       >
                         <option value="" disabled>Select Category</option>
-                        <option value="Flowers">🌸 Flowers</option>
-                        <option value="Vegetables">🥦 Vegetables</option>
+                        {categories.map((cat: any) => (
+                          <option key={cat._id} value={cat.name}>{cat.name}</option>
+                        ))}
                       </select>
                     </div>
 
@@ -697,21 +723,14 @@ export const Invoices: React.FC = () => {
                         disabled={!prod.category}
                       >
                         <option value="" disabled>Select Item</option>
-                        {prod.category === 'Flowers'
-                          ? Object.keys(flowerOptions).map(flower => (
-                              <option key={flower} value={flower}>{flower}</option>
-                            ))
-                          : prod.category === 'Vegetables'
-                          ? vegetableOptions.map(veg => (
-                              <option key={veg} value={veg}>{veg}</option>
-                            ))
-                          : null
-                        }
+                        {getCategoryItems(prod.category).map((item: any) => (
+                          <option key={item._id} value={item.name}>{item.name}</option>
+                        ))}
                       </select>
                     </div>
 
-                    {/* Item Color — only for Flowers */}
-                    {!isVegetable(prod.category) && (
+                    {/* Item Color — only shown when the selected item has colors configured */}
+                    {getItemColors(prod.category, prod.productName).length > 0 && (
                       <div className="flex-1 w-full">
                         <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">
                           Item Color
@@ -720,11 +739,10 @@ export const Invoices: React.FC = () => {
                           value={prod.productColor}
                           onChange={(e) => handleProductChange(idx, 'productColor', e.target.value)}
                           className="w-full px-3 py-2 text-sm rounded-lg border bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none disabled:opacity-50"
-                          required={!isVegetable(prod.category)}
                           disabled={!prod.productName}
                         >
-                          <option value="" disabled>Select Color</option>
-                          {(flowerOptions[prod.productName] || []).map(color => (
+                          <option value="">Select Color (optional)</option>
+                          {getItemColors(prod.category, prod.productName).map((color: string) => (
                             <option key={color} value={color}>{color}</option>
                           ))}
                         </select>
@@ -768,6 +786,8 @@ export const Invoices: React.FC = () => {
                           >
                             <option value="grams">grams</option>
                             <option value="kg">kg</option>
+                            <option value="ml">ml</option>
+                            <option value="liter">liter</option>
                           </select>
                         </div>
                       </div>

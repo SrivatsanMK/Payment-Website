@@ -3,22 +3,22 @@ import { useAxios } from '../../hooks/useAxios';
 import { endpoints } from '../../services/api';
 import { useSocket } from '../../context/SocketContext';
 import { useTheme } from '../../context/ThemeContext';
-import { 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer, 
-  Legend, 
-  LineChart, 
-  Line 
+import {
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+  LineChart,
+  Line
 } from 'recharts';
-import { 
-  IndianRupee, 
-  Users, 
-  TrendingUp, 
-  AlertCircle, 
-  ArrowUpRight, 
+import {
+  IndianRupee,
+  Users,
+  TrendingUp,
+  AlertCircle,
+  ArrowUpRight,
   Package
 } from 'lucide-react';
 import Card from '../../components/ui/Card';
@@ -98,7 +98,7 @@ export const AdminDashboard: React.FC = () => {
       title: 'Total Customers',
       value: stats?.customers?.total || 0,
       icon: <Users className="h-5 w-5 text-sky-600 dark:text-sky-400" />,
-      subtext: `${stats?.customers?.active || 0} active customer accounts`,
+      subtext: 'customer accounts',
       borderColor: 'border-sky-500/50'
     }
   ];
@@ -166,7 +166,7 @@ export const AdminDashboard: React.FC = () => {
               Monthly invoicing totals compared against actual collections received.
             </p>
           </div>
-          
+
           <div className="h-72 w-full mt-4">
             {chartData && chartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
@@ -175,45 +175,45 @@ export const AdminDashboard: React.FC = () => {
                   margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"} />
-                  <XAxis 
-                    dataKey="month" 
-                    tick={{ fontSize: 11, fill: isDark ? '#cbd5e1' : '#475569' }} 
-                    stroke={isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)"} 
-                    axisLine={false} 
+                  <XAxis
+                    dataKey="month"
+                    tick={{ fontSize: 11, fill: isDark ? '#cbd5e1' : '#475569' }}
+                    stroke={isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)"}
+                    axisLine={false}
                     tickLine={false}
                   />
-                  <YAxis 
-                    tick={{ fontSize: 11, fill: isDark ? '#cbd5e1' : '#475569' }} 
-                    stroke={isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)"} 
-                    axisLine={false} 
+                  <YAxis
+                    tick={{ fontSize: 11, fill: isDark ? '#cbd5e1' : '#475569' }}
+                    stroke={isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.2)"}
+                    axisLine={false}
                     tickLine={false}
                   />
-                  <Tooltip 
-                    contentStyle={{ 
-                      fontSize: '12px', 
-                      borderRadius: '16px', 
+                  <Tooltip
+                    contentStyle={{
+                      fontSize: '12px',
+                      borderRadius: '16px',
                       background: isDark ? 'rgba(20,20,28,0.92)' : 'rgba(255,255,255,0.95)',
                       backdropFilter: 'blur(20px)',
-                      border: isDark ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(0,0,0,0.12)', 
+                      border: isDark ? '1px solid rgba(255,255,255,0.2)' : '1px solid rgba(0,0,0,0.12)',
                       boxShadow: '0 12px 32px rgba(0,0,0,0.15)',
                       color: isDark ? '#fff' : '#0f172a'
-                    }} 
+                    }}
                   />
                   <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '14px', color: isDark ? '#cbd5e1' : '#334155' }} />
-                  <Line 
-                    type="monotone" 
-                    dataKey="sales" 
-                    name="Packing Revenue Billed" 
-                    stroke="#9333ea" 
+                  <Line
+                    type="monotone"
+                    dataKey="sales"
+                    name="Packing Revenue Billed"
+                    stroke="#9333ea"
                     strokeWidth={3}
                     dot={{ r: 4, fill: "#9333ea", strokeWidth: 2 }}
                     activeDot={{ r: 6 }}
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey="collections" 
-                    name="Collections Received" 
-                    stroke="#10b981" 
+                  <Line
+                    type="monotone"
+                    dataKey="collections"
+                    name="Collections Received"
+                    stroke="#10b981"
                     strokeWidth={3}
                     dot={{ r: 4, fill: "#10b981", strokeWidth: 2 }}
                     activeDot={{ r: 6 }}
@@ -246,8 +246,8 @@ export const AdminDashboard: React.FC = () => {
                 <span className="font-bold text-slate-900 dark:text-white">{stats?.invoices?.paid}</span>
               </div>
               <div className="w-full bg-slate-200 dark:bg-white/10 h-2.5 rounded-full overflow-hidden p-0.5 border border-slate-300 dark:border-white/10">
-                <div 
-                  className="bg-emerald-500 dark:bg-emerald-400 h-full rounded-full shadow-sm" 
+                <div
+                  className="bg-emerald-500 dark:bg-emerald-400 h-full rounded-full shadow-sm"
                   style={{ width: `${(stats?.invoices?.paid / (stats?.invoices?.total || 1)) * 100}%` }}
                 />
               </div>
@@ -259,8 +259,8 @@ export const AdminDashboard: React.FC = () => {
                 <span className="font-bold text-slate-900 dark:text-white">{stats?.invoices?.pending}</span>
               </div>
               <div className="w-full bg-slate-200 dark:bg-white/10 h-2.5 rounded-full overflow-hidden p-0.5 border border-slate-300 dark:border-white/10">
-                <div 
-                  className="bg-amber-500 dark:bg-amber-400 h-full rounded-full shadow-sm" 
+                <div
+                  className="bg-amber-500 dark:bg-amber-400 h-full rounded-full shadow-sm"
                   style={{ width: `${(stats?.invoices?.pending / (stats?.invoices?.total || 1)) * 100}%` }}
                 />
               </div>
@@ -272,8 +272,8 @@ export const AdminDashboard: React.FC = () => {
                 <span className="font-bold text-slate-900 dark:text-white">{stats?.invoices?.overdue}</span>
               </div>
               <div className="w-full bg-slate-200 dark:bg-white/10 h-2.5 rounded-full overflow-hidden p-0.5 border border-slate-300 dark:border-white/10">
-                <div 
-                  className="bg-rose-500 dark:bg-rose-400 h-full rounded-full shadow-sm" 
+                <div
+                  className="bg-rose-500 dark:bg-rose-400 h-full rounded-full shadow-sm"
                   style={{ width: `${(stats?.invoices?.overdue / (stats?.invoices?.total || 1)) * 100}%` }}
                 />
               </div>

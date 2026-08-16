@@ -85,6 +85,12 @@ export const endpoints = {
     dashboard: '/expenses/summary/dashboard',
     detailedReport: '/expenses/reports/detailed',
   },
+  categories: {
+    base: '/categories',
+    single: (id: string) => `/categories/${id}`,
+    items: (id: string) => `/categories/${id}/items`,
+    item: (catId: string, itemId: string) => `/categories/${catId}/items/${itemId}`,
+  },
   privateBusiness: {
     dashboard: '/private-business/dashboard',
     reports: '/private-business/reports',

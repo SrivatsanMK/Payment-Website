@@ -3,14 +3,15 @@ import { useAxios } from '../../hooks/useAxios';
 import { endpoints } from '../../services/api';
 import { useToast } from '../../components/ui/Toast';
 import { useSocket } from '../../context/SocketContext';
-import { 
-  Save, 
+import {
+  Save,
   Building2
 } from 'lucide-react';
 import Card from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import Spinner from '../../components/ui/Spinner';
+import { CategoryManagement } from './CategoryManagement';
 
 export const Settings: React.FC = () => {
   const api = useAxios();
@@ -64,7 +65,7 @@ export const Settings: React.FC = () => {
 
   const handleSettingsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Basic email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (formData.gmailAddress && !emailRegex.test(formData.gmailAddress.trim())) {
@@ -73,7 +74,7 @@ export const Settings: React.FC = () => {
     }
 
     setSaving(true);
-    
+
     const data = {
       companyName: formData.companyName.trim(),
       supportPhone: formData.supportPhone.trim(),
@@ -106,27 +107,27 @@ export const Settings: React.FC = () => {
       {/* Header */}
       <div>
         <h1 className="text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100">
-          Global Config Settings
+          Global Configuration Settings
         </h1>
         <p className="text-xs text-slate-400 mt-1">
-          Configure company branding, payment routing, and customer support details.
+          Manage your global system, contact preferences, and product catalogue.
         </p>
       </div>
 
       {/* Main Settings Form */}
       <form onSubmit={handleSettingsSubmit} className="space-y-6">
-        {/* Branding details */}
+        {/* Company Profile */}
         <Card className="space-y-6 p-6">
           <div className="border-b border-slate-100 dark:border-slate-800 pb-3">
             <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <Building2 className="h-4 w-4 text-purple-500" />
-              Company Profile &amp; Branding
+              Company Profile
             </h3>
             <p className="text-[11px] text-slate-400 mt-0.5">
-              Core company identification and customer care contact details.
+              Update your official brand and support details.
             </p>
           </div>
-          
+
           <div className="space-y-4">
             <Input
               label="Business Name"
@@ -137,22 +138,25 @@ export const Settings: React.FC = () => {
               required
             />
 
-            <Input
-              label="Support Contact Phone"
-              type="text"
-              value={formData.supportPhone}
-              onChange={(e) => setFormData({ ...formData, supportPhone: e.target.value })}
-              placeholder="+91 98765 43210"
-            />
+            {/* Support Phone + Gmail on the same row on desktop */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="Support Contact Phone"
+                type="text"
+                value={formData.supportPhone}
+                onChange={(e) => setFormData({ ...formData, supportPhone: e.target.value })}
+                placeholder="+91 98765 43210"
+              />
 
-            <Input
-              label="Gmail Address"
-              type="email"
-              value={formData.gmailAddress}
-              onChange={(e) => setFormData({ ...formData, gmailAddress: e.target.value })}
-              placeholder="greenglidelogistics@gmail.com"
-              required
-            />
+              <Input
+                label="Gmail Address"
+                type="email"
+                value={formData.gmailAddress}
+                onChange={(e) => setFormData({ ...formData, gmailAddress: e.target.value })}
+                placeholder="greenglidelogistics@gmail.com"
+                required
+              />
+            </div>
           </div>
 
           <div className="flex justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
@@ -163,6 +167,9 @@ export const Settings: React.FC = () => {
           </div>
         </Card>
       </form>
+
+      {/* Category & Product Management */}
+      <CategoryManagement />
     </div>
   );
 };
