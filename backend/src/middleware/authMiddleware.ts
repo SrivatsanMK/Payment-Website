@@ -1,11 +1,11 @@
 import { Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { AuthRequest } from '../types';
-import Admin from '../models/Admin';
-import Customer from '../models/Customer';
+import { findAdminById } from '../repositories/adminRepository';
+import { findCustomerById } from '../repositories/customerRepository';
 
 export const protect = async (req: AuthRequest, res: Response, next: NextFunction) => {
-  let token;
+  let token: string | undefined;
 
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
@@ -13,23 +13,23 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
       const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'supersecretjwtkeyforaccess123456');
 
       if (['ADMIN_1', 'ADMIN_2'].includes(decoded.role)) {
-        const admin = await Admin.findById(decoded.id).select('-password');
+        const admin = await findAdminById(decoded.id);
         if (!admin) {
           return res.status(401).json({ success: false, message: 'Not authorized, admin user not found' });
         }
         req.user = {
-          id: admin._id.toString(),
+          id: (admin.id || admin._id || '').toString(),
           role: admin.role,
           email: admin.email,
           username: admin.username
         };
       } else if (decoded.role === 'Customer') {
-        const customer = await Customer.findById(decoded.id).select('-password');
+        const customer = await findCustomerById(decoded.id);
         if (!customer) {
           return res.status(401).json({ success: false, message: 'Not authorized, customer not found' });
         }
         req.user = {
-          id: customer._id.toString(),
+          id: (customer.id || customer._id || '').toString(),
           role: 'Customer',
           email: customer.email,
           name: customer.name

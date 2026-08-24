@@ -1,10 +1,9 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../types';
-import Invoice from '../models/Invoice';
-import Customer from '../models/Customer';
-import Payment from '../models/Payment';
-import Order from '../models/Order';
-import ProductCategory from '../models/ProductCategory';
+import { findAllInvoices } from '../repositories/invoiceRepository';
+import { findAllCustomers } from '../repositories/customerRepository';
+import { findAllPayments } from '../repositories/paymentRepository';
+import { getActiveCategories } from '../repositories/categoryRepository';
 
 /**
  * Helper to escape CSV field values (RFC 4180 compliant)
@@ -65,7 +64,7 @@ const formatTime = (date: Date | string | undefined | null, fallback = 'Not Avai
 export const getAdminDashboardStats = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     // 1. Core financial metrics
-    const invoices = await Invoice.find({});
+    const invoices = await findAllInvoices();
     
     let totalSales = 0;
     let totalCollected = 0;
@@ -75,10 +74,10 @@ export const getAdminDashboardStats = async (req: AuthRequest, res: Response, ne
     let overdueInvoicesCount = 0;
     const now = new Date();
 
-    invoices.forEach(inv => {
-      totalSales += inv.finalAmount || 0;
-      totalCollected += inv.paidAmount || 0;
-      totalOutstanding += inv.remainingAmount || 0;
+    invoices.forEach((inv) => {
+      totalSales += Number(inv.finalAmount) || 0;
+      totalCollected += Number(inv.paidAmount) || 0;
+      totalOutstanding += Number(inv.remainingAmount) || 0;
 
       if (inv.remainingAmount <= 0) {
         paidInvoicesCount++;
@@ -92,24 +91,23 @@ export const getAdminDashboardStats = async (req: AuthRequest, res: Response, ne
     });
 
     // 2. Customer metrics
-    const totalCustomers = await Customer.countDocuments({});
+    const allCustomers = await findAllCustomers();
+    const totalCustomers = allCustomers.length;
 
     // 2.5. Category-wise and Total Packages Dispatched calculation
-    const categories = await ProductCategory.find({ isActive: true }).lean();
+    const categories = await getActiveCategories();
 
-    // Map of normalized category key -> tracking object
     const categoryMap = new Map<string, { categoryId: string; categoryName: string; packagesDispatched: number }>();
     for (const cat of categories) {
+      const catId = cat.id || cat._id || '';
       categoryMap.set(cat.name.toLowerCase().trim(), {
-        categoryId: cat._id.toString(),
+        categoryId: catId,
         categoryName: cat.name,
         packagesDispatched: 0
       });
     }
 
-    // Helper: determine which active category an invoice product belongs to
     const matchCategoryForItem = (p: any): string | null => {
-      // 1. Direct match if product has category specified
       if (p.category && String(p.category).trim()) {
         const catKey = String(p.category).toLowerCase().trim();
         if (categoryMap.has(catKey)) return catKey;
@@ -120,7 +118,6 @@ export const getAdminDashboardStats = async (req: AuthRequest, res: Response, ne
         }
       }
 
-      // 2. Name-based matching against category items
       const productName = String(p.name || '').toLowerCase().trim();
       for (const cat of categories) {
         const catKey = cat.name.toLowerCase().trim();
@@ -142,7 +139,7 @@ export const getAdminDashboardStats = async (req: AuthRequest, res: Response, ne
     let totalPackages = 0;
     let otherPackages = 0;
 
-    invoices.forEach(inv => {
+    invoices.forEach((inv) => {
       if (Array.isArray(inv.products)) {
         inv.products.forEach((p: any) => {
           const qty = Number(p.quantity) || 0;
@@ -159,7 +156,7 @@ export const getAdminDashboardStats = async (req: AuthRequest, res: Response, ne
       }
     });
 
-    const categoryPackages = Array.from(categoryMap.values()).map(c => ({
+    const categoryPackages = Array.from(categoryMap.values()).map((c) => ({
       ...c,
       percentage: totalPackages > 0 ? Number(((c.packagesDispatched / totalPackages) * 100).toFixed(1)) : 0
     }));
@@ -173,7 +170,6 @@ export const getAdminDashboardStats = async (req: AuthRequest, res: Response, ne
       });
     }
 
-    // Sort categories by packages dispatched descending
     categoryPackages.sort((a, b) => b.packagesDispatched - a.packagesDispatched);
 
     // 3. Monthly Sales and Collection Chart Data (Last 6 Months)
@@ -185,7 +181,6 @@ export const getAdminDashboardStats = async (req: AuthRequest, res: Response, ne
     sixMonthsAgo.setDate(1);
     sixMonthsAgo.setHours(0, 0, 0, 0);
 
-    // Pre-populate last 6 months
     for (let i = 5; i >= 0; i--) {
       const d = new Date();
       d.setMonth(d.getMonth() - i);
@@ -194,37 +189,37 @@ export const getAdminDashboardStats = async (req: AuthRequest, res: Response, ne
       monthlyData[key] = { month: name, sales: 0, collections: 0 };
     }
 
-    // Group invoices by month
-    const recentInvoices = await Invoice.find({ createdAt: { $gte: sixMonthsAgo } });
-    recentInvoices.forEach(inv => {
+    invoices.forEach((inv) => {
       const date = new Date(inv.createdAt);
-      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const name = `${monthNames[date.getMonth()]} ${date.getFullYear().toString().substring(2)}`;
-      
-      if (!monthlyData[key]) {
-        monthlyData[key] = { month: name, sales: 0, collections: 0 };
+      if (date >= sixMonthsAgo) {
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const name = `${monthNames[date.getMonth()]} ${date.getFullYear().toString().substring(2)}`;
+        
+        if (!monthlyData[key]) {
+          monthlyData[key] = { month: name, sales: 0, collections: 0 };
+        }
+        monthlyData[key].sales += Number(inv.finalAmount) || 0;
+        monthlyData[key].collections += Number(inv.paidAmount) || 0;
       }
-      monthlyData[key].sales += inv.finalAmount || 0;
-      monthlyData[key].collections += inv.paidAmount || 0;
     });
 
-    // Handle payments received in last 6 months (for collection accuracy in chart)
-    const sixMonthPayments = await Payment.find({ date: { $gte: sixMonthsAgo } });
-    sixMonthPayments.forEach(pay => {
+    const payments = await findAllPayments();
+    payments.forEach((pay) => {
       const date = new Date(pay.date);
-      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const name = `${monthNames[date.getMonth()]} ${date.getFullYear().toString().substring(2)}`;
+      if (date >= sixMonthsAgo) {
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const name = `${monthNames[date.getMonth()]} ${date.getFullYear().toString().substring(2)}`;
 
-      if (!monthlyData[key]) {
-        monthlyData[key] = { month: name, sales: 0, collections: 0 };
+        if (!monthlyData[key]) {
+          monthlyData[key] = { month: name, sales: 0, collections: 0 };
+        }
+        monthlyData[key].collections += Number(pay.amount) || 0;
       }
-      monthlyData[key].collections += pay.amount || 0;
     });
 
-    // Sort chart data
     const chartData = Object.keys(monthlyData)
       .sort()
-      .map(k => monthlyData[k]);
+      .map((k) => monthlyData[k]);
 
     res.status(200).json({
       success: true,
@@ -254,35 +249,15 @@ export const getAdminDashboardStats = async (req: AuthRequest, res: Response, ne
 
 /**
  * Export Invoices Statement Report to CSV / Excel Format (Admin Only)
- * 
- * Column Order:
- * 1. Invoice Number
- * 2. Customer Name
- * 3. Customer ID
- * 4. Customer Email
- * 5. CGST Amount
- * 6. SGST Amount
- * 7. Final Amount
- * 8. Status (Paid / Not Paid)
- * 9. Invoice Created Date (DD/MM/YYYY)
- * 10. Invoice Approved Date (DD/MM/YYYY or Not Approved)
- * 11. Approved By (Admin Name/Username or Not Approved)
  */
 export const exportInvoicesCSV = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const invoices = await Invoice.find({})
-      .populate('customer', 'name customerId email phone')
-      .sort({ createdAt: -1 });
+    const invoices = await findAllInvoices();
+    invoices.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
-    const invoiceNumbers = invoices.map(i => i.invoiceNumber);
-
-    // Fetch related payment records for approval lookup
-    const payments = await Payment.find({ invoiceNumber: { $in: invoiceNumbers } })
-      .populate('approvedBy', 'username displayName role email adminId')
-      .sort({ approvedAt: -1, createdAt: -1 });
-
+    const payments = await findAllPayments();
     const paymentMap: Record<string, any> = {};
-    payments.forEach(p => {
+    payments.forEach((p) => {
       if (!paymentMap[p.invoiceNumber] || p.approvedBy || p.approvedAt) {
         paymentMap[p.invoiceNumber] = p;
       }
@@ -304,13 +279,12 @@ export const exportInvoicesCSV = async (req: AuthRequest, res: Response, next: N
 
     let csv = '\uFEFF' + headers.join(',') + '\n';
 
-    invoices.forEach(inv => {
+    invoices.forEach((inv) => {
       const cust: any = inv.customer || {};
       const customerName = cust.name || 'N/A';
       const customerId = cust.customerId || 'N/A';
       const customerEmail = cust.email || 'N/A';
 
-      // Calculation of CGST and SGST
       const subtotal = (inv.products || []).reduce(
         (acc: number, p: any) => acc + (Number(p.price || 0) * Number(p.quantity || 0)),
         0
@@ -324,20 +298,17 @@ export const exportInvoicesCSV = async (req: AuthRequest, res: Response, next: N
       const sgstAmount = (taxableAmount * (sgstRate / 100)).toFixed(2);
       const finalAmount = Number(inv.finalAmount || 0).toFixed(2);
 
-      // Status determination
       const isPaid = (inv.remainingAmount <= 0) || (inv.paidAmount >= inv.finalAmount);
       const status = isPaid ? 'Paid' : 'Not Paid';
 
-      // Created date
       const createdDateStr = formatDate(inv.createdAt, 'N/A');
 
-      // Approval details
       let approvedDateStr = 'Not Approved';
       let approvedByStr = 'Not Approved';
 
       if (isPaid) {
         const p = paymentMap[inv.invoiceNumber];
-        const approvalDateVal = p?.approvedAt || (inv as any).paymentApprovedAt || p?.date || p?.createdAt;
+        const approvalDateVal = p?.approvedAt || inv.paymentApprovedAt || p?.date || p?.createdAt;
         approvedDateStr = formatDate(approvalDateVal, 'Not Approved');
 
         const adminObj = p?.approvedBy;
@@ -376,19 +347,11 @@ export const exportInvoicesCSV = async (req: AuthRequest, res: Response, next: N
 
 /**
  * Export Client Database Registry to CSV / Excel Format (Admin Only)
- * Dynamically queries current Customer collection in MongoDB Atlas.
- * 
- * Column Order:
- * 1. Customer ID
- * 2. Name
- * 3. Email
- * 4. Phone
- * 5. Address
- * 6. Joining Date
  */
 export const exportCustomersCSV = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const customers = await Customer.find({}).sort({ createdAt: -1 });
+    const customers = await findAllCustomers();
+    customers.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     const headers = [
       'Customer ID',
@@ -401,7 +364,7 @@ export const exportCustomersCSV = async (req: AuthRequest, res: Response, next: 
 
     let csv = '\uFEFF' + headers.join(',') + '\n';
 
-    customers.forEach(cust => {
+    customers.forEach((cust) => {
       const customerId = cust.customerId || 'N/A';
       const name = cust.name || 'N/A';
       const email = cust.email || 'N/A';
@@ -432,29 +395,15 @@ export const exportCustomersCSV = async (req: AuthRequest, res: Response, next: 
 
 /**
  * Export Payment Settlement Logs to CSV / Excel Format (Admin Only)
- * 
- * Column Order:
- * 1. Invoice Number
- * 2. Customer Name
- * 3. Customer ID
- * 4. Amount
- * 5. Payment Method ("Manual Admin Approval")
- * 6. Admin Approval Date (DD/MM/YYYY)
- * 7. Admin Approval Time (HH:MM:SS)
  */
 export const exportPaymentsCSV = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const payments = await Payment.find({})
-      .populate('customer', 'customerId name email phone')
-      .populate('approvedBy', 'username displayName role email adminId')
-      .sort({ approvedAt: -1, createdAt: -1 });
+    const payments = await findAllPayments();
+    payments.sort((a, b) => new Date(b.approvedAt || b.createdAt).getTime() - new Date(a.approvedAt || a.createdAt).getTime());
 
-    const invoiceNumbers = Array.from(new Set(payments.map(p => p.invoiceNumber)));
-    const invoices = await Invoice.find({ invoiceNumber: { $in: invoiceNumbers } })
-      .populate('customer', 'customerId name email phone');
-
+    const invoices = await findAllInvoices();
     const invoiceMap: Record<string, any> = {};
-    invoices.forEach(inv => {
+    invoices.forEach((inv) => {
       invoiceMap[inv.invoiceNumber] = inv;
     });
 
@@ -470,26 +419,22 @@ export const exportPaymentsCSV = async (req: AuthRequest, res: Response, next: N
 
     let csv = '\uFEFF' + headers.join(',') + '\n';
 
-    payments.forEach(pay => {
+    payments.forEach((pay) => {
       const cust: any = pay.customer || invoiceMap[pay.invoiceNumber]?.customer || {};
       const customerName = cust.name || 'N/A';
       const customerId = cust.customerId || 'N/A';
       const amountStr = Number(pay.amount || 0).toFixed(2);
-      
-      // Payment method is fixed to "Manual Admin Approval" per business requirement
       const paymentMethod = 'Manual Admin Approval';
 
-      // Admin approval timestamp
       const isPending = pay.status === 'Pending' && !pay.approvedAt;
       let approvalDateStr = 'Not Approved';
       let approvalTimeStr = 'Not Approved';
 
       if (!isPending) {
-        const approvalTimestamp = pay.approvedAt || (invoiceMap[pay.invoiceNumber] as any)?.paymentApprovedAt || pay.date || pay.createdAt;
+        const approvalTimestamp = pay.approvedAt || invoiceMap[pay.invoiceNumber]?.paymentApprovedAt || pay.date || pay.createdAt;
         approvalDateStr = formatDate(approvalTimestamp, 'Not Approved');
         
-        // If time is stored as HH:MM:SS string on the payment record, we can use it or format the Date
-        if (pay.approvedAt || (invoiceMap[pay.invoiceNumber] as any)?.paymentApprovedAt) {
+        if (pay.approvedAt || invoiceMap[pay.invoiceNumber]?.paymentApprovedAt) {
           approvalTimeStr = formatTime(approvalTimestamp, 'Not Available');
         } else if (pay.time) {
           approvalTimeStr = pay.time;

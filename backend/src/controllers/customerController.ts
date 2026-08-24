@@ -1,25 +1,18 @@
 import { Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { AuthRequest } from '../types';
-import Customer from '../models/Customer';
-import Invoice from '../models/Invoice';
-import Payment from '../models/Payment';
-import Order from '../models/Order';
-
-/**
- * Helper to generate unique Customer ID
- */
-const generateCustomerId = async (): Promise<string> => {
-  let uniqueId = '';
-  let exists = true;
-  while (exists) {
-    const randomNum = Math.floor(10000 + Math.random() * 90000); // 5 digits
-    uniqueId = `CUST${randomNum}`;
-    const check = await Customer.findOne({ customerId: uniqueId });
-    if (!check) exists = false;
-  }
-  return uniqueId;
-};
+import {
+  findCustomerById,
+  findCustomerByEmail,
+  findCustomerByPhone,
+  findCustomersPaginated,
+  createCustomer as repoCreateCustomer,
+  updateCustomer as repoUpdateCustomer,
+  deleteCustomer as repoDeleteCustomer,
+} from '../repositories/customerRepository';
+import { findInvoicesByCustomerId, deleteInvoice } from '../repositories/invoiceRepository';
+import { findOrdersByCustomerId } from '../repositories/orderRepository';
+import { findPaymentsByCustomerId } from '../repositories/paymentRepository';
 
 /**
  * Create Customer (Admin Only)
@@ -34,31 +27,28 @@ export const createCustomer = async (req: AuthRequest, res: Response, next: Next
     }
 
     // Check duplicate email
-    const existingCustomer = await Customer.findOne({ email: email.toLowerCase().trim() });
+    const existingCustomer = await findCustomerByEmail(email.toLowerCase().trim());
     if (existingCustomer) {
       return res.status(400).json({ success: false, message: 'Customer with this email already exists' });
     }
 
-    // Generate custom auto-increment ID: CUSTXXXXX
-    const customerId = await generateCustomerId();
-
-    const customer = await Customer.create({
-      customerId,
+    const customer = await repoCreateCustomer({
       name: name.trim(),
       email: email.toLowerCase().trim(),
       phone: phone.trim(),
       address: address.trim(),
       gstNumber: gstNumber ? gstNumber.trim() : undefined,
-      password: password || 'customer123', // default or custom
-      status: 'Active'
+      password: password || 'customer123',
+      status: 'Active',
     });
 
-    req.app.get('io').emit('DATA_UPDATED');
+    req.app.get('io')?.emit('DATA_UPDATED');
     res.status(201).json({
       success: true,
       message: 'Customer registered successfully',
       customer: {
-        id: customer._id,
+        id: customer.id || customer._id,
+        _id: customer.id || customer._id,
         customerId: customer.customerId,
         name: customer.name,
         email: customer.email,
@@ -85,7 +75,7 @@ export const updateCustomer = async (req: AuthRequest, res: Response, next: Next
       return res.status(403).json({ success: false, message: 'Not authorized to update other profiles' });
     }
 
-    const customer = await Customer.findById(id);
+    const customer = await findCustomerById(id);
     if (!customer) {
       return res.status(404).json({ success: false, message: 'Customer not found' });
     }
@@ -110,7 +100,8 @@ export const updateCustomer = async (req: AuthRequest, res: Response, next: Next
             process.env.JWT_SECRET || 'supersecretjwtkeyforaccess123456'
           ) as any;
 
-          if (decoded.id !== customer._id.toString() || decoded.purpose !== 'customer_profile_update') {
+          const custId = customer.id || customer._id;
+          if (decoded.id !== custId || decoded.purpose !== 'customer_profile_update') {
             return res.status(403).json({
               success: false,
               message: 'Invalid or expired verification session. Please verify with OTP again.'
@@ -125,47 +116,53 @@ export const updateCustomer = async (req: AuthRequest, res: Response, next: Next
       }
     }
 
+    const updates: any = {};
+
     // Check duplicate email or phone if updated
     if (email && email.toLowerCase().trim() !== customer.email) {
-      const emailExists = await Customer.findOne({ email: email.toLowerCase().trim() });
-      if (emailExists) return res.status(400).json({ success: false, message: 'Email already in use' });
-      customer.email = email.toLowerCase().trim();
+      const emailExists = await findCustomerByEmail(email.toLowerCase().trim());
+      if (emailExists && (emailExists.id || emailExists._id) !== id) {
+        return res.status(400).json({ success: false, message: 'Email already in use' });
+      }
+      updates.email = email.toLowerCase().trim();
     }
 
     if (phone && phone.trim() !== customer.phone) {
-      const phoneExists = await Customer.findOne({ phone: phone.trim() });
-      if (phoneExists) return res.status(400).json({ success: false, message: 'Phone number already in use' });
-      customer.phone = phone.trim();
+      const phoneExists = await findCustomerByPhone(phone.trim());
+      if (phoneExists && (phoneExists.id || phoneExists._id) !== id) {
+        return res.status(400).json({ success: false, message: 'Phone number already in use' });
+      }
+      updates.phone = phone.trim();
     }
 
-    if (name) customer.name = name.trim();
-    if (address) customer.address = address.trim();
+    if (name) updates.name = name.trim();
+    if (address) updates.address = address.trim();
     if (password) {
-      customer.password = password;
-      customer.forcedPasswordReset = false;
+      updates.password = password;
+      updates.forcedPasswordReset = false;
     }
 
     // Check profile image upload (from multer)
     if (req.file) {
-      // Save local path e.g. /uploads/filename.ext
-      customer.profilePicture = `/uploads/${req.file.filename}`;
+      updates.profilePicture = `/uploads/${req.file.filename}`;
     }
 
-    await customer.save();
+    const updated = await repoUpdateCustomer(id, updates);
 
-
-    req.app.get('io').emit('DATA_UPDATED');
+    req.app.get('io')?.emit('DATA_UPDATED');
+    const custId = updated?.id || updated?._id || id;
     res.status(200).json({
       success: true,
       message: 'Profile updated successfully',
       customer: {
-        id: customer._id,
-        customerId: customer.customerId,
-        name: customer.name,
-        email: customer.email,
-        phone: customer.phone,
-        address: customer.address,
-        profilePicture: customer.profilePicture
+        id: custId,
+        _id: custId,
+        customerId: updated?.customerId,
+        name: updated?.name,
+        email: updated?.email,
+        phone: updated?.phone,
+        address: updated?.address,
+        profilePicture: updated?.profilePicture
       }
     });
 
@@ -175,7 +172,7 @@ export const updateCustomer = async (req: AuthRequest, res: Response, next: Next
 };
 
 /**
- * Get All Customers (Admin Only, supports search, filter and pagination)
+ * Get All Customers (Admin Only, supports search and pagination)
  */
 export const getCustomers = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -183,34 +180,17 @@ export const getCustomers = async (req: AuthRequest, res: Response, next: NextFu
     const limit = parseInt(req.query.limit as string) || 10;
     const search = (req.query.search as string) || '';
 
-    const skip = (page - 1) * limit;
-
-    const query: any = {};
-
-    // Status filter removed
-
-    if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
-        { phone: { $regex: search, $options: 'i' } },
-        { customerId: { $regex: search, $options: 'i' } }
-      ];
-    }
-
-    const total = await Customer.countDocuments(query);
-    const customers = await Customer.find(query)
-      .select('-password')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
+    const result = await findCustomersPaginated({ page, limit, search });
 
     res.status(200).json({
       success: true,
-      total,
-      page,
-      pages: Math.ceil(total / limit),
-      customers
+      total: result.total,
+      page: result.page,
+      pages: result.pages,
+      customers: result.customers.map((c) => {
+        const { password, ...safe } = c as any;
+        return safe;
+      })
     });
 
   } catch (error) {
@@ -229,18 +209,18 @@ export const getCustomerById = async (req: AuthRequest, res: Response, next: Nex
       return res.status(403).json({ success: false, message: 'Not authorized to view other customer details' });
     }
 
-    const customer = await Customer.findById(id).select('-password');
+    const customer = await findCustomerById(id);
     if (!customer) {
       return res.status(404).json({ success: false, message: 'Customer not found' });
     }
 
     // Retrieve financial metrics
-    const invoices = await Invoice.find({ customer: id });
-    const orders = await Order.find({ customer: id });
+    const invoices = await findInvoicesByCustomerId(id);
+    const orders = await findOrdersByCustomerId(id);
 
     let totalPackages = 0;
-    orders.forEach(o => {
-      totalPackages += o.quantity;
+    orders.forEach((o) => {
+      totalPackages += Number(o.quantity) || 0;
     });
 
     let totalInvoices = invoices.length;
@@ -250,12 +230,12 @@ export const getCustomerById = async (req: AuthRequest, res: Response, next: Nex
     let totalPaid = 0;
     let remainingBalance = 0;
 
-    invoices.forEach(inv => {
-      totalPurchased += inv.finalAmount;
-      totalPaid += inv.paidAmount;
-      remainingBalance += inv.remainingAmount;
+    invoices.forEach((inv) => {
+      totalPurchased += Number(inv.finalAmount) || 0;
+      totalPaid += Number(inv.paidAmount) || 0;
+      remainingBalance += Number(inv.remainingAmount) || 0;
 
-      if (inv.remainingAmount === 0) {
+      if (inv.remainingAmount <= 0) {
         completedPaymentsCount++;
       } else {
         pendingPaymentsCount++;
@@ -281,39 +261,44 @@ export const getCustomerById = async (req: AuthRequest, res: Response, next: Nex
     }
 
     // Filter invoices by this customer in the last 6 months
-    const recentInvoices = await Invoice.find({ customer: id, createdAt: { $gte: sixMonthsAgo } });
-    recentInvoices.forEach(inv => {
+    invoices.forEach((inv) => {
       const date = new Date(inv.createdAt);
-      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const name = `${monthNames[date.getMonth()]} ${date.getFullYear().toString().substring(2)}`;
-      
-      if (!monthlyData[key]) {
-        monthlyData[key] = { month: name, purchases: 0, payments: 0 };
+      if (date >= sixMonthsAgo) {
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const name = `${monthNames[date.getMonth()]} ${date.getFullYear().toString().substring(2)}`;
+        
+        if (!monthlyData[key]) {
+          monthlyData[key] = { month: name, purchases: 0, payments: 0 };
+        }
+        monthlyData[key].purchases += Number(inv.finalAmount) || 0;
       }
-      monthlyData[key].purchases += inv.finalAmount;
     });
 
-    // Filter payments by this customer in the last 6 months (for chart accuracy)
-    const sixMonthPayments = await Payment.find({ customer: id, date: { $gte: sixMonthsAgo } });
-    sixMonthPayments.forEach(pay => {
+    // Filter payments by this customer in the last 6 months
+    const payments = await findPaymentsByCustomerId(id);
+    payments.forEach((pay) => {
       const date = new Date(pay.date);
-      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const name = `${monthNames[date.getMonth()]} ${date.getFullYear().toString().substring(2)}`;
+      if (date >= sixMonthsAgo) {
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const name = `${monthNames[date.getMonth()]} ${date.getFullYear().toString().substring(2)}`;
 
-      if (!monthlyData[key]) {
-        monthlyData[key] = { month: name, purchases: 0, payments: 0 };
+        if (!monthlyData[key]) {
+          monthlyData[key] = { month: name, purchases: 0, payments: 0 };
+        }
+        monthlyData[key].payments += Number(pay.amount) || 0;
       }
-      monthlyData[key].payments += pay.amount;
     });
 
     // Sort chart data
     const chartData = Object.keys(monthlyData)
       .sort()
-      .map(k => monthlyData[k]);
+      .map((k) => monthlyData[k]);
+
+    const { password, ...safeCustomer } = customer as any;
 
     res.status(200).json({
       success: true,
-      customer,
+      customer: safeCustomer,
       metrics: {
         totalInvoices,
         pendingPaymentsCount,
@@ -343,17 +328,18 @@ export const updateCustomerStatus = async (req: AuthRequest, res: Response, next
       return res.status(400).json({ success: false, message: 'Invalid status value' });
     }
 
-    const customer = await Customer.findById(id);
+    const customer = await repoUpdateCustomer(id, { status });
     if (!customer) {
       return res.status(404).json({ success: false, message: 'Customer not found' });
     }
 
-    req.app.get('io').emit('DATA_UPDATED');
+    req.app.get('io')?.emit('DATA_UPDATED');
     res.status(200).json({
       success: true,
-      message: `Status update deprecated.`,
+      message: `Status updated successfully.`,
       customer: {
-        id: customer._id,
+        id: customer.id || customer._id,
+        _id: customer.id || customer._id,
         customerId: customer.customerId
       }
     });
@@ -364,7 +350,7 @@ export const updateCustomerStatus = async (req: AuthRequest, res: Response, next
 };
 
 /**
- * Force Password Reset or Reset Customer Password (Admin Only)
+ * Reset Customer Password (Admin Only)
  */
 export const resetCustomerPassword = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
@@ -375,22 +361,20 @@ export const resetCustomerPassword = async (req: AuthRequest, res: Response, nex
       return res.status(400).json({ success: false, message: 'New password is required' });
     }
 
-    const customer = await Customer.findById(id);
+    const customer = await findCustomerById(id);
     if (!customer) {
       return res.status(404).json({ success: false, message: 'Customer not found' });
     }
 
-    customer.password = newPassword; // gets hashed by save middleware
-    if (forceReset !== undefined) {
-      customer.forcedPasswordReset = forceReset;
-    }
-    await customer.save();
+    const updated = await repoUpdateCustomer(id, {
+      password: newPassword,
+      forcedPasswordReset: forceReset !== undefined ? forceReset : false,
+    });
 
-
-    req.app.get('io').emit('DATA_UPDATED');
+    req.app.get('io')?.emit('DATA_UPDATED');
     res.status(200).json({
       success: true,
-      message: `Password successfully reset for Customer ${customer.name}. Last Password Change Date: ${customer.lastPasswordChangeDate}`
+      message: `Password successfully reset for Customer ${customer.name}. Last Password Change Date: ${updated?.lastPasswordChangeDate}`
     });
 
   } catch (error) {
@@ -405,25 +389,27 @@ export const deleteCustomer = async (req: AuthRequest, res: Response, next: Next
   try {
     const { id } = req.params;
 
-    const customer = await Customer.findById(id);
+    const customer = await findCustomerById(id);
     if (!customer) {
       return res.status(404).json({ success: false, message: 'Customer not found' });
     }
 
     // Check if customer has outstanding invoices
-    const outstandingInvoices = await Invoice.countDocuments({ customer: id, remainingAmount: { $gt: 0 } });
-    if (outstandingInvoices > 0) {
+    const customerInvoices = await findInvoicesByCustomerId(id);
+    const outstandingInvoices = customerInvoices.filter((i) => i.remainingAmount > 0);
+    if (outstandingInvoices.length > 0) {
       return res.status(400).json({ success: false, message: 'Cannot delete customer with pending/outstanding invoices' });
     }
 
     // Delete customer
-    await Customer.findByIdAndDelete(id);
+    await repoDeleteCustomer(id);
 
-    // Clean up all completed invoices for this customer
-    await Invoice.deleteMany({ customer: id });
+    // Clean up completed invoices for this customer
+    for (const inv of customerInvoices) {
+      await deleteInvoice(inv.id || inv._id || '');
+    }
 
-
-    req.app.get('io').emit('DATA_UPDATED');
+    req.app.get('io')?.emit('DATA_UPDATED');
     res.status(200).json({
       success: true,
       message: 'Customer and related records deleted successfully'

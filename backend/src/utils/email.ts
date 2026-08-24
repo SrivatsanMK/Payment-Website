@@ -1,5 +1,5 @@
 import transporter from '../config/mail';
-import Admin from '../models/Admin';
+import { findAllAdmins } from '../repositories/adminRepository';
 
 interface EmailOptions {
   to: string;
@@ -343,14 +343,15 @@ export const sendInvoiceUpdateEmail = async (
  * Sends an alert to the Admin when a customer clicks the "Pay via UPI Apps" button.
  */
 /**
- * Fetch all unique registered admin email addresses from MongoDB (ADMIN_1 and ADMIN_2)
+ * Fetch all unique registered admin email addresses from DynamoDB (ADMIN_1 and ADMIN_2)
  */
 export const getAdminEmails = async (): Promise<string[]> => {
   try {
-    const admins = await Admin.find({ role: { $in: ['ADMIN_1', 'ADMIN_2'] } }).select('email');
+    const admins = await findAllAdmins();
     const emails = admins
-      .map(a => a.email ? a.email.toLowerCase().trim() : '')
-      .filter(e => e.length > 0);
+      .filter(a => ['ADMIN_1', 'ADMIN_2'].includes(a.role))
+      .map(a => (a.email ? a.email.toLowerCase().trim() : ''))
+      .filter((e: string) => e.length > 0);
     return Array.from(new Set(emails));
   } catch (err) {
     console.error('Error fetching admin emails:', err);

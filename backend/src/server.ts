@@ -6,7 +6,13 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
-import connectDB from './config/db';
+
+// Import DynamoDB Client & Seeding functions
+import { testDynamoConnection } from './config/dynamoClient';
+import { seedDefaultAdminsIfEmpty } from './repositories/adminRepository';
+import { seedDefaultCategoriesIfEmpty } from './repositories/categoryRepository';
+import { getGlobalSettings, getPrivateBusinessSettings } from './repositories/settingRepository';
+import { initCleanupService } from './services/cleanupService';
 
 // Import Middlewares
 import { errorHandler, notFound } from './middleware/errorMiddleware';
@@ -23,130 +29,39 @@ import expenseRoutes from './routes/expenseRoutes';
 import privateBusinessRoutes from './routes/privateBusinessRoutes';
 import categoryRoutes from './routes/categoryRoutes';
 
-import Admin from './models/Admin';
-import Customer from './models/Customer';
-import PrivateBusinessSetting from './models/PrivateBusinessSetting';
-import ProductCategory from './models/ProductCategory';
-import { initCleanupService } from './services/cleanupService';
-
 // Load Env variables
 dotenv.config();
 
-// Connect to Database then run startup tasks
-connectDB().then(async () => {
+// Initialize DynamoDB and run startup seeders
+(async () => {
   try {
-    // ── 1. Admin display-name normalization ──────────────────────────────────
-    const srivatsanAdmins = await Admin.find({
-      $or: [
-        { displayName: /srivatsan/i },
-        { username: /srivatsan/i }
-      ]
-    });
-    for (const a of srivatsanAdmins) {
-      if (a.role === 'ADMIN_2') {
-        a.displayName = 'Hrithik Admin';
-        if (a.username.toLowerCase().includes('srivatsan')) a.username = 'partner';
-      } else {
-        a.displayName = 'Akash Admin';
-        if (a.username.toLowerCase().includes('srivatsan')) a.username = 'admin';
-      }
-      await a.save();
-    }
-    await Admin.updateMany({ role: 'ADMIN_1' }, { $set: { displayName: 'Akash Admin' } });
-    await Admin.updateMany({ role: 'ADMIN_2' }, { $set: { displayName: 'Hrithik Admin' } });
+    console.log('[Startup] Connecting to Amazon DynamoDB...');
+    await testDynamoConnection();
 
-    // ── 2. Business name normalization ───────────────────────────────────────
-    await PrivateBusinessSetting.updateMany(
-      { $or: [{ businessName: 'Private Business' }, { businessName: 'Prime Harvest Organic' }] },
-      { $set: { businessName: 'Prime Harvest Organics' } }
-    );
+    // 1. Seed default Admins (ADMIN_1: Akash Admin, ADMIN_2: Hrithik Admin) if empty
+    await seedDefaultAdminsIfEmpty();
 
-    // ── 3. One-time data migration: remove legacy login-history fields ───────
-    //    Remove lastLogin and recentLogins from ALL Admin documents
-    const adminLoginCleanup = await Admin.updateMany(
-      { $or: [{ lastLogin: { $exists: true } }, { recentLogins: { $exists: true } }] },
-      { $unset: { lastLogin: '', recentLogins: '' } }
-    );
-    if (adminLoginCleanup.modifiedCount > 0) {
-      console.log(`[Migration] Removed login history from ${adminLoginCleanup.modifiedCount} admin document(s).`);
-    }
+    // 2. Seed default Categories (Flowers + Vegetables) if empty
+    await seedDefaultCategoriesIfEmpty();
 
-    //    Remove lastLogin and recentLogins from ALL Customer documents
-    const customerLoginCleanup = await Customer.updateMany(
-      { $or: [{ lastLogin: { $exists: true } }, { recentLogins: { $exists: true } }] },
-      { $unset: { lastLogin: '', recentLogins: '' } }
-    );
-    if (customerLoginCleanup.modifiedCount > 0) {
-      console.log(`[Migration] Removed login history from ${customerLoginCleanup.modifiedCount} customer document(s).`);
-    }
+    // 3. Ensure default Green Glide Settings and Private Business settings exist
+    await getGlobalSettings();
+    await getPrivateBusinessSettings('default');
 
-    // ── 4. One-time data migration: drop ActivityLog collection from MongoDB ─
-    try {
-      const mongoose = await import('mongoose');
-      const db = mongoose.default.connection.db;
-      if (db) {
-        const collections = await db.listCollections({ name: 'activitylogs' }).toArray();
-        if (collections.length > 0) {
-          try {
-            await db.collection('activitylogs').drop();
-            console.log('[Migration] Dropped ActivityLog collection from MongoDB.');
-          } catch {
-            const result = await db.collection('activitylogs').deleteMany({});
-            console.log(`[Migration] Deleted ${result.deletedCount} ActivityLog document(s) from MongoDB.`);
-          }
-        }
-      }
-    } catch (alErr) {
-      console.error('[Migration] ActivityLog cleanup error (non-fatal):', alErr);
-    }
-
-    // ── 5. Seed default Categories (Flowers + Vegetables) if none exist ────
-    try {
-      const categoryCount = await ProductCategory.countDocuments();
-      if (categoryCount === 0) {
-        await ProductCategory.insertMany([
-          {
-            name: 'Flowers',
-            isActive: true,
-            items: [
-              { name: 'Chrysanthemum', colors: ['Yellow', 'White', 'Purple'], unit: 'grams', isActive: true },
-              { name: 'Button Rose', colors: ['vibrant red', 'soft pink', 'pure white', 'sunny yellow', 'cheerful orange'], unit: 'grams', isActive: true },
-              { name: 'Lily', colors: ['white', 'yellow', 'orange', 'pink', 'red', 'purple'], unit: 'grams', isActive: true },
-              { name: 'Marigold', colors: ['yellow', 'orange'], unit: 'grams', isActive: true },
-            ],
-          },
-          {
-            name: 'Vegetables',
-            isActive: true,
-            items: [
-              { name: 'Cabbage', colors: [], unit: 'kg', isActive: true },
-              { name: 'Carrot', colors: [], unit: 'kg', isActive: true },
-              { name: 'Potato', colors: [], unit: 'kg', isActive: true },
-              { name: 'Onion', colors: [], unit: 'kg', isActive: true },
-              { name: 'Tomato', colors: [], unit: 'kg', isActive: true },
-            ],
-          },
-        ]);
-        console.log('[Startup] Seeded default Flowers and Vegetables categories.');
-      }
-    } catch (seedErr) {
-      console.error('[Startup] Category seed error (non-fatal):', seedErr);
-    }
-
-    console.log('[Startup] Database migrations complete.');
-  } catch (err) {
-    console.error('[Startup] Migration error:', err);
+    console.log('[Startup] DynamoDB initialization and bootstrap complete.');
+  } catch (err: any) {
+    console.error('[Startup] DynamoDB initialization warning:', err.message);
   }
 
-  // ── 5. Initialise persistent daily cleanup service ───────────────────────
+  // 4. Initialise persistent daily cleanup service
   initCleanupService();
-});
+})();
 
 const app = express();
 
 // Security Middlewares
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" } // allows serving static local images to external react app
+  crossOriginResourcePolicy: { policy: 'cross-origin' } // allows serving static local images to external react app
 }));
 
 // CORS Configuration
@@ -224,7 +139,7 @@ app.use('/api/categories', categoryRoutes);
 
 // Root route
 app.get('/', (req, res) => {
-  res.status(200).json({ status: 'success', message: 'Green Glide Logistics API is active' });
+  res.status(200).json({ status: 'success', message: 'Green Glide Logistics API is active (DynamoDB)' });
 });
 
 // Catch 404 Route

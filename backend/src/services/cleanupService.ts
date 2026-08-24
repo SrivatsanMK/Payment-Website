@@ -8,7 +8,7 @@
  *  1. QR Code Expiry   — Delete uploaded QR code images + clear Invoice.qrCodeImage
  *                        7 days after paymentApprovedAt.
  *  2. OTP Safety Sweep — Delete any OTP records older than 30 days
- *                        (safety net beyond the 5-min security TTL).
+ *                        (safety net beyond the DynamoDB TTL).
  *
  * Rules:
  *  - Missing files are handled gracefully (no crash, logged and skipped).
@@ -19,8 +19,8 @@
 import cron from 'node-cron';
 import path from 'path';
 import fs from 'fs';
-import Invoice from '../models/Invoice';
-import OTP from '../models/OTP';
+import { findExpiredQrCodes, clearQrCodeImage } from '../repositories/invoiceRepository';
+import { deleteStaleOtps } from '../repositories/otpRepository';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -53,11 +53,8 @@ async function cleanupExpiredQrCodes(): Promise<void> {
     const cutoff = new Date(Date.now() - SEVEN_DAYS_MS);
 
     // Find invoices where payment was approved more than 7 days ago
-    // AND a qrCodeImage reference still exists in MongoDB
-    const expiredInvoices = await Invoice.find({
-      paymentApprovedAt: { $lte: cutoff },
-      qrCodeImage: { $exists: true, $ne: '' }
-    }).lean();
+    // AND a qrCodeImage reference still exists in DynamoDB
+    const expiredInvoices = await findExpiredQrCodes(cutoff);
 
     if (expiredInvoices.length === 0) {
       console.log(`${tag} No expired QR codes found.`);
@@ -67,10 +64,9 @@ async function cleanupExpiredQrCodes(): Promise<void> {
     console.log(`${tag} Found ${expiredInvoices.length} invoice(s) with expired QR codes.`);
 
     for (const invoice of expiredInvoices) {
-      const qrPath: string = (invoice as any).qrCodeImage || '';
+      const qrPath: string = invoice.qrCodeImage || '';
       if (!qrPath) continue;
 
-      // Build absolute filesystem path from the relative URL path (/uploads/xxx.png)
       const relativePath = qrPath.startsWith('/') ? qrPath.slice(1) : qrPath;
       const absolutePath = path.join(UPLOADS_DIR, path.basename(relativePath));
 
@@ -78,16 +74,13 @@ async function cleanupExpiredQrCodes(): Promise<void> {
       if (deleted) {
         console.log(`${tag} Deleted physical file: ${absolutePath}`);
       } else {
-        console.log(`${tag} Physical file not found (stale ref): ${absolutePath} — will clear MongoDB ref.`);
+        console.log(`${tag} Physical file not found (stale ref): ${absolutePath} — will clear DynamoDB ref.`);
       }
 
-      // Clear the MongoDB reference regardless of whether the file existed
-      await Invoice.updateOne(
-        { _id: (invoice as any)._id },
-        { $unset: { qrCodeImage: '' } }
-      );
+      const invId = invoice.id || invoice._id || '';
+      await clearQrCodeImage(invId);
 
-      console.log(`${tag} Cleared qrCodeImage ref for invoice ${(invoice as any).invoiceNumber}`);
+      console.log(`${tag} Cleared qrCodeImage ref for invoice ${invoice.invoiceNumber}`);
     }
 
     console.log(`${tag} Cleanup complete. Processed ${expiredInvoices.length} invoice(s).`);
@@ -102,13 +95,10 @@ async function cleanupOldOtpRecords(): Promise<void> {
   const tag = '[Cleanup:OTP]';
   try {
     const cutoff = new Date(Date.now() - THIRTY_DAYS_MS);
+    const deletedCount = await deleteStaleOtps(cutoff);
 
-    // The OTP TTL index auto-deletes on expiresAt, but this ensures
-    // any orphaned records older than 30 days are removed as a safety net.
-    const result = await OTP.deleteMany({ createdAt: { $lte: cutoff } });
-
-    if (result.deletedCount > 0) {
-      console.log(`${tag} Deleted ${result.deletedCount} stale OTP record(s) older than 30 days.`);
+    if (deletedCount > 0) {
+      console.log(`${tag} Deleted ${deletedCount} stale OTP record(s) older than 30 days.`);
     } else {
       console.log(`${tag} No stale OTP records found.`);
     }
@@ -128,23 +118,17 @@ async function runDailyCleanup(): Promise<void> {
 
 // ─── Export: initialise the cron schedule ────────────────────────────────────
 
-/**
- * Call this once after the database connection is established.
- * Schedules the cleanup to run every day at 02:00 AM server time.
- * Also runs once immediately on startup to catch anything that expired
- * while the server was offline.
- */
 export function initCleanupService(): void {
   console.log('[Cleanup] Initialising daily cleanup service (runs daily at 02:00 AM)…');
 
   // Run immediately on startup (catches expiries from any server downtime)
-  runDailyCleanup().catch(err =>
+  runDailyCleanup().catch((err) =>
     console.error('[Cleanup] Startup run error:', err)
   );
 
   // Schedule to run every day at 2:00 AM
   cron.schedule('0 2 * * *', () => {
-    runDailyCleanup().catch(err =>
+    runDailyCleanup().catch((err) =>
       console.error('[Cleanup] Scheduled run error:', err)
     );
   }, {

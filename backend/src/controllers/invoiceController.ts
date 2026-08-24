@@ -1,26 +1,28 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../types';
-import Invoice from '../models/Invoice';
-import Customer from '../models/Customer';
-import Order from '../models/Order';
-import Notification from '../models/Notification';
+import {
+  createInvoice as repoCreateInvoice,
+  findInvoiceById,
+  findInvoicesPaginated,
+  updateInvoice as repoUpdateInvoice,
+  deleteInvoice as repoDeleteInvoice,
+} from '../repositories/invoiceRepository';
+import { findCustomerById } from '../repositories/customerRepository';
+import {
+  createOrdersBulk,
+  findAllOrders,
+  findOrdersByCustomerId,
+  updateOrderStatusByInvoiceNumber,
+  deleteOrdersByInvoiceNumber,
+} from '../repositories/orderRepository';
+import {
+  createPayment as repoCreatePayment,
+  findPaymentsByInvoiceNumbersBulk,
+  findPaymentsByInvoiceNumber,
+} from '../repositories/paymentRepository';
+import { createNotification } from '../repositories/notificationRepository';
+import { findAdminById } from '../repositories/adminRepository';
 import { sendInvoiceEmail, sendInvoiceUpdateEmail, sendPaymentConfirmationWithPdfEmail } from '../utils/email';
-import Payment from '../models/Payment';
-
-/**
- * Generate unique Invoice Number
- */
-const generateInvoiceNumber = async (): Promise<string> => {
-  let uniqueNum = '';
-  let exists = true;
-  while (exists) {
-    const randomVal = Math.floor(100000 + Math.random() * 900000); // 6 digits
-    uniqueNum = `INV-${randomVal}`;
-    const check = await Invoice.findOne({ invoiceNumber: uniqueNum });
-    if (!check) exists = false;
-  }
-  return uniqueNum;
-};
 
 /**
  * Create Invoice (Admin Only)
@@ -46,27 +48,24 @@ export const createInvoice = async (req: AuthRequest, res: Response, next: NextF
       qrCodeImage = `/uploads/${req.file.filename}`;
     }
 
-    const customer = await Customer.findById(customerId);
+    const customer = await findCustomerById(customerId);
     if (!customer) {
       return res.status(404).json({ success: false, message: 'Customer not found' });
     }
 
     // Calculate final amount
-    // products: Array of { name, quantity, price }
     let subtotal = 0;
     products.forEach((p: any) => {
-      subtotal += p.price * p.quantity;
+      subtotal += (Number(p.price) || 0) * (Number(p.quantity) || 0);
     });
 
     const discountAmount = parseFloat(discount as any) || 0;
-    const gstRate = parseFloat(gst as any) || 0; // percentage, e.g. 18
+    const gstRate = parseFloat(gst as any) || 0;
 
-    // Final = (Subtotal - Discount) * (1 + GST/100)
     const afterDiscount = Math.max(0, subtotal - discountAmount);
     const gstAmount = afterDiscount * (gstRate / 100);
     const finalAmount = afterDiscount + gstAmount;
 
-    const invoiceNumber = await generateInvoiceNumber();
     const invoiceDate = new Date();
 
     const finalDeliveryAddress = (deliveryAddress !== undefined && deliveryAddress !== null && String(deliveryAddress).trim() !== '')
@@ -87,9 +86,35 @@ export const createInvoice = async (req: AuthRequest, res: Response, next: NextF
     }
     const finalTransportMode = (transportMode || 'Road').trim();
 
-    const invoice = await Invoice.create({
-      invoiceNumber,
-      customer: customer._id,
+    // Admin createdBy snapshot
+    let createdBySnapshot: any = req.user?.id;
+    if (req.user?.id) {
+      const admin = await findAdminById(req.user.id);
+      if (admin) {
+        createdBySnapshot = {
+          _id: admin.id || admin._id,
+          id: admin.id || admin._id,
+          username: admin.username,
+          displayName: admin.displayName || admin.username,
+          role: admin.role,
+          email: admin.email,
+          adminId: admin.adminId,
+        };
+      }
+    }
+
+    const invoice = await repoCreateInvoice({
+      customerId: customer.id || customer._id,
+      customer: {
+        _id: customer.id || customer._id,
+        id: customer.id || customer._id,
+        customerId: customer.customerId,
+        name: customer.name,
+        email: customer.email,
+        phone: customer.phone,
+        address: customer.address,
+        gstNumber: customer.gstNumber,
+      },
       products,
       discount: discountAmount,
       gst: gstRate,
@@ -101,41 +126,57 @@ export const createInvoice = async (req: AuthRequest, res: Response, next: NextF
       shippedAddress: finalDeliveryAddress,
       vehicleNumber: finalVehicleNumber,
       transportMode: finalTransportMode,
-      dueDate: dueDate ? new Date(dueDate) : invoiceDate,
-      createdBy: req.user?.id
+      dueDate: dueDate ? new Date(dueDate).toISOString() : invoiceDate.toISOString(),
+      createdBy: createdBySnapshot,
     });
 
-    // Create Order records for each product item so it reflects in Order History
+    // Create Order records for each product item
+    const orderItemsToCreate: any[] = [];
     for (const p of products) {
-      const orderSubtotal = p.price * p.quantity;
+      const orderSubtotal = (Number(p.price) || 0) * (Number(p.quantity) || 0);
       const orderDiscountShare = subtotal > 0 ? (orderSubtotal / subtotal) * discountAmount : 0;
       const orderAfterDiscount = Math.max(0, orderSubtotal - orderDiscountShare);
       const orderGstShare = orderAfterDiscount * (gstRate / 100);
       const orderGrandTotal = orderAfterDiscount + orderGstShare;
 
-      const orderNumber = `ORD-${Math.floor(100000 + Math.random() * 900000)}`;
-
-      await Order.create({
-        orderNumber,
+      orderItemsToCreate.push({
         invoiceNumber: invoice.invoiceNumber,
-        customer: customer._id,
+        customerId: customer.id || customer._id,
+        customer: {
+          _id: customer.id || customer._id,
+          id: customer.id || customer._id,
+          customerId: customer.customerId,
+          name: customer.name,
+          email: customer.email,
+          phone: customer.phone,
+          address: customer.address,
+          gstNumber: customer.gstNumber,
+        },
         productName: p.name,
         category: p.category || '',
-        quantity: p.quantity,
-        price: p.price,
+        quantity: Number(p.quantity) || 0,
+        price: Number(p.price) || 0,
         discount: orderDiscountShare,
         gst: orderGstShare,
         grandTotal: orderGrandTotal,
-        purchaseDate: invoiceDate
+        purchaseDate: invoiceDate.toISOString(),
+        invoiceStatus: 'Pending',
       });
     }
 
+    await createOrdersBulk(orderItemsToCreate);
+
     // Create Notification for customer
     const formattedAmount = finalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 });
-    await Notification.create({
-      customer: customer._id,
+    await createNotification({
+      customerId: customer.id || customer._id,
+      customer: {
+        _id: customer.id || customer._id,
+        customerId: customer.customerId,
+        name: customer.name,
+      },
       title: 'New Invoice Received',
-      message: `Invoice ${invoiceNumber} for ₹${formattedAmount} has been generated.`
+      message: `Invoice ${invoice.invoiceNumber} for ₹${formattedAmount} has been generated.`
     });
 
     // Send Email Notification
@@ -143,7 +184,7 @@ export const createInvoice = async (req: AuthRequest, res: Response, next: NextF
       await sendInvoiceEmail(
         customer.email,
         customer.name,
-        invoiceNumber,
+        invoice.invoiceNumber,
         finalAmount,
         invoiceDate.toLocaleDateString(),
         products,
@@ -155,8 +196,7 @@ export const createInvoice = async (req: AuthRequest, res: Response, next: NextF
       console.error('Invoice email error (non-fatal):', emailErr);
     }
 
-
-    req.app.get('io').emit('DATA_UPDATED');
+    req.app.get('io')?.emit('DATA_UPDATED');
     res.status(200).json({
       success: true,
       message: 'Invoice created successfully',
@@ -169,114 +209,58 @@ export const createInvoice = async (req: AuthRequest, res: Response, next: NextF
 };
 
 /**
- * List Invoices (Admin sees all with createdBy/approvedBy, Customer sees their own without admin audit fields)
+ * List Invoices
  */
 export const getInvoices = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
     const search = (req.query.search as string) || '';
-    const dateFilter = (req.query.dateFilter as string) || ''; // 'today', 'this_month', 'custom'
+    const dateFilter = (req.query.dateFilter as string) || '';
     const startDate = (req.query.startDate as string) || '';
     const endDate = (req.query.endDate as string) || '';
     const status = (req.query.status as string) || '';
 
-    const skip = (page - 1) * limit;
-    const query: any = {};
-
     const isAdmin = ['ADMIN_1', 'ADMIN_2'].includes(req.user?.role || '');
+    const customerId = req.user?.role === 'Customer' ? req.user.id : (req.query.customer as string);
 
-    // Role restrictions: Customer only sees their own invoices
-    if (req.user?.role === 'Customer') {
-      query.customer = req.user.id;
-    } else if (req.query.customer) {
-      // Admin filter by specific customer
-      query.customer = req.query.customer;
-    }
+    const result = await findInvoicesPaginated({
+      page,
+      limit,
+      search,
+      dateFilter,
+      startDate,
+      endDate,
+      status,
+      customerId,
+      isAdmin,
+    });
 
-    // Status filter: unpaid vs paid
-    if (status) {
-      const lowerStatus = status.toLowerCase();
-      if (lowerStatus === 'unpaid' || lowerStatus === 'pending') {
-        query.remainingAmount = { $gt: 0 };
-      } else if (lowerStatus === 'paid') {
-        query.remainingAmount = { $lte: 0 };
-      }
-    }
-
-    // Date range filter
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const todayEnd = new Date();
-    todayEnd.setHours(23, 59, 59, 999);
-
-    if (dateFilter === 'today') {
-      query.createdAt = { $gte: todayStart, $lte: todayEnd };
-    } else if (dateFilter === 'this_month') {
-      const now = new Date();
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-      query.createdAt = { $gte: startOfMonth, $lte: endOfMonth };
-    } else if (dateFilter === 'custom' && startDate && endDate) {
-      query.createdAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
-    }
-
-    // Search (by invoice number or customer name)
-    if (search) {
-      if (isAdmin) {
-        const matchingCustomers = await Customer.find({
-          $or: [
-            { name: { $regex: search, $options: 'i' } },
-            { customerId: { $regex: search, $options: 'i' } }
-          ]
-        }).select('_id');
-        
-        const customerIds = matchingCustomers.map(c => c._id);
-        
-        query.$or = [
-          { invoiceNumber: { $regex: search, $options: 'i' } },
-          { customer: { $in: customerIds } }
-        ];
-      } else {
-        query.invoiceNumber = { $regex: search, $options: 'i' };
-      }
-    }
-
-    const total = await Invoice.countDocuments(query);
-    const rawInvoices = await Invoice.find(query)
-      .populate('customer', 'customerId name email phone address gstNumber')
-      .populate('createdBy', 'username displayName role email adminId')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
-
-    // Fetch corresponding payments to resolve approvedBy for each invoice (Admin Only)
     let processedInvoices: any[] = [];
     if (isAdmin) {
-      const invoiceNumbers = rawInvoices.map(inv => inv.invoiceNumber);
-      const payments = await Payment.find({ invoiceNumber: { $in: invoiceNumbers } })
-        .populate('approvedBy', 'username displayName role email adminId');
+      const invoiceNumbers = result.invoices.map((inv) => inv.invoiceNumber);
+      const payments = await findPaymentsByInvoiceNumbersBulk(invoiceNumbers);
 
       const paymentMap: Record<string, any> = {};
-      payments.forEach(p => {
+      payments.forEach((p) => {
         if (p.approvedBy || !paymentMap[p.invoiceNumber]) {
           paymentMap[p.invoiceNumber] = p;
         }
       });
 
-      processedInvoices = rawInvoices.map(inv => {
-        const doc: any = inv.toObject();
+      processedInvoices = result.invoices.map((inv) => {
+        const doc: any = { ...inv };
         const linkedPayment = paymentMap[inv.invoiceNumber];
-        doc.status = (inv.remainingAmount === 0 || (inv.remainingAmount !== undefined && inv.remainingAmount <= 0)) ? 'Paid' : 'Unpaid';
+        doc.status = (inv.remainingAmount <= 0) ? 'Paid' : 'Unpaid';
         doc.approvedBy = linkedPayment?.approvedBy || null;
         doc.approvedAt = linkedPayment?.approvedAt || null;
         return doc;
       });
     } else {
-      // Customer: strictly sanitize and remove all admin audit fields
-      processedInvoices = rawInvoices.map(inv => {
-        const doc: any = inv.toObject();
-        doc.status = (inv.remainingAmount === 0 || (inv.remainingAmount !== undefined && inv.remainingAmount <= 0)) ? 'Paid' : 'Unpaid';
+      // Customer view
+      processedInvoices = result.invoices.map((inv) => {
+        const doc: any = { ...inv };
+        doc.status = (inv.remainingAmount <= 0) ? 'Paid' : 'Unpaid';
         delete doc.createdBy;
         delete doc.approvedBy;
         delete doc.approvedAt;
@@ -286,9 +270,9 @@ export const getInvoices = async (req: AuthRequest, res: Response, next: NextFun
 
     res.status(200).json({
       success: true,
-      total,
-      page,
-      pages: Math.ceil(total / limit),
+      total: result.total,
+      page: result.page,
+      pages: result.pages,
       invoices: processedInvoices
     });
 
@@ -305,27 +289,24 @@ export const getInvoiceById = async (req: AuthRequest, res: Response, next: Next
     const { id } = req.params;
     const isAdmin = ['ADMIN_1', 'ADMIN_2'].includes(req.user?.role || '');
 
-    const rawInvoice = await Invoice.findById(id)
-      .populate('customer', 'customerId name email phone address gstNumber')
-      .populate('createdBy', 'username displayName role email adminId');
-
+    const rawInvoice = await findInvoiceById(id);
     if (!rawInvoice) {
       return res.status(404).json({ success: false, message: 'Invoice not found' });
     }
 
     // Role check for customer
-    if (req.user?.role === 'Customer' && (rawInvoice.customer as any)._id.toString() !== req.user.id) {
+    if (req.user?.role === 'Customer' && rawInvoice.customerId !== req.user.id) {
       return res.status(403).json({ success: false, message: 'Access denied to view other invoices' });
     }
 
-    const doc: any = rawInvoice.toObject();
-    doc.status = (rawInvoice.remainingAmount === 0 || (rawInvoice.remainingAmount !== undefined && rawInvoice.remainingAmount <= 0)) ? 'Paid' : 'Unpaid';
+    const doc: any = { ...rawInvoice };
+    doc.status = (rawInvoice.remainingAmount <= 0) ? 'Paid' : 'Unpaid';
 
     if (isAdmin) {
-      const payment = await Payment.findOne({ invoiceNumber: rawInvoice.invoiceNumber })
-        .populate('approvedBy', 'username displayName role email adminId');
-      doc.approvedBy = payment?.approvedBy || null;
-      doc.approvedAt = payment?.approvedAt || null;
+      const payments = await findPaymentsByInvoiceNumber(rawInvoice.invoiceNumber);
+      const approvedPayment = payments.find((p) => p.approvedBy || p.approvedAt) || payments[0];
+      doc.approvedBy = approvedPayment?.approvedBy || null;
+      doc.approvedAt = approvedPayment?.approvedAt || null;
     } else {
       delete doc.createdBy;
       delete doc.approvedBy;
@@ -350,54 +331,46 @@ export const updateInvoice = async (req: AuthRequest, res: Response, next: NextF
     const { id } = req.params;
     const { products, discount, gst, dueDate, paidAmount, deliveryAddress, shippedAddress, vehicleNumber, vehicleNo, transportMode } = req.body;
 
-    const invoice = await Invoice.findById(id).populate('customer');
+    const invoice = await findInvoiceById(id);
     if (!invoice) {
       return res.status(404).json({ success: false, message: 'Invoice not found' });
     }
 
-    const customer: any = invoice.customer;
+    const customer = invoice.customer || (await findCustomerById(invoice.customerId));
 
-    // Save previous state to check changes
     const prevFinal = invoice.finalAmount;
     const prevRemaining = invoice.remainingAmount;
 
-    if (products && products.length) {
-      invoice.products = products;
-      
-      // Re-calculate final amount
-      let subtotal = 0;
-      products.forEach((p: any) => {
-        subtotal += p.price * p.quantity;
-      });
-      const discountAmount = discount !== undefined ? discount : invoice.discount;
-      const gstRate = gst !== undefined ? gst : invoice.gst;
+    let updatedProducts = products && products.length ? products : invoice.products;
+    let discountAmount = discount !== undefined ? Number(discount) : invoice.discount;
+    let gstRate = gst !== undefined ? Number(gst) : invoice.gst;
 
-      const afterDiscount = Math.max(0, subtotal - discountAmount);
-      const gstAmount = afterDiscount * (gstRate / 100);
-      invoice.finalAmount = afterDiscount + gstAmount;
-    } else {
-      // Just recalculate with previous products if discount/gst updated
-      if (discount !== undefined || gst !== undefined) {
-        let subtotal = 0;
-        invoice.products.forEach((p: any) => {
-          subtotal += p.price * p.quantity;
-        });
-        const discountAmount = discount !== undefined ? discount : invoice.discount;
-        const gstRate = gst !== undefined ? gst : invoice.gst;
+    let subtotal = 0;
+    updatedProducts.forEach((p: any) => {
+      subtotal += (Number(p.price) || 0) * (Number(p.quantity) || 0);
+    });
 
-        const afterDiscount = Math.max(0, subtotal - discountAmount);
-        const gstAmount = afterDiscount * (gstRate / 100);
-        invoice.finalAmount = afterDiscount + gstAmount;
-      }
-    }
+    const afterDiscount = Math.max(0, subtotal - discountAmount);
+    const gstAmount = afterDiscount * (gstRate / 100);
+    const finalAmount = afterDiscount + gstAmount;
 
-    if (discount !== undefined) invoice.discount = discount;
-    if (gst !== undefined) invoice.gst = gst;
-    if (dueDate) invoice.dueDate = new Date(dueDate);
+    const finalPaidAmount = paidAmount !== undefined ? Number(paidAmount) : invoice.paidAmount;
+    const remainingAmount = Math.max(0, finalAmount - finalPaidAmount);
+
+    const updates: any = {
+      products: updatedProducts,
+      discount: discountAmount,
+      gst: gstRate,
+      finalAmount,
+      paidAmount: finalPaidAmount,
+      remainingAmount,
+    };
+
+    if (dueDate) updates.dueDate = new Date(dueDate).toISOString();
     if (deliveryAddress !== undefined || shippedAddress !== undefined) {
       const addr = String(deliveryAddress !== undefined ? deliveryAddress : shippedAddress).trim();
-      (invoice as any).deliveryAddress = addr;
-      invoice.shippedAddress = addr;
+      updates.deliveryAddress = addr;
+      updates.shippedAddress = addr;
     }
     if (vehicleNumber !== undefined || vehicleNo !== undefined) {
       const vNum = String(vehicleNumber || vehicleNo || '').trim().toUpperCase();
@@ -410,52 +383,52 @@ export const updateInvoice = async (req: AuthRequest, res: Response, next: NextF
           });
         }
       }
-      invoice.vehicleNumber = vNum;
+      updates.vehicleNumber = vNum;
     }
-    if (transportMode !== undefined) invoice.transportMode = String(transportMode).trim();
+    if (transportMode !== undefined) updates.transportMode = String(transportMode).trim();
 
-    if (paidAmount !== undefined) {
-      invoice.paidAmount = paidAmount;
-    }
-
-    // Set remaining amount
-    invoice.remainingAmount = Math.max(0, invoice.finalAmount - invoice.paidAmount);
-    
-    await invoice.save();
+    const updated = await repoUpdateInvoice(id, updates);
 
     // Trigger Notification to Customer
     let changeMessage = `Invoice ${invoice.invoiceNumber} has been updated by Admin.`;
-    if (invoice.finalAmount !== prevFinal) {
-      changeMessage += ` New Total: ₹${invoice.finalAmount.toLocaleString('en-IN')}.`;
+    if (finalAmount !== prevFinal) {
+      changeMessage += ` New Total: ₹${finalAmount.toLocaleString('en-IN')}.`;
     }
-    if (invoice.remainingAmount !== prevRemaining) {
-      changeMessage += ` Remaining amount due: ₹${invoice.remainingAmount.toLocaleString('en-IN')}.`;
-    }
-
-    await Notification.create({
-      customer: customer._id,
-      title: 'Invoice Updated',
-      message: changeMessage
-    });
-
-    // Send Email Notification for Update
-    try {
-      await sendInvoiceUpdateEmail(
-        customer.email,
-        customer.name,
-        invoice.invoiceNumber,
-        changeMessage
-      );
-    } catch (emailErr) {
-      console.error('Invoice update email error (non-fatal):', emailErr);
+    if (remainingAmount !== prevRemaining) {
+      changeMessage += ` Remaining amount due: ₹${remainingAmount.toLocaleString('en-IN')}.`;
     }
 
+    if (customer) {
+      await createNotification({
+        customerId: customer.id || customer._id,
+        customer: {
+          _id: customer.id || customer._id,
+          customerId: customer.customerId,
+          name: customer.name,
+        },
+        title: 'Invoice Updated',
+        message: changeMessage
+      });
 
-    req.app.get('io').emit('DATA_UPDATED');
+      if (customer.email) {
+        try {
+          await sendInvoiceUpdateEmail(
+            customer.email,
+            customer.name || 'Valued Customer',
+            invoice.invoiceNumber,
+            changeMessage
+          );
+        } catch (emailErr) {
+          console.error('Invoice update email error (non-fatal):', emailErr);
+        }
+      }
+    }
+
+    req.app.get('io')?.emit('DATA_UPDATED');
     res.status(200).json({
       success: true,
       message: 'Invoice updated successfully',
-      invoice
+      invoice: updated
     });
 
   } catch (error) {
@@ -470,19 +443,18 @@ export const deleteInvoice = async (req: AuthRequest, res: Response, next: NextF
   try {
     const { id } = req.params;
 
-    const invoice = await Invoice.findById(id);
+    const invoice = await findInvoiceById(id);
     if (!invoice) {
       return res.status(404).json({ success: false, message: 'Invoice not found' });
     }
 
     // Delete related orders using invoiceNumber
-    await Order.deleteMany({ invoiceNumber: invoice.invoiceNumber });
+    await deleteOrdersByInvoiceNumber(invoice.invoiceNumber);
 
     // Delete invoice
-    await Invoice.findByIdAndDelete(id);
+    await repoDeleteInvoice(id);
 
-
-    req.app.get('io').emit('DATA_UPDATED');
+    req.app.get('io')?.emit('DATA_UPDATED');
     res.status(200).json({
       success: true,
       message: 'Invoice and related orders deleted successfully'
@@ -494,53 +466,43 @@ export const deleteInvoice = async (req: AuthRequest, res: Response, next: NextF
 };
 
 /**
- * Get Customer Orders History (Admin and Owner Customer)
+ * Get Customer Orders History
  */
 export const getCustomerOrders = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const query: any = {};
     const isAdmin = ['ADMIN_1', 'ADMIN_2'].includes(req.user?.role || '');
 
+    let orders: any[] = [];
     if (req.user?.role === 'Customer') {
-      query.customer = req.user.id;
+      orders = await findOrdersByCustomerId(req.user.id);
+    } else {
+      orders = await findAllOrders();
     }
 
-    const orders = await Order.find(query)
-      .populate('customer', 'customerId name email phone address gstNumber')
-      .sort({ purchaseDate: -1 })
-      .lean();
+    // Sort descending by purchaseDate
+    orders.sort((a, b) => new Date(b.purchaseDate).getTime() - new Date(a.purchaseDate).getTime());
 
-    const invoiceNumbers = Array.from(new Set(orders.map(o => o.invoiceNumber)));
-    const invoices = await Invoice.find({ invoiceNumber: { $in: invoiceNumbers } })
-      .populate('createdBy', 'username displayName role email adminId');
-    const payments = await Payment.find({ invoiceNumber: { $in: invoiceNumbers } })
-      .populate('approvedBy', 'username displayName role email adminId');
-
-    const invoiceMap: Record<string, any> = {};
-    invoices.forEach(inv => {
-      invoiceMap[inv.invoiceNumber] = inv;
-    });
+    const invoiceNumbers = Array.from(new Set(orders.map((o) => o.invoiceNumber)));
+    const payments = await findPaymentsByInvoiceNumbersBulk(invoiceNumbers);
 
     const paymentMap: Record<string, any> = {};
-    payments.forEach(p => {
+    payments.forEach((p) => {
       if (p.approvedBy || !paymentMap[p.invoiceNumber]) {
         paymentMap[p.invoiceNumber] = p;
       }
     });
 
-    const ordersWithInvoiceStatus = orders.map(o => {
-      const inv = invoiceMap[o.invoiceNumber];
+    const ordersWithInvoiceStatus = orders.map((o) => {
       const pymt = paymentMap[o.invoiceNumber];
-      const status = inv ? (inv.remainingAmount === 0 ? 'Paid' : 'Pending') : 'Pending';
+      const status = o.invoiceStatus || 'Pending';
 
       const baseObj: any = {
         ...o,
         invoiceStatus: status,
-        paymentId: pymt?._id || null
+        paymentId: pymt?.id || pymt?._id || null
       };
 
       if (isAdmin) {
-        baseObj.createdBy = inv?.createdBy || null;
         baseObj.approvedBy = pymt?.approvedBy || null;
         baseObj.approvedAt = pymt?.approvedAt || null;
       } else {
@@ -567,49 +529,68 @@ export const getCustomerOrders = async (req: AuthRequest, res: Response, next: N
 export const markAsPaid = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const { invoicePdf } = req.body; // Base64 PDF string from frontend
+    const { invoicePdf } = req.body;
 
-    const invoice = await Invoice.findById(id).populate('customer');
+    const invoice = await findInvoiceById(id);
     if (!invoice) {
       return res.status(404).json({ success: false, message: 'Invoice not found' });
     }
 
-    const customer: any = invoice.customer || {};
-    const customerId = customer._id || invoice.customer || null;
+    const customer: any = invoice.customer || (await findCustomerById(invoice.customerId)) || {};
+    const customerId = customer.id || customer._id || invoice.customerId;
     const customerEmail = customer.email || '';
-    const customerName = customer.name || customer.companyName || 'Valued Customer';
+    const customerName = customer.name || 'Valued Customer';
+
+    const approvalTime = new Date();
 
     // 1. Update Invoice status
-    invoice.paidAmount = invoice.finalAmount;
-    invoice.remainingAmount = 0;
-    await invoice.save();
+    const updatedInvoice = await repoUpdateInvoice(id, {
+      paidAmount: invoice.finalAmount,
+      remainingAmount: 0,
+      paymentApprovedAt: approvalTime.toISOString(),
+    });
 
     // 2. Update Order invoiceStatus
-    await Order.updateMany(
-      { invoiceNumber: invoice.invoiceNumber },
-      { invoiceStatus: 'Paid' }
-    );
+    await updateOrderStatusByInvoiceNumber(invoice.invoiceNumber, 'Paid');
 
-    // Set paymentApprovedAt to start the 7-day QR code retention countdown
-    if (!(invoice as any).paymentApprovedAt) {
-      (invoice as any).paymentApprovedAt = new Date();
-      await invoice.save();
+    // Admin createdBy/approvedBy snapshot
+    let adminSnapshot: any = req.user?.id;
+    if (req.user?.id) {
+      const admin = await findAdminById(req.user.id);
+      if (admin) {
+        adminSnapshot = {
+          _id: admin.id || admin._id,
+          id: admin.id || admin._id,
+          username: admin.username,
+          displayName: admin.displayName || admin.username,
+          role: admin.role,
+          email: admin.email,
+          adminId: admin.adminId,
+        };
+      }
     }
 
     // 3. Create Payment record
     if (customerId) {
-      await Payment.create({
+      await repoCreatePayment({
         invoiceNumber: invoice.invoiceNumber,
-        customer: customerId,
+        customerId,
+        customer: {
+          _id: customerId,
+          id: customerId,
+          customerId: customer.customerId,
+          name: customerName,
+          email: customerEmail,
+        },
         amount: invoice.finalAmount,
         paymentMethod: 'Manual Admin Approval',
         transactionId: 'MANUAL-' + Date.now().toString().slice(-6),
         status: 'Settled',
-        date: new Date(),
-        time: new Date().toLocaleTimeString('en-US', { hour12: false }),
-        approvedBy: req.user?.id,
-        approvedAt: new Date(),
-        createdBy: req.user?.id
+        date: approvalTime.toISOString(),
+        time: approvalTime.toLocaleTimeString('en-US', { hour12: false }),
+        approvedBy: adminSnapshot,
+        approvedAt: approvalTime.toISOString(),
+        createdBy: adminSnapshot,
       });
     }
 
@@ -630,12 +611,11 @@ export const markAsPaid = async (req: AuthRequest, res: Response, next: NextFunc
       }
     }
 
-
-    req.app.get('io').emit('DATA_UPDATED');
+    req.app.get('io')?.emit('DATA_UPDATED');
     res.status(200).json({
       success: true,
       message: 'Invoice marked as paid and confirmation emailed to customer.',
-      invoice
+      invoice: updatedInvoice
     });
   } catch (error) {
     next(error);

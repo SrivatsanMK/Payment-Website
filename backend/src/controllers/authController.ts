@@ -1,8 +1,26 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import Admin from '../models/Admin';
-import Customer from '../models/Customer';
-import OTP from '../models/OTP';
+import {
+  findAdminById,
+  findAdminByIdentifier,
+  findAdminByEmail,
+  findAllAdmins,
+  updateAdmin,
+  comparePassword,
+} from '../repositories/adminRepository';
+import {
+  findCustomerById,
+  findCustomerByIdentifier,
+  findCustomerByEmail,
+  updateCustomer,
+  compareCustomerPassword,
+} from '../repositories/customerRepository';
+import {
+  saveOtp,
+  findOtp,
+  deleteOtp,
+  incrementOtpAttempts,
+} from '../repositories/otpRepository';
 import { sendOTPEmail, sendEmail, sendNewAdminIdEmail, sendCustomerIdEmail } from '../utils/email';
 
 const generateTokens = (id: string, role: string) => {
@@ -30,14 +48,7 @@ export const customerLogin = async (req: Request, res: Response, next: NextFunct
       return res.status(400).json({ success: false, message: 'Please provide your Customer ID/Email and password' });
     }
 
-    // Only search the Customer collection
-    const user: any = await Customer.findOne({
-      $or: [
-        { customerId: identifier.toUpperCase().trim() },
-        { email: identifier.toLowerCase().trim() },
-        { phone: identifier.trim() }
-      ]
-    });
+    const user = await findCustomerByIdentifier(identifier);
 
     if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid credentials. Please check your Customer ID and password.' });
@@ -47,21 +58,23 @@ export const customerLogin = async (req: Request, res: Response, next: NextFunct
       return res.status(403).json({ success: false, message: 'Your account is suspended. Please contact the Administrator.' });
     }
 
-    const isMatch = await user.comparePassword(password);
+    const isMatch = await compareCustomerPassword(password, user.password || '');
     if (!isMatch) {
       return res.status(401).json({ success: false, message: 'Invalid credentials. Please check your Customer ID and password.' });
     }
 
-    const { accessToken, refreshToken } = generateTokens(user._id.toString(), 'Customer');
+    const userId = user.id || user._id || '';
+    const { accessToken, refreshToken } = generateTokens(userId, 'Customer');
 
-    req.app.get('io').emit('DATA_UPDATED');
+    req.app.get('io')?.emit('DATA_UPDATED');
     return res.status(200).json({
       success: true,
       message: 'Login successful',
       accessToken,
       refreshToken,
       user: {
-        id: user._id,
+        id: userId,
+        _id: userId,
         role: 'Customer',
         email: user.email,
         name: user.name,
@@ -87,36 +100,30 @@ export const adminLogin = async (req: Request, res: Response, next: NextFunction
       return res.status(400).json({ success: false, message: 'Please provide your Admin ID/Email and password' });
     }
 
-    // Only search the Admin collection (supports adminId, email, username, phone)
-    const user: any = await Admin.findOne({
-      $or: [
-        { adminId: identifier.trim() },
-        { email: identifier.toLowerCase().trim() },
-        { username: identifier.trim() },
-        { phone: identifier.trim() }
-      ]
-    });
+    const user = await findAdminByIdentifier(identifier);
 
     if (!user) {
       return res.status(401).json({ success: false, message: 'Invalid credentials. Please check your Admin ID and password.' });
     }
 
-    const isMatch = await user.comparePassword(password);
+    const isMatch = await comparePassword(password, user.password || '');
     if (!isMatch) {
       return res.status(401).json({ success: false, message: 'Invalid credentials. Please check your Admin ID and password.' });
     }
 
     const actualRole = user.role; // ADMIN_1 or ADMIN_2
-    const { accessToken, refreshToken } = generateTokens(user._id.toString(), actualRole);
+    const userId = user.id || user._id || '';
+    const { accessToken, refreshToken } = generateTokens(userId, actualRole);
 
-    req.app.get('io').emit('DATA_UPDATED');
+    req.app.get('io')?.emit('DATA_UPDATED');
     return res.status(200).json({
       success: true,
       message: 'Admin login successful',
       accessToken,
       refreshToken,
       user: {
-        id: user._id,
+        id: userId,
+        _id: userId,
         role: actualRole,
         email: user.email,
         name: user.username,
@@ -136,8 +143,6 @@ export const adminLogin = async (req: Request, res: Response, next: NextFunction
  */
 export const login = customerLogin;
 
-
-
 /**
  * Request OTP for Forgot Password
  */
@@ -149,11 +154,12 @@ export const requestOTP = async (req: Request, res: Response, next: NextFunction
       return res.status(400).json({ success: false, message: 'Email and role are required' });
     }
 
+    const cleanEmail = email.toLowerCase().trim();
     let user: any = null;
     if (role === 'Admin') {
-      user = await Admin.findOne({ email: email.toLowerCase().trim() });
+      user = await findAdminByEmail(cleanEmail);
     } else {
-      user = await Customer.findOne({ email: email.toLowerCase().trim() });
+      user = await findCustomerByEmail(cleanEmail);
     }
 
     if (!user) {
@@ -164,12 +170,8 @@ export const requestOTP = async (req: Request, res: Response, next: NextFunction
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
-    // Delete any existing OTP for this email and purpose
-    await OTP.deleteMany({ email: email.toLowerCase().trim(), purpose: 'forgot_password' });
-
-    // Store new OTP
-    await OTP.create({
-      email: email.toLowerCase().trim(),
+    await saveOtp({
+      email: cleanEmail,
       otp: otpCode,
       purpose: 'forgot_password',
       expiresAt
@@ -179,7 +181,7 @@ export const requestOTP = async (req: Request, res: Response, next: NextFunction
     const name = role === 'Admin' ? user.username : user.name;
     await sendOTPEmail(user.email, name, otpCode);
 
-    req.app.get('io').emit('DATA_UPDATED');
+    req.app.get('io')?.emit('DATA_UPDATED');
     res.status(200).json({
       success: true,
       message: 'Verification OTP sent to your registered email'
@@ -201,43 +203,39 @@ export const verifyOTP = async (req: Request, res: Response, next: NextFunction)
       return res.status(400).json({ success: false, message: 'Email and OTP are required' });
     }
 
-    const otpRecord = await OTP.findOne({
-      email: email.toLowerCase().trim(),
-      purpose: 'forgot_password'
-    });
+    const cleanEmail = email.toLowerCase().trim();
+    const otpRecord = await findOtp(cleanEmail, 'forgot_password');
 
     if (!otpRecord) {
       return res.status(400).json({ success: false, message: 'OTP not found or expired' });
     }
 
-    // Check expiration (although TTL index handles it, double check)
-    if (new Date() > otpRecord.expiresAt) {
-      await OTP.findByIdAndDelete(otpRecord._id);
+    const currentEpoch = Math.floor(Date.now() / 1000);
+    if (currentEpoch > otpRecord.expiresAt) {
+      await deleteOtp(cleanEmail, 'forgot_password');
       return res.status(400).json({ success: false, message: 'OTP has expired' });
     }
 
-    // Max attempts check (e.g. 3 attempts)
     if (otpRecord.attempts >= 3) {
-      await OTP.findByIdAndDelete(otpRecord._id);
+      await deleteOtp(cleanEmail, 'forgot_password');
       return res.status(422).json({ success: false, message: 'Max OTP verification attempts exceeded. Please request a new one.' });
     }
 
     if (otpRecord.otp !== otp.trim()) {
-      otpRecord.attempts += 1;
-      await otpRecord.save();
+      await incrementOtpAttempts(cleanEmail, 'forgot_password');
       return res.status(400).json({ success: false, message: 'Invalid OTP code. Please try again.' });
     }
 
-    await OTP.findByIdAndDelete(otpRecord._id);
+    await deleteOtp(cleanEmail, 'forgot_password');
 
     // Generate a temporary action token to secure reset request
     const resetToken = jwt.sign(
-      { email: email.toLowerCase().trim() },
+      { email: cleanEmail },
       process.env.JWT_SECRET || 'supersecretjwtkeyforaccess123456',
       { expiresIn: '15m' }
     );
 
-    req.app.get('io').emit('DATA_UPDATED');
+    req.app.get('io')?.emit('DATA_UPDATED');
     res.status(200).json({
       success: true,
       message: 'OTP verified successfully',
@@ -267,27 +265,23 @@ export const resetPassword = async (req: Request, res: Response, next: NextFunct
       return res.status(400).json({ success: false, message: 'Invalid or expired reset token' });
     }
 
-    const email = decoded.email;
+    const email = decoded.email.toLowerCase().trim();
 
-    let user: any = null;
     if (role === 'Admin') {
-      user = await Admin.findOne({ email });
+      const admin = await findAdminByEmail(email);
+      if (!admin) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+      await updateAdmin(admin.id, { password });
     } else {
-      user = await Customer.findOne({ email });
+      const customer = await findCustomerByEmail(email);
+      if (!customer) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+      await updateCustomer(customer.id, { password, forcedPasswordReset: false });
     }
 
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
-    }
-
-    // Update password
-    user.password = password;
-    if (role === 'Customer') {
-      user.forcedPasswordReset = false; // cleared on reset
-    }
-    await user.save();
-
-    req.app.get('io').emit('DATA_UPDATED');
+    req.app.get('io')?.emit('DATA_UPDATED');
     res.status(200).json({
       success: true,
       message: 'Password has been successfully updated'
@@ -311,12 +305,11 @@ export const refreshToken = async (req: Request, res: Response, next: NextFuncti
 
     const decoded: any = jwt.verify(token, process.env.JWT_REFRESH_SECRET || 'supersecretjwtrefreshkeyforauth987654');
 
-    // Verify user exists in the database
     let userExists = false;
     if (decoded.role === 'ADMIN_1' || decoded.role === 'ADMIN_2') {
-      userExists = await Admin.exists({ _id: decoded.id }) !== null;
+      userExists = (await findAdminById(decoded.id)) !== null;
     } else if (decoded.role === 'Customer') {
-      userExists = await Customer.exists({ _id: decoded.id }) !== null;
+      userExists = (await findCustomerById(decoded.id)) !== null;
     }
 
     if (!userExists) {
@@ -340,19 +333,21 @@ export const refreshToken = async (req: Request, res: Response, next: NextFuncti
  */
 export const getAdminProfile = async (req: any, res: Response, next: NextFunction) => {
   try {
-    const admin = await Admin.findById(req.user.id).select('-password');
+    const admin = await findAdminById(req.user.id);
     if (!admin) {
       return res.status(404).json({ success: false, message: 'Admin account not found' });
     }
+    const adminId = admin.id || admin._id || '';
     res.status(200).json({
       success: true,
       admin: {
-        _id: admin._id,
-        adminId: (admin as any).adminId || '',
+        _id: adminId,
+        id: adminId,
+        adminId: admin.adminId || '',
         username: admin.username,
-        displayName: (admin as any).displayName || admin.username,
+        displayName: admin.displayName || admin.username,
         email: admin.email,
-        phone: admin.phone,
+        phone: admin.phone || '',
         role: admin.role,
         profilePicture: admin.profilePicture || ''
       }
@@ -367,37 +362,40 @@ export const getAdminProfile = async (req: any, res: Response, next: NextFunctio
  */
 export const updateAdminProfile = async (req: any, res: Response, next: NextFunction) => {
   try {
-    const admin = await Admin.findById(req.user.id);
+    const admin = await findAdminById(req.user.id);
     if (!admin) {
       return res.status(404).json({ success: false, message: 'Admin account not found' });
     }
 
     const { username, displayName, email, phone } = req.body;
-    if (username) admin.username = username.trim();
-    if (displayName !== undefined) (admin as any).displayName = displayName.trim();
-    if (email) admin.email = email.toLowerCase().trim();
-    if (phone) admin.phone = phone.trim();
+    const updates: any = {};
+    if (username) updates.username = username.trim();
+    if (displayName !== undefined) updates.displayName = displayName.trim();
+    if (email) updates.email = email.toLowerCase().trim();
+    if (phone) updates.phone = phone.trim();
 
     if (req.file) {
-      admin.profilePicture = `/uploads/${req.file.filename}`;
+      updates.profilePicture = `/uploads/${req.file.filename}`;
     }
 
-    await admin.save();
-    req.app.get('io').emit('DATA_UPDATED');
+    const updated = await updateAdmin(req.user.id, updates);
+    req.app.get('io')?.emit('DATA_UPDATED');
 
+    const adminId = updated?.id || updated?._id || req.user.id;
     res.status(200).json({
       success: true,
       message: 'Admin profile updated successfully',
       admin: {
-        id: admin._id,
-        role: admin.role,
-        email: admin.email,
-        username: admin.username,
-        displayName: (admin as any).displayName || admin.username,
-        adminId: (admin as any).adminId || '',
-        name: (admin as any).displayName || admin.username,
-        phone: admin.phone,
-        profilePicture: admin.profilePicture || ''
+        id: adminId,
+        _id: adminId,
+        role: updated?.role,
+        email: updated?.email,
+        username: updated?.username,
+        displayName: updated?.displayName || updated?.username,
+        adminId: updated?.adminId || '',
+        name: updated?.displayName || updated?.username,
+        phone: updated?.phone,
+        profilePicture: updated?.profilePicture || ''
       }
     });
   } catch (error: any) {
@@ -410,7 +408,7 @@ export const updateAdminProfile = async (req: any, res: Response, next: NextFunc
  */
 export const requestProfileUpdateOTP = async (req: any, res: Response, next: NextFunction) => {
   try {
-    const admin = await Admin.findById(req.user.id).select('email username');
+    const admin = await findAdminById(req.user.id);
     if (!admin) {
       return res.status(404).json({ success: false, message: 'Admin account not found' });
     }
@@ -418,9 +416,7 @@ export const requestProfileUpdateOTP = async (req: any, res: Response, next: Nex
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
-    await OTP.deleteMany({ email: admin.email, purpose: 'profile_update' });
-    await OTP.create({ email: admin.email, otp: otpCode, purpose: 'profile_update', expiresAt });
-
+    await saveOtp({ email: admin.email, otp: otpCode, purpose: 'profile_update', expiresAt });
     await sendOTPEmail(admin.email, admin.username, otpCode);
 
     res.status(200).json({
@@ -437,31 +433,31 @@ export const requestProfileUpdateOTP = async (req: any, res: Response, next: Nex
  */
 export const verifyProfileUpdateOTP = async (req: any, res: Response, next: NextFunction) => {
   try {
-    const admin = await Admin.findById(req.user.id).select('email');
+    const admin = await findAdminById(req.user.id);
     if (!admin) return res.status(404).json({ success: false, message: 'Admin not found' });
 
     const { otp } = req.body;
     if (!otp) return res.status(400).json({ success: false, message: 'OTP is required' });
 
-    const record = await OTP.findOne({ email: admin.email, purpose: 'profile_update' });
+    const record = await findOtp(admin.email, 'profile_update');
     if (!record) return res.status(400).json({ success: false, message: 'OTP not found or already expired' });
-    if (new Date() > record.expiresAt) {
-      await OTP.findByIdAndDelete(record._id);
+
+    const currentEpoch = Math.floor(Date.now() / 1000);
+    if (currentEpoch > record.expiresAt) {
+      await deleteOtp(admin.email, 'profile_update');
       return res.status(400).json({ success: false, message: 'OTP has expired. Please request a new one.' });
     }
     if (record.attempts >= 3) {
-      await OTP.findByIdAndDelete(record._id);
+      await deleteOtp(admin.email, 'profile_update');
       return res.status(422).json({ success: false, message: 'Max OTP attempts exceeded. Please request a new code.' });
     }
     if (record.otp !== otp.trim()) {
-      record.attempts += 1;
-      await record.save();
+      await incrementOtpAttempts(admin.email, 'profile_update');
       return res.status(400).json({ success: false, message: 'Invalid OTP code. Please try again.' });
     }
 
-    await OTP.findByIdAndDelete(record._id);
+    await deleteOtp(admin.email, 'profile_update');
 
-    // Issue a short-lived profile-update token (10 min)
     const profileToken = jwt.sign(
       { id: req.user.id, purpose: 'profile_update' },
       process.env.JWT_SECRET || 'supersecretjwtkeyforaccess123456',
@@ -479,11 +475,10 @@ export const verifyProfileUpdateOTP = async (req: any, res: Response, next: Next
  */
 export const notifyOtpIssue = async (req: any, res: Response, next: NextFunction) => {
   try {
-    const admin = await Admin.findById(req.user.id).select('username email adminId role');
+    const admin = await findAdminById(req.user.id);
     if (!admin) return res.status(404).json({ success: false, message: 'Admin not found' });
 
-    // Send notification to all admins
-    const allAdmins = await Admin.find({}).select('email username');
+    const allAdmins = await findAllAdmins();
     const timestamp = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
 
     for (const a of allAdmins) {
@@ -496,7 +491,7 @@ export const notifyOtpIssue = async (req: any, res: Response, next: NextFunction
           <p>An admin account was unable to receive their verification OTP while trying to update their profile details. This may indicate a mail delivery issue.</p>
           <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">
             <tr style="background:#f9fafb;"><th style="padding:10px;text-align:left;border:1px solid #e5e7eb;">Admin Name</th><td style="padding:10px;border:1px solid #e5e7eb;">${admin.username}</td></tr>
-            <tr><th style="padding:10px;text-align:left;border:1px solid #e5e7eb;">Admin ID</th><td style="padding:10px;border:1px solid #e5e7eb;">${(admin as any).adminId || 'N/A'}</td></tr>
+            <tr><th style="padding:10px;text-align:left;border:1px solid #e5e7eb;">Admin ID</th><td style="padding:10px;border:1px solid #e5e7eb;">${admin.adminId || 'N/A'}</td></tr>
             <tr style="background:#f9fafb;"><th style="padding:10px;text-align:left;border:1px solid #e5e7eb;">Role</th><td style="padding:10px;border:1px solid #e5e7eb;">${admin.role === 'ADMIN_1' ? 'Owner Admin' : 'Partner Admin'}</td></tr>
             <tr><th style="padding:10px;text-align:left;border:1px solid #e5e7eb;">Email on file</th><td style="padding:10px;border:1px solid #e5e7eb;">${admin.email}</td></tr>
             <tr style="background:#f9fafb;"><th style="padding:10px;text-align:left;border:1px solid #e5e7eb;">Timestamp (IST)</th><td style="padding:10px;border:1px solid #e5e7eb;">${timestamp}</td></tr>
@@ -513,9 +508,6 @@ export const notifyOtpIssue = async (req: any, res: Response, next: NextFunction
   }
 };
 
-/**
- * Generate a unique ADM-XXXXX ID checking DB collisions and ensuring difference from current ID
- */
 const generateUniqueAdminId = async (currentAdminId?: string): Promise<string> => {
   let newId: string;
   let exists: any;
@@ -525,59 +517,35 @@ const generateUniqueAdminId = async (currentAdminId?: string): Promise<string> =
     if (currentAdminId && newId === currentAdminId) {
       continue;
     }
-    exists = await Admin.findOne({ adminId: newId });
+    exists = await findAdminByIdentifier(newId);
   } while (exists);
   return newId;
 };
 
 /**
- * Request OTP for Forgot Admin ID (Public Admin Endpoint)
+ * Request OTP for Forgot Admin ID
  */
 export const requestAdminIdOTP = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email } = req.body;
-
     if (!email || !email.trim()) {
       return res.status(400).json({ success: false, message: 'Registered email address is required' });
     }
 
     const cleanEmail = email.toLowerCase().trim();
+    const admin = await findAdminByEmail(cleanEmail);
 
-    // Search ONLY the Admin collection
-    const admins = await Admin.find({ email: cleanEmail });
-
-    if (admins.length === 0) {
+    if (!admin) {
       return res.status(404).json({
         success: false,
         message: 'No admin account found with this registered email'
       });
     }
 
-    if (admins.length > 1) {
-      return res.status(400).json({
-        success: false,
-        message: 'Multiple admin accounts are registered with this email. Please contact support to resolve account email configurations.'
-      });
-    }
-
-    const admin = admins[0];
-
-    // Generate 6-digit OTP
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
-    // Invalidate previous OTPs for this email and purpose
-    await OTP.deleteMany({ email: cleanEmail, purpose: 'forgot_admin_id' });
-
-    // Create new OTP
-    await OTP.create({
-      email: cleanEmail,
-      otp: otpCode,
-      purpose: 'forgot_admin_id',
-      expiresAt
-    });
-
-    // Send Email using existing infrastructure
+    await saveOtp({ email: cleanEmail, otp: otpCode, purpose: 'forgot_admin_id', expiresAt });
     await sendOTPEmail(admin.email, admin.username, otpCode);
 
     res.status(200).json({
@@ -595,66 +563,44 @@ export const requestAdminIdOTP = async (req: Request, res: Response, next: NextF
 export const verifyAdminIdOTP = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, otp } = req.body;
-
     if (!email || !otp) {
       return res.status(400).json({ success: false, message: 'Email and OTP code are required' });
     }
 
     const cleanEmail = email.toLowerCase().trim();
-
-    const otpRecord = await OTP.findOne({
-      email: cleanEmail,
-      purpose: 'forgot_admin_id'
-    });
+    const otpRecord = await findOtp(cleanEmail, 'forgot_admin_id');
 
     if (!otpRecord) {
       return res.status(400).json({ success: false, message: 'OTP code not found or already expired' });
     }
 
-    // Check expiration
-    if (new Date() > otpRecord.expiresAt) {
-      await OTP.findByIdAndDelete(otpRecord._id);
+    const currentEpoch = Math.floor(Date.now() / 1000);
+    if (currentEpoch > otpRecord.expiresAt) {
+      await deleteOtp(cleanEmail, 'forgot_admin_id');
       return res.status(400).json({ success: false, message: 'OTP has expired. Please request a new code.' });
     }
 
-    // Check max attempts (3)
     if (otpRecord.attempts >= 3) {
-      await OTP.findByIdAndDelete(otpRecord._id);
+      await deleteOtp(cleanEmail, 'forgot_admin_id');
       return res.status(422).json({ success: false, message: 'Maximum OTP attempts exceeded. Please request a new code.' });
     }
 
-    // Code match check
     if (otpRecord.otp !== otp.trim()) {
-      otpRecord.attempts += 1;
-      await otpRecord.save();
+      await incrementOtpAttempts(cleanEmail, 'forgot_admin_id');
       return res.status(400).json({ success: false, message: 'Invalid OTP code. Please try again.' });
     }
 
-    // Invalidate/Delete OTP immediately after successful verification (single-use)
-    await OTP.findByIdAndDelete(otpRecord._id);
+    await deleteOtp(cleanEmail, 'forgot_admin_id');
 
-    // Find the single matching admin
-    const admins = await Admin.find({ email: cleanEmail });
-    if (admins.length === 0) {
+    const admin = await findAdminByEmail(cleanEmail);
+    if (!admin) {
       return res.status(404).json({ success: false, message: 'Admin account not found' });
     }
-    if (admins.length > 1) {
-      return res.status(400).json({
-        success: false,
-        message: 'Multiple admin accounts are registered with this email address.'
-      });
-    }
 
-    const admin = admins[0];
     const oldAdminId = admin.adminId || '';
-
-    // Generate NEW collision-safe Admin ID
     const newAdminId = await generateUniqueAdminId(oldAdminId);
 
-    // Update ONLY adminId field using updateOne to preserve password hash
-    await Admin.updateOne({ _id: admin._id }, { $set: { adminId: newAdminId } });
-
-    // Send confirmation email with new Admin ID
+    await updateAdmin(admin.id, { adminId: newAdminId });
     await sendNewAdminIdEmail(admin.email, admin.username, oldAdminId, newAdminId);
 
     req.app.get('io')?.emit('DATA_UPDATED');
@@ -671,54 +617,36 @@ export const verifyAdminIdOTP = async (req: Request, res: Response, next: NextFu
 };
 
 /**
- * Request OTP for Forgot Customer ID (Public Customer Endpoint)
- * Looks up ONLY the Customer collection — can never target an Admin account.
+ * Request OTP for Forgot Customer ID
  */
 export const requestCustomerIdOTP = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email } = req.body;
-
     if (!email || !email.trim()) {
       return res.status(400).json({ success: false, message: 'Registered email address is required' });
     }
 
     const cleanEmail = email.toLowerCase().trim();
+    const customer = await findCustomerByEmail(cleanEmail);
 
-    // Search ONLY the Customer collection
-    const customers = await Customer.find({ email: cleanEmail });
-
-    if (customers.length === 0) {
+    if (!customer) {
       return res.status(404).json({
         success: false,
         message: 'No customer account found with this registered email'
       });
     }
 
-    const customer = customers[0];
-
-    if ((customer as any).status === 'Suspended') {
+    if (customer.status === 'Suspended') {
       return res.status(403).json({
         success: false,
         message: 'This account is suspended. Please contact the Administrator.'
       });
     }
 
-    // Generate 6-digit OTP
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
-    // Invalidate previous OTPs for this email and purpose
-    await OTP.deleteMany({ email: cleanEmail, purpose: 'forgot_customer_id' });
-
-    // Create new OTP — purpose 'forgot_customer_id' is completely isolated from admin purposes
-    await OTP.create({
-      email: cleanEmail,
-      otp: otpCode,
-      purpose: 'forgot_customer_id',
-      expiresAt
-    });
-
-    // Send email using existing infrastructure
+    await saveOtp({ email: cleanEmail, otp: otpCode, purpose: 'forgot_customer_id', expiresAt });
     await sendOTPEmail(customer.email, customer.name, otpCode);
 
     res.status(200).json({
@@ -732,58 +660,45 @@ export const requestCustomerIdOTP = async (req: Request, res: Response, next: Ne
 
 /**
  * Verify OTP for Forgot Customer ID and REVEAL the existing Customer ID
- * (Does NOT generate a new Customer ID — Customer IDs are business-critical invoice references)
  */
 export const verifyCustomerIdOTP = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, otp } = req.body;
-
     if (!email || !otp) {
       return res.status(400).json({ success: false, message: 'Email and OTP code are required' });
     }
 
     const cleanEmail = email.toLowerCase().trim();
-
-    const otpRecord = await OTP.findOne({
-      email: cleanEmail,
-      purpose: 'forgot_customer_id'
-    });
+    const otpRecord = await findOtp(cleanEmail, 'forgot_customer_id');
 
     if (!otpRecord) {
       return res.status(400).json({ success: false, message: 'OTP code not found or already expired' });
     }
 
-    // Check expiration
-    if (new Date() > otpRecord.expiresAt) {
-      await OTP.findByIdAndDelete(otpRecord._id);
+    const currentEpoch = Math.floor(Date.now() / 1000);
+    if (currentEpoch > otpRecord.expiresAt) {
+      await deleteOtp(cleanEmail, 'forgot_customer_id');
       return res.status(400).json({ success: false, message: 'OTP has expired. Please request a new code.' });
     }
 
-    // Check max attempts (3)
     if (otpRecord.attempts >= 3) {
-      await OTP.findByIdAndDelete(otpRecord._id);
+      await deleteOtp(cleanEmail, 'forgot_customer_id');
       return res.status(422).json({ success: false, message: 'Maximum OTP attempts exceeded. Please request a new code.' });
     }
 
-    // Code match check
     if (otpRecord.otp !== otp.trim()) {
-      otpRecord.attempts += 1;
-      await otpRecord.save();
+      await incrementOtpAttempts(cleanEmail, 'forgot_customer_id');
       return res.status(400).json({ success: false, message: 'Invalid OTP code. Please try again.' });
     }
 
-    // Invalidate/Delete OTP immediately after successful verification (single-use)
-    await OTP.findByIdAndDelete(otpRecord._id);
+    await deleteOtp(cleanEmail, 'forgot_customer_id');
 
-    // Find the customer — ONLY in Customer collection
-    const customer = await Customer.findOne({ email: cleanEmail });
+    const customer = await findCustomerByEmail(cleanEmail);
     if (!customer) {
       return res.status(404).json({ success: false, message: 'Customer account not found' });
     }
 
-    const customerId = (customer as any).customerId || '';
-
-    // Send confirmation email with the existing Customer ID
+    const customerId = customer.customerId || '';
     await sendCustomerIdEmail(customer.email, customer.name, customerId);
 
     req.app.get('io')?.emit('DATA_UPDATED');
@@ -800,26 +715,18 @@ export const verifyCustomerIdOTP = async (req: Request, res: Response, next: Nex
 
 /**
  * Request OTP for Customer Profile Update (Email / Phone)
- * Authenticated customer endpoint
  */
 export const requestCustomerProfileUpdateOTP = async (req: any, res: Response, next: NextFunction) => {
   try {
-    const customer = await Customer.findById(req.user.id).select('email name customerId');
+    const customer = await findCustomerById(req.user.id);
     if (!customer) {
       return res.status(404).json({ success: false, message: 'Customer account not found' });
     }
 
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
-    await OTP.deleteMany({ email: customer.email, purpose: 'customer_profile_update' });
-    await OTP.create({
-      email: customer.email,
-      otp: otpCode,
-      purpose: 'customer_profile_update',
-      expiresAt
-    });
-
+    await saveOtp({ email: customer.email, otp: otpCode, purpose: 'customer_profile_update', expiresAt });
     await sendOTPEmail(customer.email, customer.name, otpCode);
 
     res.status(200).json({
@@ -832,12 +739,11 @@ export const requestCustomerProfileUpdateOTP = async (req: any, res: Response, n
 };
 
 /**
- * Verify Customer Profile Update OTP and issue a short-lived profileToken
- * Authenticated customer endpoint
+ * Verify Customer Profile Update OTP
  */
 export const verifyCustomerProfileUpdateOTP = async (req: any, res: Response, next: NextFunction) => {
   try {
-    const customer = await Customer.findById(req.user.id).select('email');
+    const customer = await findCustomerById(req.user.id);
     if (!customer) {
       return res.status(404).json({ success: false, message: 'Customer account not found' });
     }
@@ -847,30 +753,32 @@ export const verifyCustomerProfileUpdateOTP = async (req: any, res: Response, ne
       return res.status(400).json({ success: false, message: 'OTP code is required' });
     }
 
-    const record = await OTP.findOne({ email: customer.email, purpose: 'customer_profile_update' });
+    const record = await findOtp(customer.email, 'customer_profile_update');
     if (!record) {
       return res.status(400).json({ success: false, message: 'OTP not found or already expired' });
     }
-    if (new Date() > record.expiresAt) {
-      await OTP.findByIdAndDelete(record._id);
+
+    const currentEpoch = Math.floor(Date.now() / 1000);
+    if (currentEpoch > record.expiresAt) {
+      await deleteOtp(customer.email, 'customer_profile_update');
       return res.status(400).json({ success: false, message: 'OTP has expired. Please request a new one.' });
     }
+
     if (record.attempts >= 3) {
-      await OTP.findByIdAndDelete(record._id);
+      await deleteOtp(customer.email, 'customer_profile_update');
       return res.status(422).json({ success: false, message: 'Max OTP attempts exceeded. Please request a new code.' });
     }
+
     if (record.otp !== otp.trim()) {
-      record.attempts += 1;
-      await record.save();
+      await incrementOtpAttempts(customer.email, 'customer_profile_update');
       return res.status(400).json({ success: false, message: 'Invalid OTP code. Please try again.' });
     }
 
-    // Invalidate OTP (single-use)
-    await OTP.findByIdAndDelete(record._id);
+    await deleteOtp(customer.email, 'customer_profile_update');
 
-    // Issue a short-lived profile-update token (10 min)
+    const customerId = customer.id || customer._id || '';
     const profileToken = jwt.sign(
-      { id: customer._id.toString(), purpose: 'customer_profile_update' },
+      { id: customerId, purpose: 'customer_profile_update' },
       process.env.JWT_SECRET || 'supersecretjwtkeyforaccess123456',
       { expiresIn: '10m' }
     );
@@ -884,4 +792,3 @@ export const verifyCustomerProfileUpdateOTP = async (req: any, res: Response, ne
     next(error);
   }
 };
-
