@@ -1,5 +1,5 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 // Context Providers
 import { AuthProvider } from './context/AuthContext';
@@ -14,7 +14,8 @@ import DashboardLayout from './components/layout/DashboardLayout';
 import AdminLayout from './components/layout/AdminLayout';
 import PrivateBusinessLayout from './components/layout/PrivateBusinessLayout';
 
-// ─── CUSTOMER AUTH PAGES ──────────────────────────────────────────────────────
+// ─── PRELOAD & AUTH PAGES ──────────────────────────────────────────────────
+import PreloadPage from './pages/PreloadPage';
 import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
 import VerifyOTP from './pages/VerifyOTP';
@@ -65,6 +66,99 @@ const AdminProfileRoute: React.FC<{ children: React.ReactNode }> = ({ children }
   return <>{children}</>;
 };
 
+// ─── PRELOAD GATEWAY WRAPPER (Shows animation on visit / reload) ──────────────
+const AppRoutes: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [isPreloadComplete, setIsPreloadComplete] = useState(false);
+
+  const handlePreloadComplete = () => {
+    setIsPreloadComplete(true);
+    // If user arrived at root '/' or '/preload', redirect to customer login
+    if (location.pathname === '/' || location.pathname === '/preload') {
+      navigate('/login', { replace: true });
+    }
+  };
+
+  return (
+    <>
+      {/* Preload Animation Overlay shown on reload/visit */}
+      {!isPreloadComplete && (
+        <PreloadPage onComplete={handlePreloadComplete} />
+      )}
+
+      <Routes>
+        {/* ── ENTRY PRELOAD ROUTE ─────────────────────────────────── */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/preload" element={<PreloadPage onComplete={() => navigate('/login', { replace: true })} />} />
+
+        {/* ── CUSTOMER PUBLIC ROUTES ──────────────────────────────── */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/forgot-customer-id" element={<ForgotCustomerId />} />
+        <Route path="/verify-otp" element={<VerifyOTP />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+
+        {/* ── CUSTOMER PROTECTED ROUTES ───────────────────────────── */}
+        <Route element={<DashboardLayout />}>
+          <Route path="/dashboard" element={<CustomerDashboard />} />
+          <Route path="/orders" element={<CustomerOrders />} />
+          <Route path="/payments/history" element={<CustomerPayments />} />
+          <Route path="/profile" element={<CustomerProfile />} />
+          <Route path="/pay-invoice/:id" element={<PayInvoice />} />
+        </Route>
+
+        {/* ── ADMIN PUBLIC ROUTES ─────────────────────────────────── */}
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin/forgot-password" element={<ForgotPassword forcedRole="Admin" />} />
+        <Route path="/admin/forgot-admin-id" element={<ForgotAdminId />} />
+
+        {/* Admin 1 profile selection — outside AdminLayout (no sidebar) */}
+        <Route
+          path="/admin/profile-selection"
+          element={
+            <AdminProfileRoute>
+              <ProfileSelection />
+            </AdminProfileRoute>
+          }
+        />
+
+        {/* ── PRIVATE BUSINESS (VEGETABLE PURCHASE WORKSPACE) ───────── */}
+        <Route path="/admin/private-business" element={<PrivateBusinessLayout />}>
+          <Route path="dashboard" element={<PrivateBusinessDashboard />} />
+          <Route path="purchases/add" element={<AddPurchase />} />
+          <Route path="purchases" element={<PurchaseHistory />} />
+          <Route path="vegetables" element={<Vegetables />} />
+          <Route path="suppliers" element={<Suppliers />} />
+          <Route path="reports" element={<PrivateBusinessReports />} />
+          <Route path="settings" element={<PrivateBusinessSettings />} />
+          <Route path="profile" element={<AdminProfile />} />
+        </Route>
+
+        {/* ── GREEN GLIDE LOGISTICS ADMIN PROTECTED ROUTES ───────────── */}
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="customers" element={<Customers />} />
+          <Route path="invoices" element={<Invoices />} />
+          <Route path="payments" element={<Payments />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="settings" element={<Settings />} />
+          <Route path="profile" element={<AdminProfile />} />
+          {/* Expense Manager sub-routes */}
+          <Route path="expense-manager" element={<ExpenseDashboard />} />
+          <Route path="expense-manager/add" element={<AddExpense />} />
+          <Route path="expense-manager/history" element={<ExpenseHistory />} />
+          <Route path="expense-manager/reports" element={<ExpenseReports />} />
+          <Route path="expense-manager/settings" element={<ExpenseSettings />} />
+        </Route>
+
+        {/* ── FALLBACK ────────────────────────────────────────────── */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    </>
+  );
+};
+
 export const App: React.FC = () => {
   return (
     <ThemeProvider>
@@ -78,73 +172,7 @@ export const App: React.FC = () => {
           <AdminAuthProvider>
             <SocketProvider>
               <BrowserRouter>
-                <Routes>
-
-                  {/* ── CUSTOMER PUBLIC ROUTES ──────────────────────────────── */}
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/forgot-password" element={<ForgotPassword />} />
-                  <Route path="/forgot-customer-id" element={<ForgotCustomerId />} />
-                  <Route path="/verify-otp" element={<VerifyOTP />} />
-                  <Route path="/reset-password" element={<ResetPassword />} />
-
-                  {/* ── CUSTOMER PROTECTED ROUTES ───────────────────────────── */}
-                  <Route element={<DashboardLayout />}>
-                    <Route path="/dashboard" element={<CustomerDashboard />} />
-                    <Route path="/orders" element={<CustomerOrders />} />
-                    <Route path="/payments/history" element={<CustomerPayments />} />
-                    <Route path="/profile" element={<CustomerProfile />} />
-                    <Route path="/pay-invoice/:id" element={<PayInvoice />} />
-                  </Route>
-
-                  {/* ── ADMIN PUBLIC ROUTES ─────────────────────────────────── */}
-                  <Route path="/admin/login" element={<AdminLogin />} />
-                  <Route path="/admin/forgot-password" element={<ForgotPassword forcedRole="Admin" />} />
-                  <Route path="/admin/forgot-admin-id" element={<ForgotAdminId />} />
-
-                  {/* Admin 1 profile selection — outside AdminLayout (no sidebar) */}
-                  <Route
-                    path="/admin/profile-selection"
-                    element={
-                      <AdminProfileRoute>
-                        <ProfileSelection />
-                      </AdminProfileRoute>
-                    }
-                  />
-
-                  {/* ── PRIVATE BUSINESS (VEGETABLE PURCHASE WORKSPACE) ───────── */}
-                  <Route path="/admin/private-business" element={<PrivateBusinessLayout />}>
-                    <Route path="dashboard" element={<PrivateBusinessDashboard />} />
-                    <Route path="purchases/add" element={<AddPurchase />} />
-                    <Route path="purchases" element={<PurchaseHistory />} />
-                    <Route path="vegetables" element={<Vegetables />} />
-                    <Route path="suppliers" element={<Suppliers />} />
-                    <Route path="reports" element={<PrivateBusinessReports />} />
-                    <Route path="settings" element={<PrivateBusinessSettings />} />
-                    <Route path="profile" element={<AdminProfile />} />
-                  </Route>
-
-                  {/* ── GREEN GLIDE LOGISTICS ADMIN PROTECTED ROUTES ───────────── */}
-                  <Route path="/admin" element={<AdminLayout />}>
-                    <Route path="dashboard" element={<AdminDashboard />} />
-                    <Route path="customers" element={<Customers />} />
-                    <Route path="invoices" element={<Invoices />} />
-                    <Route path="payments" element={<Payments />} />
-                    <Route path="reports" element={<Reports />} />
-                    <Route path="settings" element={<Settings />} />
-                    <Route path="profile" element={<AdminProfile />} />
-                    {/* Expense Manager sub-routes */}
-                    <Route path="expense-manager" element={<ExpenseDashboard />} />
-                    <Route path="expense-manager/add" element={<AddExpense />} />
-                    <Route path="expense-manager/history" element={<ExpenseHistory />} />
-                    <Route path="expense-manager/reports" element={<ExpenseReports />} />
-                    <Route path="expense-manager/settings" element={<ExpenseSettings />} />
-                  </Route>
-
-                  {/* ── FALLBACK ────────────────────────────────────────────── */}
-                  <Route path="/" element={<Navigate to="/login" replace />} />
-                  <Route path="*" element={<Navigate to="/login" replace />} />
-
-                </Routes>
+                <AppRoutes />
               </BrowserRouter>
             </SocketProvider>
           </AdminAuthProvider>
