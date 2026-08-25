@@ -24,24 +24,29 @@ export const findAdminById = async (id: string): Promise<AdminModel | null> => {
  * Find all admins
  */
 export const findAllAdmins = async (): Promise<AdminModel[]> => {
-  const admins = await queryItems<AdminModel>({
-    IndexName: 'GSI1',
-    KeyConditionExpression: 'GSI1PK = :gsi1pk',
-    ExpressionAttributeValues: {
-      ':gsi1pk': 'ADMINS',
-    },
-  });
+  try {
+    const admins = await queryItems<AdminModel>({
+      IndexName: 'GSI1',
+      KeyConditionExpression: 'GSI1PK = :gsi1pk',
+      ExpressionAttributeValues: {
+        ':gsi1pk': 'ADMINS',
+      },
+    });
 
-  if (admins.length > 0) return admins;
+    if (admins.length > 0) return admins;
 
-  // Fallback scan for items with PK begins_with ADMIN# and SK = PROFILE
-  return scanItems<AdminModel>({
-    FilterExpression: 'begins_with(PK, :prefix) AND SK = :sk',
-    ExpressionAttributeValues: {
-      ':prefix': 'ADMIN#',
-      ':sk': 'PROFILE',
-    },
-  });
+    // Fallback scan for items with PK begins_with ADMIN# and SK = PROFILE
+    return await scanItems<AdminModel>({
+      FilterExpression: 'begins_with(PK, :prefix) AND SK = :sk',
+      ExpressionAttributeValues: {
+        ':prefix': 'ADMIN#',
+        ':sk': 'PROFILE',
+      },
+    });
+  } catch (err: any) {
+    console.warn('[AdminRepository] Warning querying DynamoDB admins:', err.message);
+    return [];
+  }
 };
 
 /**

@@ -39,24 +39,29 @@ export const findCustomerById = async (id: string): Promise<CustomerModel | null
  * Find all customers
  */
 export const findAllCustomers = async (): Promise<CustomerModel[]> => {
-  const customers = await queryItems<CustomerModel>({
-    IndexName: 'GSI1',
-    KeyConditionExpression: 'GSI1PK = :gsi1pk',
-    ExpressionAttributeValues: {
-      ':gsi1pk': 'CUSTOMERS',
-    },
-    ScanIndexForward: false, // Descending order by createdAt
-  });
+  try {
+    const customers = await queryItems<CustomerModel>({
+      IndexName: 'GSI1',
+      KeyConditionExpression: 'GSI1PK = :gsi1pk',
+      ExpressionAttributeValues: {
+        ':gsi1pk': 'CUSTOMERS',
+      },
+      ScanIndexForward: false, // Descending order by createdAt
+    });
 
-  if (customers.length > 0) return customers;
+    if (customers.length > 0) return customers;
 
-  return scanItems<CustomerModel>({
-    FilterExpression: 'begins_with(PK, :prefix) AND SK = :sk',
-    ExpressionAttributeValues: {
-      ':prefix': 'CUSTOMER#',
-      ':sk': 'PROFILE',
-    },
-  });
+    return await scanItems<CustomerModel>({
+      FilterExpression: 'begins_with(PK, :prefix) AND SK = :sk',
+      ExpressionAttributeValues: {
+        ':prefix': 'CUSTOMER#',
+        ':sk': 'PROFILE',
+      },
+    });
+  } catch (err: any) {
+    console.warn('[CustomerRepository] Warning querying DynamoDB customers:', err.message);
+    return [];
+  }
 };
 
 /**

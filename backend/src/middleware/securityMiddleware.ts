@@ -1,16 +1,23 @@
 import { Request, Response, NextFunction } from 'express';
 
-// ─── 1. ACCOUNT LOCKOUT & BRUTE-FORCE SHIELD ────────────────────────────────
+// ─── 1. TIERED ACCOUNT LOCKOUT & BRUTE-FORCE SHIELD ────────────────────────
 
 interface LockoutRecord {
   attempts: number;
   firstAttemptAt: number;
   lockedUntil: number | null;
+  lastAttemptAt: number;
 }
 
-const MAX_FAILED_ATTEMPTS = 5;
-const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes lockout
-const ATTEMPT_WINDOW_MS = 15 * 60 * 1000;   // 15 minutes attempt window
+export interface FailedAttemptResult {
+  totalAttempts: number;
+  locked: boolean;
+  lockoutMinutes: number;
+  attemptsLeft: number;
+  message: string;
+}
+
+const INACTIVITY_RESET_WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours of inactivity resets attempts
 
 class AccountLockoutManager {
   private store: Map<string, LockoutRecord> = new Map();
@@ -26,56 +33,123 @@ class AccountLockoutManager {
     return `${cleanId}#${cleanIp}`;
   }
 
-  public isAccountLocked(identifier: string, ip?: string): { locked: boolean; remainingMinutes: number } {
+  public isAccountLocked(identifier: string, ip?: string): { locked: boolean; remainingMinutes: number; totalAttempts: number } {
     const key = this.normalizeKey(identifier, ip);
     const record = this.store.get(key);
 
     if (!record || !record.lockedUntil) {
-      return { locked: false, remainingMinutes: 0 };
+      return { locked: false, remainingMinutes: 0, totalAttempts: record?.attempts || 0 };
     }
 
     const now = Date.now();
     if (now < record.lockedUntil) {
       const remainingMs = record.lockedUntil - now;
       const remainingMinutes = Math.ceil(remainingMs / (60 * 1000));
-      return { locked: true, remainingMinutes };
+      return { locked: true, remainingMinutes, totalAttempts: record.attempts };
     }
 
-    // Lockout has expired — reset
-    this.store.delete(key);
-    return { locked: false, remainingMinutes: 0 };
+    // Lockout has expired — clear lockedUntil flag so user enters next tier
+    record.lockedUntil = null;
+    this.store.set(key, record);
+    return { locked: false, remainingMinutes: 0, totalAttempts: record.attempts };
   }
 
-  public recordFailedAttempt(identifier: string, ip?: string): { attemptsLeft: number; locked: boolean; remainingMinutes: number } {
+  /**
+   * Records a failed attempt and evaluates Tiered Lockout:
+   * - 1-2 attempts: Alert email sent, 2 / 1 attempts remaining until 10-minute lockout.
+   * - 3rd attempt: 10-minute lockout + Lockout email sent.
+   * - 4th attempt (after 10m lock): Alert email sent, 1 attempt remaining until 15-minute lockout.
+   * - 5th attempt: 15-minute lockout + Lockout email sent.
+   * - 6th and subsequent attempts: 10-minute lockout each time + Lockout email sent.
+   */
+  public recordFailedAttempt(identifier: string, ip?: string): FailedAttemptResult {
     const key = this.normalizeKey(identifier, ip);
     const now = Date.now();
     let record = this.store.get(key);
 
-    if (!record || now - record.firstAttemptAt > ATTEMPT_WINDOW_MS) {
+    if (!record || now - record.lastAttemptAt > INACTIVITY_RESET_WINDOW_MS) {
       record = {
         attempts: 1,
         firstAttemptAt: now,
+        lastAttemptAt: now,
         lockedUntil: null,
       };
     } else {
       record.attempts += 1;
+      record.lastAttemptAt = now;
     }
 
-    if (record.attempts >= MAX_FAILED_ATTEMPTS) {
-      record.lockedUntil = now + LOCKOUT_DURATION_MS;
+    const attempts = record.attempts;
+
+    if (attempts === 1) {
       this.store.set(key, record);
       return {
-        attemptsLeft: 0,
-        locked: true,
-        remainingMinutes: Math.ceil(LOCKOUT_DURATION_MS / (60 * 1000)),
+        totalAttempts: 1,
+        locked: false,
+        lockoutMinutes: 0,
+        attemptsLeft: 2,
+        message: 'Invalid credentials. You have 2 attempt(s) remaining before a 10-minute account lockout.',
       };
     }
 
+    if (attempts === 2) {
+      this.store.set(key, record);
+      return {
+        totalAttempts: 2,
+        locked: false,
+        lockoutMinutes: 0,
+        attemptsLeft: 1,
+        message: 'Invalid credentials. Warning: 1 attempt remaining before a 10-minute account lockout.',
+      };
+    }
+
+    if (attempts === 3) {
+      const lockoutMinutes = 10;
+      record.lockedUntil = now + lockoutMinutes * 60 * 1000;
+      this.store.set(key, record);
+      return {
+        totalAttempts: 3,
+        locked: true,
+        lockoutMinutes,
+        attemptsLeft: 0,
+        message: `Account temporarily locked for ${lockoutMinutes} minutes due to 3 consecutive failed login attempts.`,
+      };
+    }
+
+    if (attempts === 4) {
+      this.store.set(key, record);
+      return {
+        totalAttempts: 4,
+        locked: false,
+        lockoutMinutes: 0,
+        attemptsLeft: 1,
+        message: 'Invalid credentials. Warning: 1 attempt remaining before a 15-minute account lockout.',
+      };
+    }
+
+    if (attempts === 5) {
+      const lockoutMinutes = 15;
+      record.lockedUntil = now + lockoutMinutes * 60 * 1000;
+      this.store.set(key, record);
+      return {
+        totalAttempts: 5,
+        locked: true,
+        lockoutMinutes,
+        attemptsLeft: 0,
+        message: `Account temporarily locked for ${lockoutMinutes} minutes due to 5 consecutive failed login attempts.`,
+      };
+    }
+
+    // 6th and each subsequent failure: 10 minutes lock
+    const lockoutMinutes = 10;
+    record.lockedUntil = now + lockoutMinutes * 60 * 1000;
     this.store.set(key, record);
     return {
-      attemptsLeft: MAX_FAILED_ATTEMPTS - record.attempts,
-      locked: false,
-      remainingMinutes: 0,
+      totalAttempts: attempts,
+      locked: true,
+      lockoutMinutes,
+      attemptsLeft: 0,
+      message: `Account temporarily locked for ${lockoutMinutes} minutes due to repeated failed login attempts.`,
     };
   }
 
@@ -87,9 +161,9 @@ class AccountLockoutManager {
   private cleanup(): void {
     const now = Date.now();
     for (const [key, record] of this.store.entries()) {
-      if (record.lockedUntil && now > record.lockedUntil) {
+      if (record.lockedUntil && now > record.lockedUntil && now - record.lastAttemptAt > INACTIVITY_RESET_WINDOW_MS) {
         this.store.delete(key);
-      } else if (!record.lockedUntil && now - record.firstAttemptAt > ATTEMPT_WINDOW_MS) {
+      } else if (!record.lockedUntil && now - record.lastAttemptAt > INACTIVITY_RESET_WINDOW_MS) {
         this.store.delete(key);
       }
     }

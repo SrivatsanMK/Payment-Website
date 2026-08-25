@@ -477,3 +477,149 @@ export const sendPaymentConfirmationWithPdfEmail = async (
     ]
   });
 };
+
+/**
+ * Sends a Security Alert email when a failed login attempt occurs.
+ */
+export const sendFailedLoginAttemptEmail = async (params: {
+  email: string;
+  name: string;
+  identifier: string;
+  ip: string;
+  attemptsCount: number;
+  attemptsLeft: number;
+  role: 'Customer' | 'Admin';
+}): Promise<boolean> => {
+  const { email, name, identifier, ip, attemptsCount, attemptsLeft, role } = params;
+  const timeString = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+
+  const html = `
+    <div style="font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #fed7aa; border-radius: 12px; background-color: #ffffff; color: #1e293b;">
+      <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #f97316; padding-bottom: 12px;">
+        <h2 style="color: #ea580c; margin: 0; font-size: 22px;">⚠️ Security Alert: Failed Login Attempt</h2>
+        <span style="font-size: 13px; color: #64748b; font-weight: 500;">Green Glide Logistics Security Shield</span>
+      </div>
+      
+      <p style="font-size: 15px;">Hello <strong>${name}</strong>,</p>
+      
+      <p style="font-size: 14px; line-height: 1.6; color: #334155;">
+        A failed sign-in attempt was detected for your <strong>${role}</strong> account (<strong>${identifier}</strong>) using an incorrect password or credentials.
+      </p>
+
+      <div style="background-color: #fff7ed; border-left: 4px solid #f97316; border-radius: 6px; padding: 14px 18px; margin: 20px 0;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+          <tr>
+            <td style="padding: 6px 0; color: #64748b; width: 140px;"><strong>Attempt Count:</strong></td>
+            <td style="padding: 6px 0; color: #c2410c; font-weight: bold;">Attempt #${attemptsCount}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #64748b;"><strong>Attempts Remaining:</strong></td>
+            <td style="padding: 6px 0; color: #0369a1; font-weight: bold;">${attemptsLeft} attempt(s) before lockout</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #64748b;"><strong>IP Address:</strong></td>
+            <td style="padding: 6px 0; color: #0f172a; font-family: monospace;">${ip || 'Unknown IP'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #64748b;"><strong>Timestamp:</strong></td>
+            <td style="padding: 6px 0; color: #0f172a;">${timeString} (IST)</td>
+          </tr>
+        </table>
+      </div>
+
+      <p style="font-size: 13px; color: #475569; line-height: 1.5;">
+        <strong>If this was you:</strong> Please ensure you are entering your correct assigned ${role} ID and password.<br/>
+        <strong>If this was NOT you:</strong> Someone may be attempting to access your account. We recommend resetting your password immediately.
+      </p>
+
+      <div style="text-align: center; margin-top: 25px;">
+        <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}${role === 'Admin' ? '/admin/forgot-password' : '/forgot-password'}" style="background-color: #ea580c; color: #ffffff; text-decoration: none; padding: 11px 22px; border-radius: 8px; font-weight: bold; font-size: 14px; display: inline-block;">
+          Secure / Reset Password
+        </a>
+      </div>
+
+      <p style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 25px; border-top: 1px solid #f1f5f9; padding-top: 12px;">
+        This automated security notification is delivered instantly upon any failed authentication activity on your Green Glide Logistics account.
+      </p>
+    </div>
+  `;
+
+  return sendEmail({
+    to: email,
+    subject: `⚠️ Security Alert: Failed Sign-In Attempt on ${role} Account (${identifier})`,
+    html,
+  });
+};
+
+/**
+ * Sends a Critical Account Lockout notification email.
+ */
+export const sendAccountLockedEmail = async (params: {
+  email: string;
+  name: string;
+  identifier: string;
+  ip: string;
+  lockoutMinutes: number;
+  totalAttempts: number;
+  role: 'Customer' | 'Admin';
+}): Promise<boolean> => {
+  const { email, name, identifier, ip, lockoutMinutes, totalAttempts, role } = params;
+  const timeString = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+
+  const html = `
+    <div style="font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #fecaca; border-radius: 12px; background-color: #ffffff; color: #1e293b;">
+      <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #ef4444; padding-bottom: 12px;">
+        <h2 style="color: #dc2626; margin: 0; font-size: 22px;">🔒 Account Temporarily Locked</h2>
+        <span style="font-size: 13px; color: #64748b; font-weight: 500;">Green Glide Logistics Security Shield</span>
+      </div>
+      
+      <p style="font-size: 15px;">Hello <strong>${name}</strong>,</p>
+      
+      <p style="font-size: 14px; line-height: 1.6; color: #334155;">
+        Your <strong>${role}</strong> account (<strong>${identifier}</strong>) has been <strong>temporarily locked for ${lockoutMinutes} minutes</strong> due to <strong>${totalAttempts} consecutive failed login attempts</strong>.
+      </p>
+
+      <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; border-radius: 6px; padding: 14px 18px; margin: 20px 0;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+          <tr>
+            <td style="padding: 6px 0; color: #64748b; width: 140px;"><strong>Lockout Duration:</strong></td>
+            <td style="padding: 6px 0; color: #dc2626; font-weight: bold;">${lockoutMinutes} Minutes</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #64748b;"><strong>Failed Attempts:</strong></td>
+            <td style="padding: 6px 0; color: #991b1b; font-weight: bold;">${totalAttempts} failed attempts</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #64748b;"><strong>Source IP:</strong></td>
+            <td style="padding: 6px 0; color: #0f172a; font-family: monospace;">${ip || 'Unknown IP'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 0; color: #64748b;"><strong>Locked At:</strong></td>
+            <td style="padding: 6px 0; color: #0f172a;">${timeString} (IST)</td>
+          </tr>
+        </table>
+      </div>
+
+      <p style="font-size: 13px; color: #475569; line-height: 1.5;">
+        For your protection, further login attempts from this source are restricted during the lockout window. Once the timer expires, you may sign in with your valid credentials.
+      </p>
+
+      <div style="text-align: center; margin-top: 25px;">
+        <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}${role === 'Admin' ? '/admin/forgot-password' : '/forgot-password'}" style="background-color: #dc2626; color: #ffffff; text-decoration: none; padding: 11px 22px; border-radius: 8px; font-weight: bold; font-size: 14px; display: inline-block;">
+          Recover / Reset Password
+        </a>
+      </div>
+
+      <p style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 25px; border-top: 1px solid #f1f5f9; padding-top: 12px;">
+        Green Glide Logistics Automated Defense System • Anti-Brute-Force & Credential Guard
+      </p>
+    </div>
+  `;
+
+  return sendEmail({
+    to: email,
+    subject: `🔒 CRITICAL: Account Temporarily Locked (${lockoutMinutes} mins) - ${role} ID ${identifier}`,
+    html,
+  });
+};
+

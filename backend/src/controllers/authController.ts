@@ -23,7 +23,14 @@ import {
   deleteOtp,
   incrementOtpAttempts,
 } from '../repositories/otpRepository';
-import { sendOTPEmail, sendEmail, sendNewAdminIdEmail, sendCustomerIdEmail } from '../utils/email';
+import {
+  sendOTPEmail,
+  sendEmail,
+  sendNewAdminIdEmail,
+  sendCustomerIdEmail,
+  sendFailedLoginAttemptEmail,
+  sendAccountLockedEmail,
+} from '../utils/email';
 import { lockoutManager } from '../middleware/securityMiddleware';
 
 const generateTokens = (id: string, role: string) => {
@@ -43,11 +50,17 @@ const generateTokens = (id: string, role: string) => {
 /**
  * Customer Login — strictly allows Customer ID only (e.g. CUST-10001, GGL-10001)
  * Login via Email or Phone Number is blocked for high security.
+ * Tiered Lockout:
+ *   - Attempts 1-2: Security alert email sent.
+ *   - Attempt 3: 10-minute lockout + Lockout email sent.
+ *   - Attempt 4: Security alert email sent.
+ *   - Attempt 5: 15-minute lockout + Lockout email sent.
+ *   - Attempt 6+: 10-minute lockout each time + Lockout email sent.
  */
 export const customerLogin = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { identifier, password } = req.body;
-    const clientIp = req.ip || req.socket.remoteAddress;
+    const clientIp = req.ip || req.socket.remoteAddress || '';
 
     if (!identifier || !password) {
       return res.status(400).json({ success: false, message: 'Please provide your Customer ID and password.' });
@@ -72,7 +85,7 @@ export const customerLogin = async (req: Request, res: Response, next: NextFunct
     }
 
     // Check brute-force account lockout status
-    const lockoutStatus = lockoutManager.isAccountLocked(cleanIdentifier, clientIp);
+    const lockoutStatus = lockoutManager.isAccountLocked(cleanIdentifier, String(clientIp));
     if (lockoutStatus.locked) {
       return res.status(429).json({
         success: false,
@@ -84,16 +97,16 @@ export const customerLogin = async (req: Request, res: Response, next: NextFunct
     const user = await findCustomerByCustomerId(cleanIdentifier);
 
     if (!user) {
-      const attemptResult = lockoutManager.recordFailedAttempt(cleanIdentifier, clientIp);
+      const attemptResult = lockoutManager.recordFailedAttempt(cleanIdentifier, String(clientIp));
       if (attemptResult.locked) {
         return res.status(429).json({
           success: false,
-          message: `Too many invalid attempts. Your account is temporarily locked for ${attemptResult.remainingMinutes} minutes.`
+          message: attemptResult.message,
         });
       }
       return res.status(401).json({
         success: false,
-        message: `Invalid credentials. Please check your Customer ID and password. (${attemptResult.attemptsLeft} attempt(s) remaining)`
+        message: attemptResult.message,
       });
     }
 
@@ -103,21 +116,48 @@ export const customerLogin = async (req: Request, res: Response, next: NextFunct
 
     const isMatch = await compareCustomerPassword(password, user.password || '');
     if (!isMatch) {
-      const attemptResult = lockoutManager.recordFailedAttempt(cleanIdentifier, clientIp);
+      const attemptResult = lockoutManager.recordFailedAttempt(cleanIdentifier, String(clientIp));
+
+      // Asynchronously send security alert / lockout email to customer
+      if (user.email) {
+        if (attemptResult.locked) {
+          sendAccountLockedEmail({
+            email: user.email,
+            name: user.name || 'Customer',
+            identifier: user.customerId || cleanIdentifier,
+            ip: String(clientIp),
+            lockoutMinutes: attemptResult.lockoutMinutes,
+            totalAttempts: attemptResult.totalAttempts,
+            role: 'Customer',
+          }).catch((err) => console.error('[Security Email] Error sending customer lockout email:', err));
+        } else {
+          sendFailedLoginAttemptEmail({
+            email: user.email,
+            name: user.name || 'Customer',
+            identifier: user.customerId || cleanIdentifier,
+            ip: String(clientIp),
+            attemptsCount: attemptResult.totalAttempts,
+            attemptsLeft: attemptResult.attemptsLeft,
+            role: 'Customer',
+          }).catch((err) => console.error('[Security Email] Error sending customer attempt email:', err));
+        }
+      }
+
       if (attemptResult.locked) {
         return res.status(429).json({
           success: false,
-          message: `Too many invalid attempts. Your account is temporarily locked for ${attemptResult.remainingMinutes} minutes.`
+          message: attemptResult.message,
         });
       }
+
       return res.status(401).json({
         success: false,
-        message: `Invalid credentials. Please check your Customer ID and password. (${attemptResult.attemptsLeft} attempt(s) remaining)`
+        message: attemptResult.message,
       });
     }
 
     // Reset lockout attempts on successful authentication
-    lockoutManager.resetFailedAttempts(cleanIdentifier, clientIp);
+    lockoutManager.resetFailedAttempts(cleanIdentifier, String(clientIp));
 
     const userId = user.id || user._id || '';
     const { accessToken, refreshToken } = generateTokens(userId, 'Customer');
@@ -148,11 +188,17 @@ export const customerLogin = async (req: Request, res: Response, next: NextFunct
 /**
  * Admin Login — strictly allows Admin ID only (e.g. ADM-10001, ADM-10002)
  * Login via Email, Phone, or Username is blocked for high security.
+ * Tiered Lockout:
+ *   - Attempts 1-2: Security alert email sent.
+ *   - Attempt 3: 10-minute lockout + Lockout email sent.
+ *   - Attempt 4: Security alert email sent.
+ *   - Attempt 5: 15-minute lockout + Lockout email sent.
+ *   - Attempt 6+: 10-minute lockout each time + Lockout email sent.
  */
 export const adminLogin = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { identifier, password } = req.body;
-    const clientIp = req.ip || req.socket.remoteAddress;
+    const clientIp = req.ip || req.socket.remoteAddress || '';
 
     if (!identifier || !password) {
       return res.status(400).json({ success: false, message: 'Please provide your Admin ID and password.' });
@@ -169,7 +215,7 @@ export const adminLogin = async (req: Request, res: Response, next: NextFunction
     }
 
     // Check brute-force account lockout status
-    const lockoutStatus = lockoutManager.isAccountLocked(cleanIdentifier, clientIp);
+    const lockoutStatus = lockoutManager.isAccountLocked(cleanIdentifier, String(clientIp));
     if (lockoutStatus.locked) {
       return res.status(429).json({
         success: false,
@@ -181,36 +227,63 @@ export const adminLogin = async (req: Request, res: Response, next: NextFunction
     const user = await findAdminByAdminId(cleanIdentifier);
 
     if (!user) {
-      const attemptResult = lockoutManager.recordFailedAttempt(cleanIdentifier, clientIp);
+      const attemptResult = lockoutManager.recordFailedAttempt(cleanIdentifier, String(clientIp));
       if (attemptResult.locked) {
         return res.status(429).json({
           success: false,
-          message: `Too many invalid attempts. Admin account is temporarily locked for ${attemptResult.remainingMinutes} minutes.`
+          message: attemptResult.message,
         });
       }
       return res.status(401).json({
         success: false,
-        message: `Invalid credentials. Please check your Admin ID and password. (${attemptResult.attemptsLeft} attempt(s) remaining)`
+        message: attemptResult.message,
       });
     }
 
     const isMatch = await comparePassword(password, user.password || '');
     if (!isMatch) {
-      const attemptResult = lockoutManager.recordFailedAttempt(cleanIdentifier, clientIp);
+      const attemptResult = lockoutManager.recordFailedAttempt(cleanIdentifier, String(clientIp));
+
+      // Asynchronously send security alert / lockout email to admin
+      if (user.email) {
+        if (attemptResult.locked) {
+          sendAccountLockedEmail({
+            email: user.email,
+            name: user.displayName || user.username || 'Admin',
+            identifier: user.adminId || cleanIdentifier,
+            ip: String(clientIp),
+            lockoutMinutes: attemptResult.lockoutMinutes,
+            totalAttempts: attemptResult.totalAttempts,
+            role: 'Admin',
+          }).catch((err) => console.error('[Security Email] Error sending admin lockout email:', err));
+        } else {
+          sendFailedLoginAttemptEmail({
+            email: user.email,
+            name: user.displayName || user.username || 'Admin',
+            identifier: user.adminId || cleanIdentifier,
+            ip: String(clientIp),
+            attemptsCount: attemptResult.totalAttempts,
+            attemptsLeft: attemptResult.attemptsLeft,
+            role: 'Admin',
+          }).catch((err) => console.error('[Security Email] Error sending admin attempt email:', err));
+        }
+      }
+
       if (attemptResult.locked) {
         return res.status(429).json({
           success: false,
-          message: `Too many invalid attempts. Admin account is temporarily locked for ${attemptResult.remainingMinutes} minutes.`
+          message: attemptResult.message,
         });
       }
+
       return res.status(401).json({
         success: false,
-        message: `Invalid credentials. Please check your Admin ID and password. (${attemptResult.attemptsLeft} attempt(s) remaining)`
+        message: attemptResult.message,
       });
     }
 
     // Reset lockout attempts on successful authentication
-    lockoutManager.resetFailedAttempts(cleanIdentifier, clientIp);
+    lockoutManager.resetFailedAttempts(cleanIdentifier, String(clientIp));
 
     const actualRole = user.role; // ADMIN_1 or ADMIN_2
     const userId = user.id || user._id || '';
