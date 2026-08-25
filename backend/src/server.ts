@@ -28,6 +28,7 @@ import notificationRoutes from './routes/notificationRoutes';
 import expenseRoutes from './routes/expenseRoutes';
 import privateBusinessRoutes from './routes/privateBusinessRoutes';
 import categoryRoutes from './routes/categoryRoutes';
+import { sanitizePayloads, securityErrorHandler } from './middleware/securityMiddleware';
 
 // Load Env variables
 dotenv.config();
@@ -59,9 +60,19 @@ dotenv.config();
 
 const app = express();
 
-// Security Middlewares
+// Comprehensive Enterprise Security Middlewares (Helmet)
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'cross-origin' } // allows serving static local images to external react app
+  crossOriginResourcePolicy: { policy: 'cross-origin' }, // allows serving static local images to external react app
+  frameguard: { action: 'deny' },                        // Anti-Clickjacking
+  hidePoweredBy: true,                                   // Mask Express framework headers
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true,
+  },
+  noSniff: true,                                         // Prevent MIME-sniffing exploits
+  xssFilter: true,                                       // Cross-site scripting filter
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
 }));
 
 // CORS Configuration
@@ -92,6 +103,9 @@ io.on('connection', (socket) => {
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+// Anti-Injection & Deep Payload Sanitization
+app.use(sanitizePayloads);
+
 // Serving file uploads statically
 app.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
 
@@ -110,7 +124,7 @@ const apiLimiter = rateLimit({
 // Stricter Rate Limiting for Auth login/verification
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'production' ? 30 : 100000, // high limit in development/testing
+  max: process.env.NODE_ENV === 'production' ? 20 : 100000, // max 20 attempts per IP window
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -122,6 +136,8 @@ const authLimiter = rateLimit({
 // Apply rate limiter
 app.use('/api/', apiLimiter);
 app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/customer/login', authLimiter);
+app.use('/api/auth/admin/login', authLimiter);
 app.use('/api/auth/forgot-password', authLimiter);
 app.use('/api/auth/verify-otp', authLimiter);
 
@@ -145,7 +161,8 @@ app.get('/', (req, res) => {
 // Catch 404 Route
 app.use(notFound);
 
-// Global Error Handler
+// Security & Global Error Handler
+app.use(securityErrorHandler);
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;

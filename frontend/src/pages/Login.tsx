@@ -16,14 +16,25 @@ export const Login: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!identifier || !password) {
-      showToast('Please fill in all fields', 'error');
+    const cleanId = identifier.trim();
+    if (!cleanId || !password) {
+      showToast('Please enter your Customer ID and password', 'error');
+      return;
+    }
+
+    if (cleanId.includes('@')) {
+      showToast('Email login is disabled. Please enter your assigned Customer ID (e.g. CUST-10001).', 'error');
+      return;
+    }
+
+    if (/^\+?\d{10,15}$/.test(cleanId)) {
+      showToast('Phone number login is disabled. Please enter your assigned Customer ID (e.g. CUST-10001).', 'error');
       return;
     }
 
     setLoading(true);
     try {
-      const res = await login({ identifier, password });
+      const res = await login({ identifier: cleanId, password });
       showToast('Welcome back!', 'success');
 
       if (res.user.forcedPasswordReset) {
@@ -45,7 +56,7 @@ export const Login: React.FC = () => {
     <CinematicLogin
       title="Customer Portal"
       identifierLabel="Customer ID"
-      identifierPlaceholder="Enter Your Customer ID"
+      identifierPlaceholder="Enter Your Customer ID (e.g. CUST-10001)"
       passwordLabel="Password"
       forgotPasswordLink="/forgot-password"
       forgotCustomerIdLink="/forgot-customer-id"

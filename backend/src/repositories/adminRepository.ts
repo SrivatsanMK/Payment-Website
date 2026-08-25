@@ -45,6 +45,16 @@ export const findAllAdmins = async (): Promise<AdminModel[]> => {
 };
 
 /**
+ * Find admin strictly by adminId (e.g. ADM-10001)
+ */
+export const findAdminByAdminId = async (adminId: string): Promise<AdminModel | null> => {
+  if (!adminId) return null;
+  const cleanId = adminId.trim().toUpperCase();
+  const allAdmins = await findAllAdmins();
+  return allAdmins.find((a) => a.adminId && a.adminId.trim().toUpperCase() === cleanId) || null;
+};
+
+/**
  * Find admin by any identifier: adminId, email, username, or phone
  */
 export const findAdminByIdentifier = async (identifier: string): Promise<AdminModel | null> => {

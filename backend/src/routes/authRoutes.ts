@@ -25,6 +25,7 @@ const router = Router();
 
 // Customer auth routes (public)
 router.post('/login', customerLogin);
+router.post('/customer/login', customerLogin);
 router.post('/forgot-password', requestOTP);
 router.post('/verify-otp', verifyOTP);
 router.post('/reset-password', resetPassword);

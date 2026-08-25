@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import {
   findAdminById,
+  findAdminByAdminId,
   findAdminByIdentifier,
   findAdminByEmail,
   findAllAdmins,
@@ -10,6 +11,7 @@ import {
 } from '../repositories/adminRepository';
 import {
   findCustomerById,
+  findCustomerByCustomerId,
   findCustomerByIdentifier,
   findCustomerByEmail,
   updateCustomer,
@@ -22,6 +24,7 @@ import {
   incrementOtpAttempts,
 } from '../repositories/otpRepository';
 import { sendOTPEmail, sendEmail, sendNewAdminIdEmail, sendCustomerIdEmail } from '../utils/email';
+import { lockoutManager } from '../middleware/securityMiddleware';
 
 const generateTokens = (id: string, role: string) => {
   const accessToken = jwt.sign(
@@ -38,20 +41,60 @@ const generateTokens = (id: string, role: string) => {
 };
 
 /**
- * Customer Login — only allows Customer accounts
+ * Customer Login — strictly allows Customer ID only (e.g. CUST-10001, GGL-10001)
+ * Login via Email or Phone Number is blocked for high security.
  */
 export const customerLogin = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { identifier, password } = req.body;
+    const clientIp = req.ip || req.socket.remoteAddress;
 
     if (!identifier || !password) {
-      return res.status(400).json({ success: false, message: 'Please provide your Customer ID/Email and password' });
+      return res.status(400).json({ success: false, message: 'Please provide your Customer ID and password.' });
     }
 
-    const user = await findCustomerByIdentifier(identifier);
+    const cleanIdentifier = identifier.trim();
+
+    // Block email formats during login
+    if (cleanIdentifier.includes('@')) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email login is disabled for security. Please log in using your Customer ID only (e.g. CUST-10001).'
+      });
+    }
+
+    // Block raw phone numbers (10+ pure digits) during login
+    if (/^\+?\d{10,15}$/.test(cleanIdentifier)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Phone number login is disabled for security. Please log in using your Customer ID only (e.g. CUST-10001).'
+      });
+    }
+
+    // Check brute-force account lockout status
+    const lockoutStatus = lockoutManager.isAccountLocked(cleanIdentifier, clientIp);
+    if (lockoutStatus.locked) {
+      return res.status(429).json({
+        success: false,
+        message: `Account temporarily locked due to multiple failed login attempts. Please try again in ${lockoutStatus.remainingMinutes} minute(s).`
+      });
+    }
+
+    // Strictly lookup customer by Customer ID
+    const user = await findCustomerByCustomerId(cleanIdentifier);
 
     if (!user) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials. Please check your Customer ID and password.' });
+      const attemptResult = lockoutManager.recordFailedAttempt(cleanIdentifier, clientIp);
+      if (attemptResult.locked) {
+        return res.status(429).json({
+          success: false,
+          message: `Too many invalid attempts. Your account is temporarily locked for ${attemptResult.remainingMinutes} minutes.`
+        });
+      }
+      return res.status(401).json({
+        success: false,
+        message: `Invalid credentials. Please check your Customer ID and password. (${attemptResult.attemptsLeft} attempt(s) remaining)`
+      });
     }
 
     if (user.status === 'Suspended') {
@@ -60,8 +103,21 @@ export const customerLogin = async (req: Request, res: Response, next: NextFunct
 
     const isMatch = await compareCustomerPassword(password, user.password || '');
     if (!isMatch) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials. Please check your Customer ID and password.' });
+      const attemptResult = lockoutManager.recordFailedAttempt(cleanIdentifier, clientIp);
+      if (attemptResult.locked) {
+        return res.status(429).json({
+          success: false,
+          message: `Too many invalid attempts. Your account is temporarily locked for ${attemptResult.remainingMinutes} minutes.`
+        });
+      }
+      return res.status(401).json({
+        success: false,
+        message: `Invalid credentials. Please check your Customer ID and password. (${attemptResult.attemptsLeft} attempt(s) remaining)`
+      });
     }
+
+    // Reset lockout attempts on successful authentication
+    lockoutManager.resetFailedAttempts(cleanIdentifier, clientIp);
 
     const userId = user.id || user._id || '';
     const { accessToken, refreshToken } = generateTokens(userId, 'Customer');
@@ -90,26 +146,71 @@ export const customerLogin = async (req: Request, res: Response, next: NextFunct
 };
 
 /**
- * Admin Login — only allows ADMIN_1 and ADMIN_2 accounts
+ * Admin Login — strictly allows Admin ID only (e.g. ADM-10001, ADM-10002)
+ * Login via Email, Phone, or Username is blocked for high security.
  */
 export const adminLogin = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { identifier, password } = req.body;
+    const clientIp = req.ip || req.socket.remoteAddress;
 
     if (!identifier || !password) {
-      return res.status(400).json({ success: false, message: 'Please provide your Admin ID/Email and password' });
+      return res.status(400).json({ success: false, message: 'Please provide your Admin ID and password.' });
     }
 
-    const user = await findAdminByIdentifier(identifier);
+    const cleanIdentifier = identifier.trim();
+
+    // Block email formats during admin login
+    if (cleanIdentifier.includes('@')) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email login is disabled for security. Please log in using your assigned Admin ID only (e.g. ADM-10001).'
+      });
+    }
+
+    // Check brute-force account lockout status
+    const lockoutStatus = lockoutManager.isAccountLocked(cleanIdentifier, clientIp);
+    if (lockoutStatus.locked) {
+      return res.status(429).json({
+        success: false,
+        message: `Admin account temporarily locked due to multiple failed login attempts. Please try again in ${lockoutStatus.remainingMinutes} minute(s).`
+      });
+    }
+
+    // Strictly lookup admin by Admin ID
+    const user = await findAdminByAdminId(cleanIdentifier);
 
     if (!user) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials. Please check your Admin ID and password.' });
+      const attemptResult = lockoutManager.recordFailedAttempt(cleanIdentifier, clientIp);
+      if (attemptResult.locked) {
+        return res.status(429).json({
+          success: false,
+          message: `Too many invalid attempts. Admin account is temporarily locked for ${attemptResult.remainingMinutes} minutes.`
+        });
+      }
+      return res.status(401).json({
+        success: false,
+        message: `Invalid credentials. Please check your Admin ID and password. (${attemptResult.attemptsLeft} attempt(s) remaining)`
+      });
     }
 
     const isMatch = await comparePassword(password, user.password || '');
     if (!isMatch) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials. Please check your Admin ID and password.' });
+      const attemptResult = lockoutManager.recordFailedAttempt(cleanIdentifier, clientIp);
+      if (attemptResult.locked) {
+        return res.status(429).json({
+          success: false,
+          message: `Too many invalid attempts. Admin account is temporarily locked for ${attemptResult.remainingMinutes} minutes.`
+        });
+      }
+      return res.status(401).json({
+        success: false,
+        message: `Invalid credentials. Please check your Admin ID and password. (${attemptResult.attemptsLeft} attempt(s) remaining)`
+      });
     }
+
+    // Reset lockout attempts on successful authentication
+    lockoutManager.resetFailedAttempts(cleanIdentifier, clientIp);
 
     const actualRole = user.role; // ADMIN_1 or ADMIN_2
     const userId = user.id || user._id || '';

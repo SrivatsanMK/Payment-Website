@@ -16,14 +16,20 @@ export const AdminLogin: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!identifier || !password) {
-      showToast('Please fill in all fields', 'error');
+    const cleanId = identifier.trim();
+    if (!cleanId || !password) {
+      showToast('Please enter your Admin ID and password', 'error');
+      return;
+    }
+
+    if (cleanId.includes('@')) {
+      showToast('Email login is disabled. Please enter your assigned Admin ID (e.g. ADM-10001).', 'error');
       return;
     }
 
     setLoading(true);
     try {
-      const res = await login({ identifier, password });
+      const res = await login({ identifier: cleanId, password });
       const role = res.user.role;
       showToast('Admin login successful', 'success');
 
@@ -34,7 +40,7 @@ export const AdminLogin: React.FC = () => {
         navigate('/admin/dashboard');
       }
     } catch (err: any) {
-      showToast(err || 'Invalid admin credentials', 'error');
+      showToast(err || 'Invalid admin credentials. Please check your Admin ID.', 'error');
     } finally {
       setLoading(false);
     }
@@ -44,7 +50,7 @@ export const AdminLogin: React.FC = () => {
     <CinematicLogin
       title="Admin Portal"
       identifierLabel="Admin ID"
-      identifierPlaceholder="Enter Your Admin ID"
+      identifierPlaceholder="Enter Your Admin ID (e.g. ADM-10001)"
       passwordLabel="Password"
       forgotPasswordLink="/admin/forgot-password"
       forgotAdminIdLink="/admin/forgot-admin-id"
