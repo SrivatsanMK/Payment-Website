@@ -150,7 +150,7 @@ export const updateAdmin = async (id: string, updates: Partial<AdminModel>): Pro
 };
 
 /**
- * Seed default Admin accounts (Akash Admin & Hrithik Admin) if empty
+ * Seed or sync default Admin accounts (Akash Admin & Hrithik Admin)
  */
 export const seedDefaultAdminsIfEmpty = async (): Promise<void> => {
   const admins = await findAllAdmins();
@@ -162,7 +162,7 @@ export const seedDefaultAdminsIfEmpty = async (): Promise<void> => {
       adminId: 'ADM-10001',
       username: 'admin',
       displayName: 'Akash Admin',
-      email: 'akash@greenglide.com',
+      email: 'srivatsanmk2004@gmail.com',
       phone: '9876543210',
       password: defaultPasswordHash,
       role: 'ADMIN_1',
@@ -172,12 +172,39 @@ export const seedDefaultAdminsIfEmpty = async (): Promise<void> => {
       adminId: 'ADM-10002',
       username: 'partner',
       displayName: 'Hrithik Admin',
-      email: 'hrithik@greenglide.com',
+      email: 'mksrivatsan53@gmail.com',
       phone: '9876543211',
       password: defaultPasswordHash,
       role: 'ADMIN_2',
     });
 
-    console.log('[DynamoDB] Seeded ADMIN_1 (Akash Admin) and ADMIN_2 (Hrithik Admin).');
+    console.log('[DynamoDB] Seeded ADMIN_1 (Akash Admin) and ADMIN_2 (Hrithik Admin) with updated emails.');
+  } else {
+    // Ensure existing admin records are synced with the new emails
+    for (const admin of admins) {
+      if (
+        admin.role === 'ADMIN_1' ||
+        admin.adminId === 'ADM-10001' ||
+        admin.displayName?.toLowerCase().includes('akash') ||
+        admin.username === 'admin'
+      ) {
+        if (admin.email !== 'srivatsanmk2004@gmail.com') {
+          console.log(`[DynamoDB] Updating Akash Admin email to srivatsanmk2004@gmail.com...`);
+          await updateAdmin(admin.id, { email: 'srivatsanmk2004@gmail.com' });
+        }
+      }
+
+      if (
+        admin.role === 'ADMIN_2' ||
+        admin.adminId === 'ADM-10002' ||
+        admin.displayName?.toLowerCase().includes('hrithik') ||
+        admin.username === 'partner'
+      ) {
+        if (admin.email !== 'mksrivatsan53@gmail.com') {
+          console.log(`[DynamoDB] Updating Hrithik Admin email to mksrivatsan53@gmail.com...`);
+          await updateAdmin(admin.id, { email: 'mksrivatsan53@gmail.com' });
+        }
+      }
+    }
   }
 };
