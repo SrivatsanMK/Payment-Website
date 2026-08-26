@@ -22,10 +22,6 @@ export const AdminLogin: React.FC = () => {
       return;
     }
 
-    if (cleanId.includes('@')) {
-      showToast('Email login is disabled. Please enter your assigned Admin ID (e.g. ADM-10001).', 'error');
-      return;
-    }
 
     setLoading(true);
     try {
@@ -50,7 +46,7 @@ export const AdminLogin: React.FC = () => {
     <CinematicLogin
       title="Admin Portal"
       identifierLabel="Admin ID"
-      identifierPlaceholder="Enter Your Admin ID (e.g. ADM-10001)"
+      identifierPlaceholder="Enter Your Admin ID"
       passwordLabel="Password"
       forgotPasswordLink="/admin/forgot-password"
       forgotAdminIdLink="/admin/forgot-admin-id"

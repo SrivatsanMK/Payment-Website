@@ -68,21 +68,6 @@ export const customerLogin = async (req: Request, res: Response, next: NextFunct
 
     const cleanIdentifier = identifier.trim();
 
-    // Block email formats during login
-    if (cleanIdentifier.includes('@')) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email login is disabled for security. Please log in using your Customer ID only (e.g. CUST-10001).'
-      });
-    }
-
-    // Block raw phone numbers (10+ pure digits) during login
-    if (/^\+?\d{10,15}$/.test(cleanIdentifier)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Phone number login is disabled for security. Please log in using your Customer ID only (e.g. CUST-10001).'
-      });
-    }
 
     // Check brute-force account lockout status
     const lockoutStatus = lockoutManager.isAccountLocked(cleanIdentifier, String(clientIp));
@@ -206,13 +191,6 @@ export const adminLogin = async (req: Request, res: Response, next: NextFunction
 
     const cleanIdentifier = identifier.trim();
 
-    // Block email formats during admin login
-    if (cleanIdentifier.includes('@')) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email login is disabled for security. Please log in using your assigned Admin ID only (e.g. ADM-10001).'
-      });
-    }
 
     // Check brute-force account lockout status
     const lockoutStatus = lockoutManager.isAccountLocked(cleanIdentifier, String(clientIp));

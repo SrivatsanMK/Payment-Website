@@ -22,15 +22,6 @@ export const Login: React.FC = () => {
       return;
     }
 
-    if (cleanId.includes('@')) {
-      showToast('Email login is disabled. Please enter your assigned Customer ID (e.g. CUST-10001).', 'error');
-      return;
-    }
-
-    if (/^\+?\d{10,15}$/.test(cleanId)) {
-      showToast('Phone number login is disabled. Please enter your assigned Customer ID (e.g. CUST-10001).', 'error');
-      return;
-    }
 
     setLoading(true);
     try {
@@ -56,7 +47,7 @@ export const Login: React.FC = () => {
     <CinematicLogin
       title="Customer Portal"
       identifierLabel="Customer ID"
-      identifierPlaceholder="Enter Your Customer ID (e.g. CUST-10001)"
+      identifierPlaceholder="Enter Your Customer ID"
       passwordLabel="Password"
       forgotPasswordLink="/forgot-password"
       forgotCustomerIdLink="/forgot-customer-id"
